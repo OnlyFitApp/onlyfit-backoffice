@@ -5561,7 +5561,11 @@ svg text {
   display: grid;
   align-items: center;
   gap: 6px;
-  grid-template-columns: minmax(0, 1fr) 112px 72px 36px;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 10px;
+  background: rgb(var(--color-surface-container-low));
+  padding: 6px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 112px 72px 36px;
 }
 
 .pcat-field > .button {
@@ -5604,8 +5608,14 @@ svg text {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1400px) {
+  /* O editor é uma coluna estreita: com instrução, a etapa vira duas linhas. */
   .pcat-step {
     grid-template-columns: minmax(0, 1fr) 96px 64px 34px;
+  }
+
+  .pcat-step input:nth-child(2) {
+    grid-column: 1 / -1;
+    order: 1;
   }
 }

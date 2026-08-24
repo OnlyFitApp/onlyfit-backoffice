@@ -36,6 +36,7 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   Sparkles,
+  Swords,
   Tags,
   Ticket,
   UserPlus,
@@ -88,6 +89,7 @@ import { AffinityGroupsPage } from './components/AffinityGroupsPage';
 import { ProtocolCatalogPage } from './components/ProtocolCatalogPage';
 import { SessionTypesPage } from './components/SessionTypesPage';
 import { ExerciseCatalogPage } from './components/ExerciseCatalogPage';
+import { CombatTechniquesPage } from './components/CombatTechniquesPage';
 import { ProfessionalCredentialsPage } from './components/ProfessionalCredentialsPage';
 import { ProfessionalSpecialtiesPage } from './components/ProfessionalSpecialtiesPage';
 import { LegalDocumentsPage } from './components/LegalDocumentsPage';
@@ -133,6 +135,7 @@ const navItems = [
     children: [
       { id: 'protocol-catalog', label: 'Protocolos', icon: ListChecks },
       { id: 'exercise-catalog', label: 'Exercícios', icon: Dumbbell },
+      { id: 'combat-techniques', label: 'Técnicas de luta', icon: Swords },
       { id: 'session-types', label: 'Tipos de sessão', icon: Dumbbell },
     ],
   },
@@ -176,6 +179,7 @@ type SectionId =
   | 'affinity-groups'
   | 'protocol-catalog'
   | 'exercise-catalog'
+  | 'combat-techniques'
   | 'session-types'
   | 'professional-specialties'
   | 'market-settings'
@@ -2592,6 +2596,7 @@ function AppShell() {
         {activeSection === 'protocol-catalog' && <ProtocolCatalogPage />}
         {activeSection === 'session-types' && <SessionTypesPage />}
         {activeSection === 'exercise-catalog' && <ExerciseCatalogPage />}
+        {activeSection === 'combat-techniques' && <CombatTechniquesPage />}
         {activeSection === 'professional-specialties' && <ProfessionalSpecialtiesPage />}
         {activeSection === 'market-settings' && <MarketSettingsPage />}
         {activeSection === 'offering-types' && <OfferingTypesPage />}

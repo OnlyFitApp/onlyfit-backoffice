@@ -1,5 +1,14 @@
 import {
   Activity,
+  Footprints,
+  Gauge,
+  Mountain,
+  MoveUpRight,
+  PersonStanding,
+  Repeat,
+  Snowflake,
+  Trophy,
+  Zap,
   AlarmClock,
   Apple,
   Bed,
@@ -71,4 +80,40 @@ export const protocolIconKeys = Object.keys(protocolIcons);
 
 export function protocolIcon(key: string): LucideIcon {
   return protocolIcons[key] ?? Sparkles;
+}
+
+/**
+ * Os ícones de tipo de sessão de treino (F5.b).
+ *
+ * Mesma regra do catálogo de protocolos: a chave kebab-case vai para o banco e
+ * o portal resolve por ela, então só entram ícones que existem também no
+ * `lucide-react` do desktop.
+ */
+export const sessionIcons: Readonly<Record<string, LucideIcon>> = {
+  footprints: Footprints,
+  'move-up-right': MoveUpRight,
+  gauge: Gauge,
+  timer: Timer,
+  snowflake: Snowflake,
+  wind: Wind,
+  zap: Zap,
+  trophy: Trophy,
+  bike: Bike,
+  repeat: Repeat,
+  mountain: Mountain,
+  waves: Waves,
+  sparkles: Sparkles,
+  dumbbell: Dumbbell,
+  activity: Activity,
+  'person-standing': PersonStanding,
+  target: Target,
+  flame: Flame,
+  'heart-pulse': HeartPulse,
+  stethoscope: Stethoscope,
+};
+
+export const sessionIconKeys = Object.keys(sessionIcons);
+
+export function sessionIcon(key: string): LucideIcon {
+  return sessionIcons[key] ?? Activity;
 }

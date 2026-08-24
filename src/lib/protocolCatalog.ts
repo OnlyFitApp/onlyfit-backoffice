@@ -22,6 +22,7 @@ export const protocolFlows: ReadonlyArray<{ value: ProtocolFlow; label: string; 
 
 export type ProtocolStep = {
   name: string;
+  instruction: string;
   time: string;
   durationMinutes: number | null;
 };
@@ -69,6 +70,7 @@ function parseStep(value: unknown): ProtocolStep {
   const duration = Number(row.duration_minutes);
   return {
     name: String(row.name ?? ''),
+    instruction: String(row.instruction ?? ''),
     time: String(row.time ?? ''),
     durationMinutes: Number.isFinite(duration) && duration > 0 ? duration : null,
   };
@@ -101,6 +103,7 @@ function stepPayload(steps: ProtocolStep[]) {
     .map((step) => ({
       name: step.name.trim(),
       time: step.time.trim(),
+      ...(step.instruction.trim() ? { instruction: step.instruction.trim() } : {}),
       ...(step.durationMinutes ? { duration_minutes: step.durationMinutes } : {}),
     }));
 }

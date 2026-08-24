@@ -313,6 +313,12 @@ export function ProtocolCatalogPage() {
                       onChange={(event) => patchStep(index, { name: event.target.value })}
                     />
                     <input
+                      value={step.instruction}
+                      placeholder="Instrução"
+                      maxLength={120}
+                      onChange={(event) => patchStep(index, { instruction: event.target.value })}
+                    />
+                    <input
                       type="time"
                       value={step.time}
                       onChange={(event) => patchStep(index, { time: event.target.value })}
@@ -343,7 +349,9 @@ export function ProtocolCatalogPage() {
                   className="button secondary compact"
                   type="button"
                   onClick={() =>
-                    patch({ defaultSteps: [...draft.defaultSteps, { name: '', time: '08:00', durationMinutes: null }] })
+                    patch({
+                      defaultSteps: [...draft.defaultSteps, { name: '', instruction: '', time: '08:00', durationMinutes: null }],
+                    })
                   }
                 >
                   <Plus size={14} /> Etapa

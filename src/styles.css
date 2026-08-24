@@ -5343,3 +5343,269 @@ svg text {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* F4 — catálogo de protocolos da plataforma.
+   Vocabulário próprio: a lista tem ícone, badge de fluxo e um editor com
+   repetidor de etapas, que as páginas de especialidade e afinidade não têm. */
+.pcat-page {
+  display: grid;
+  gap: 16px;
+}
+
+.pcat-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pcat-summary span {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: baseline;
+  gap: 6px;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 10px;
+  background: rgb(var(--color-surface-container-low));
+  padding: 8px 11px;
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 12px;
+}
+
+.pcat-summary strong {
+  color: rgb(var(--color-on-surface));
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcat-workspace {
+  display: grid;
+  min-width: 0;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pcat-workspace.has-editor {
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+}
+
+.pcat-list-panel,
+.pcat-editor {
+  min-width: 0;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 12px;
+  background: rgb(var(--color-surface-container));
+}
+
+.pcat-editor {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.pcat-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pcat-row {
+  display: flex;
+  min-width: 0;
+  min-height: 72px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgb(var(--color-outline-variant));
+  padding: 12px 14px;
+}
+
+.pcat-row:last-child {
+  border-bottom: 0;
+}
+
+.pcat-row.inactive {
+  opacity: 0.62;
+}
+
+.pcat-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: rgb(var(--color-primary) / 0.12);
+  color: rgb(var(--color-primary));
+  place-items: center;
+}
+
+.pcat-row-main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 260px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.pcat-row-main > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.pcat-row-main strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgb(var(--color-on-surface));
+  font-size: 14px;
+}
+
+.pcat-featured {
+  color: rgb(var(--color-primary));
+}
+
+.pcat-row-main code {
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 11px;
+}
+
+.pcat-status {
+  display: inline-flex;
+  min-width: 72px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgb(var(--color-surface-container-high));
+  color: rgb(var(--color-on-surface-variant));
+  padding: 0 9px;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.pcat-status.active {
+  background: rgb(var(--color-primary) / 0.12);
+  color: rgb(var(--color-primary));
+}
+
+.pcat-muted {
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 12px;
+}
+
+.pcat-row-actions,
+.pcat-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pcat-editor-actions {
+  justify-content: flex-end;
+}
+
+.pcat-field {
+  display: grid;
+  gap: 6px;
+}
+
+.pcat-field > span {
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 12px;
+}
+
+.pcat-field input,
+.pcat-field select,
+.pcat-field textarea {
+  min-height: 40px;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 10px;
+  background: rgb(var(--color-surface));
+  padding: 8px 12px;
+  color: rgb(var(--color-on-surface));
+  font: inherit;
+}
+
+.pcat-field textarea {
+  resize: vertical;
+}
+
+.pcat-icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pcat-icon-picker button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 9px;
+  background: rgb(var(--color-surface));
+  color: rgb(var(--color-on-surface-variant));
+  place-items: center;
+}
+
+.pcat-icon-picker button.selected {
+  border-color: rgb(var(--color-primary));
+  background: rgb(var(--color-primary) / 0.14);
+  color: rgb(var(--color-primary));
+}
+
+.pcat-step {
+  display: grid;
+  align-items: center;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) 112px 72px 36px;
+}
+
+.pcat-field > .button {
+  justify-self: start;
+}
+
+.pcat-choice-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 12px;
+}
+
+.pcat-note {
+  margin: 0;
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 12px;
+}
+
+.pcat-section-heading {
+  margin: 0;
+  color: rgb(var(--color-on-surface));
+  font-size: 15px;
+}
+
+.pcat-loading,
+.pcat-empty {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  align-content: center;
+  gap: 9px;
+  color: rgb(var(--color-on-surface-variant));
+}
+
+@media (max-width: 1100px) {
+  .pcat-workspace.has-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .pcat-step {
+    grid-template-columns: minmax(0, 1fr) 96px 64px 34px;
+  }
+}

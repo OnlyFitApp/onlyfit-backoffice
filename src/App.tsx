@@ -16,6 +16,7 @@ import {
   Heart,
   KeyRound,
   LayoutDashboard,
+  ListChecks,
   FileText,
   LogOut,
   MessageCircle,
@@ -84,6 +85,7 @@ import { EmailCenterPage } from './components/EmailCenter';
 import { MarketSettingsPage } from './components/MarketSettingsPage';
 import { ReviewModerationPage } from './components/ReviewModerationPage';
 import { AffinityGroupsPage } from './components/AffinityGroupsPage';
+import { ProtocolCatalogPage } from './components/ProtocolCatalogPage';
 import { ProfessionalCredentialsPage } from './components/ProfessionalCredentialsPage';
 import { ProfessionalSpecialtiesPage } from './components/ProfessionalSpecialtiesPage';
 import { LegalDocumentsPage } from './components/LegalDocumentsPage';
@@ -120,6 +122,14 @@ const navItems = [
       { id: 'offering-types', label: 'Tipos de oferta', icon: HandCoins },
       { id: 'offerings', label: 'Ofertas', icon: ShoppingBag },
       { id: 'consultancies', label: 'Consultorias', icon: Handshake },
+    ],
+  },
+  {
+    groupId: 'library',
+    label: 'Biblioteca da plataforma',
+    icon: ListChecks,
+    children: [
+      { id: 'protocol-catalog', label: 'Protocolos', icon: ListChecks },
     ],
   },
   {
@@ -160,6 +170,7 @@ type SectionId =
   | 'members'
   | 'feed'
   | 'affinity-groups'
+  | 'protocol-catalog'
   | 'professional-specialties'
   | 'market-settings'
   | 'offering-types'
@@ -2572,6 +2583,7 @@ function AppShell() {
         {activeSection === 'members' && <UsersDirectoryPage />}
         {activeSection === 'feed' && <FeedAlgorithmPage />}
         {activeSection === 'affinity-groups' && <AffinityGroupsPage />}
+        {activeSection === 'protocol-catalog' && <ProtocolCatalogPage />}
         {activeSection === 'professional-specialties' && <ProfessionalSpecialtiesPage />}
         {activeSection === 'market-settings' && <MarketSettingsPage />}
         {activeSection === 'offering-types' && <OfferingTypesPage />}

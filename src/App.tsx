@@ -87,6 +87,7 @@ import { ReviewModerationPage } from './components/ReviewModerationPage';
 import { AffinityGroupsPage } from './components/AffinityGroupsPage';
 import { ProtocolCatalogPage } from './components/ProtocolCatalogPage';
 import { SessionTypesPage } from './components/SessionTypesPage';
+import { ExerciseCatalogPage } from './components/ExerciseCatalogPage';
 import { ProfessionalCredentialsPage } from './components/ProfessionalCredentialsPage';
 import { ProfessionalSpecialtiesPage } from './components/ProfessionalSpecialtiesPage';
 import { LegalDocumentsPage } from './components/LegalDocumentsPage';
@@ -131,6 +132,7 @@ const navItems = [
     icon: ListChecks,
     children: [
       { id: 'protocol-catalog', label: 'Protocolos', icon: ListChecks },
+      { id: 'exercise-catalog', label: 'Exercícios', icon: Dumbbell },
       { id: 'session-types', label: 'Tipos de sessão', icon: Dumbbell },
     ],
   },
@@ -173,6 +175,7 @@ type SectionId =
   | 'feed'
   | 'affinity-groups'
   | 'protocol-catalog'
+  | 'exercise-catalog'
   | 'session-types'
   | 'professional-specialties'
   | 'market-settings'
@@ -2588,6 +2591,7 @@ function AppShell() {
         {activeSection === 'affinity-groups' && <AffinityGroupsPage />}
         {activeSection === 'protocol-catalog' && <ProtocolCatalogPage />}
         {activeSection === 'session-types' && <SessionTypesPage />}
+        {activeSection === 'exercise-catalog' && <ExerciseCatalogPage />}
         {activeSection === 'professional-specialties' && <ProfessionalSpecialtiesPage />}
         {activeSection === 'market-settings' && <MarketSettingsPage />}
         {activeSection === 'offering-types' && <OfferingTypesPage />}

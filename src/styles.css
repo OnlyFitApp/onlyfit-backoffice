@@ -5619,3 +5619,33 @@ svg text {
     order: 1;
   }
 }
+
+/* F5.b — tipos de sessão. Reaproveita o vocabulário .pcat-* da biblioteca da
+   plataforma e acrescenta só o que é próprio: filtro por esporte e as fichas
+   de esporte do editor. */
+.pcat-filter {
+  max-width: 260px;
+}
+
+.pcat-sport-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pcat-sport-picker button {
+  min-height: 32px;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 999px;
+  background: rgb(var(--color-surface));
+  padding: 0 11px;
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 12px;
+}
+
+.pcat-sport-picker button.selected {
+  border-color: rgb(var(--color-primary));
+  background: rgb(var(--color-primary) / 0.14);
+  color: rgb(var(--color-primary));
+  font-weight: 650;
+}

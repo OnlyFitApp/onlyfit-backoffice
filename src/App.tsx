@@ -85,6 +85,7 @@ import { BetaFeedbackPage } from './components/BetaFeedback';
 import { EmailCenterPage } from './components/EmailCenter';
 import { MarketSettingsPage } from './components/MarketSettingsPage';
 import { ReviewModerationPage } from './components/ReviewModerationPage';
+import { CommunityModerationPage } from './components/CommunityModerationPage';
 import { AffinityGroupsPage } from './components/AffinityGroupsPage';
 import { ProtocolCatalogPage } from './components/ProtocolCatalogPage';
 import { SessionTypesPage } from './components/SessionTypesPage';
@@ -115,6 +116,7 @@ const navItems = [
       { id: 'feed', label: 'Feed', icon: Rss },
       { id: 'affinity-groups', label: 'Grupos de afinidade', icon: Tags },
       { id: 'review-moderation', label: 'Moderação', icon: Shield },
+      { id: 'community-moderation', label: 'Comunidades', icon: UsersRound },
     ],
   },
   {
@@ -194,7 +196,8 @@ type SectionId =
   | 'professional-credentials'
   | 'legal-documents'
   | 'users'
-  | 'review-moderation';
+  | 'review-moderation'
+  | 'community-moderation';
 
 const billingTypeOptions: ReadonlyArray<{ value: BillingType; label: string }> = [
   { value: 'one_time', label: 'Pagamento único' },
@@ -2611,6 +2614,7 @@ function AppShell() {
         {activeSection === 'legal-documents' && <LegalDocumentsPage />}
         {activeSection === 'users' && <UsersPage />}
         {activeSection === 'review-moderation' && <ReviewModerationPage />}
+        {activeSection === 'community-moderation' && <CommunityModerationPage />}
       </div>
     </div>
   );

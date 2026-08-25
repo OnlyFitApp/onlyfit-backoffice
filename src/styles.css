@@ -4209,6 +4209,95 @@ svg text {
   gap: 18px;
 }
 
+.community-moderation-page,
+.community-moderation-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.community-moderation-toolbar,
+.community-moderation-title,
+.community-moderation-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.community-moderation-toolbar,
+.community-moderation-title {
+  justify-content: space-between;
+}
+
+.community-moderation-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: min(280px, 100%);
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 999px;
+  padding: 9px 13px;
+  background: rgb(var(--color-surface-container));
+}
+
+.community-moderation-search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.community-moderation-card {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 16px;
+  background: rgb(var(--color-surface-container));
+}
+
+.community-moderation-card > img,
+.community-moderation-cover {
+  width: 100%;
+  height: 100%;
+  min-height: 148px;
+  object-fit: cover;
+}
+
+.community-moderation-cover {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgb(var(--color-primary) / .3), rgb(var(--color-surface-container-highest)));
+}
+
+.community-moderation-body {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.community-moderation-title span,
+.community-moderation-stats {
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 12px;
+}
+
+.community-moderation-title h2 { margin: 2px 0 0; }
+.community-moderation-stats { flex-wrap: wrap; }
+.community-moderation-stats span { display: inline-flex; align-items: center; gap: 5px; }
+.review-status.published { color: rgb(var(--color-primary)); }
+.review-status.read_only { color: rgb(var(--color-tertiary)); }
+.review-status.suspended,
+.review-status.archived { color: rgb(var(--color-error)); }
+
+@media (max-width: 760px) {
+  .community-moderation-toolbar { align-items: stretch; flex-direction: column; }
+  .community-moderation-card { grid-template-columns: 1fr; }
+  .community-moderation-card > img,
+  .community-moderation-cover { height: 120px; min-height: 120px; }
+}
+
 .review-report-list {
   display: grid;
   gap: 14px;

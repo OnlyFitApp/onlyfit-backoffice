@@ -20,6 +20,11 @@ export type OfferingTypeBilling = {
   requires_affinity_group: boolean;
   requires_product_category: boolean;
   active_offerings_count: number;
+  below_minimum_active_count: number;
+  previous_minimum_price: number;
+  paused_offerings_count: number;
+  notified_professionals_count: number;
+  notification_batch_id: string | null;
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -58,6 +63,11 @@ function parseOfferingType(value: unknown): OfferingTypeBilling {
     requires_affinity_group: row.requires_affinity_group === true,
     requires_product_category: row.requires_product_category === true,
     active_offerings_count: numberFrom(row.active_offerings_count),
+    below_minimum_active_count: numberFrom(row.below_minimum_active_count),
+    previous_minimum_price: numberFrom(row.previous_minimum_price),
+    paused_offerings_count: numberFrom(row.paused_offerings_count),
+    notified_professionals_count: numberFrom(row.notified_professionals_count),
+    notification_batch_id: typeof row.notification_batch_id === 'string' ? row.notification_batch_id : null,
   };
 }
 

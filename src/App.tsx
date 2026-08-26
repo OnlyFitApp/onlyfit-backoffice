@@ -462,7 +462,7 @@ function OfferingTypeBillingRow({ item, canEdit }: { item: OfferingTypeBilling; 
 
   const parsedMinimumPrice = parseCurrencyInput(minimumPriceInput);
   const minimumPrice = parsedMinimumPrice;
-  const isMinimumPriceInvalid = minimumPrice === null || minimumPrice <= 0;
+  const isMinimumPriceInvalid = minimumPrice === null || minimumPrice < 0;
 
   const parsedFeePercent = parseCurrencyInput(feePercentInput);
   const feePercent = parsedFeePercent;
@@ -510,7 +510,16 @@ function OfferingTypeBillingRow({ item, canEdit }: { item: OfferingTypeBilling; 
         platformFeeFixed: feeFixed,
       },
       {
-        onSuccess: () => setMessage('Configuração salva. Ofertas ativas deste tipo foram sincronizadas.'),
+        onSuccess: (result) => {
+          if (result.paused_offerings_count > 0) {
+            setMessage(
+              `${formatNumber(result.paused_offerings_count)} oferta(s) pausada(s). ` +
+              `${formatNumber(result.notified_professionals_count)} profissional(is) avisado(s).`,
+            );
+            return;
+          }
+          setMessage('Configuração salva.');
+        },
         onError: (error) => setMessage(error instanceof Error ? error.message : 'Não foi possível salvar.'),
       },
     );

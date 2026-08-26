@@ -2,6 +2,7 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  BadgeCheck,
   Bell,
   CheckCircle2,
   ChevronDown,
@@ -85,6 +86,7 @@ import { BetaFeedbackPage } from './components/BetaFeedback';
 import { EmailCenterPage } from './components/EmailCenter';
 import { MarketSettingsPage } from './components/MarketSettingsPage';
 import { ReviewModerationPage } from './components/ReviewModerationPage';
+import { CompanyVerificationPage } from './components/CompanyVerificationPage';
 import { CommunityModerationPage } from './components/CommunityModerationPage';
 import { AffinityGroupsPage } from './components/AffinityGroupsPage';
 import { ProtocolCatalogPage } from './components/ProtocolCatalogPage';
@@ -156,6 +158,7 @@ const navItems = [
     label: 'Operação',
     icon: SlidersHorizontal,
     children: [
+      { id: 'company-verification', label: 'Verificação de empresas', icon: BadgeCheck },
       { id: 'finance', label: 'Financeiro', icon: CreditCard },
       { id: 'beta-feedback', label: 'Feedback Beta', icon: MessageSquareWarning },
       { id: 'email-center', label: 'E-mails', icon: Mail },
@@ -197,7 +200,8 @@ type SectionId =
   | 'legal-documents'
   | 'users'
   | 'review-moderation'
-  | 'community-moderation';
+  | 'community-moderation'
+  | 'company-verification';
 
 const billingTypeOptions: ReadonlyArray<{ value: BillingType; label: string }> = [
   { value: 'one_time', label: 'Pagamento único' },
@@ -2614,6 +2618,7 @@ function AppShell() {
         {activeSection === 'legal-documents' && <LegalDocumentsPage />}
         {activeSection === 'users' && <UsersPage />}
         {activeSection === 'review-moderation' && <ReviewModerationPage />}
+        {activeSection === 'company-verification' && <CompanyVerificationPage />}
         {activeSection === 'community-moderation' && <CommunityModerationPage />}
       </div>
     </div>

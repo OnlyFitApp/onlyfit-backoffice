@@ -5910,3 +5910,144 @@ svg text {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* Fila de verificação de empresas (Operação). O cartão mostra o que a operação
+   precisa conferir — CNPJ, site e responsável — sem abrir outra tela. */
+.company-verification-list {
+  display: grid;
+  gap: 14px;
+}
+
+.company-verification-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 14px;
+  background: rgb(var(--color-surface-container));
+  padding: 18px;
+}
+
+.company-verification-head,
+.company-verification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.company-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.company-identity span,
+.company-verification-details dt {
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 12px;
+}
+
+.company-identity h2 {
+  margin: 3px 0 0;
+}
+
+.company-logo {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgb(var(--color-surface-container-high));
+}
+
+.company-logo.placeholder {
+  display: grid;
+  place-items: center;
+  color: rgb(var(--color-on-surface-variant));
+}
+
+.company-status {
+  border-radius: 999px;
+  background: rgb(var(--color-surface-container-highest));
+  padding: 5px 10px;
+  font-weight: 800;
+}
+
+.company-status.pending_review { color: rgb(var(--color-tertiary)); }
+.company-status.approved { color: rgb(var(--color-primary)); }
+.company-status.rejected { color: rgb(var(--color-error)); }
+
+.company-verification-details {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.company-verification-details div {
+  min-width: 0;
+}
+
+.company-verification-details dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.company-verification-details a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: rgb(var(--color-primary));
+}
+
+.company-description {
+  margin: 0;
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 13px;
+}
+
+.company-verification-card blockquote {
+  display: grid;
+  gap: 4px;
+  border-left: 3px solid rgb(var(--color-error));
+  background: rgb(var(--color-surface-container-high));
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.company-verification-decision {
+  display: grid;
+  gap: 10px;
+}
+
+.company-verification-decision label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  color: rgb(var(--color-on-surface-variant));
+}
+
+.company-verification-decision textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 12px;
+  background: rgb(var(--color-surface));
+  color: rgb(var(--color-on-surface));
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.company-verification-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .company-verification-details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

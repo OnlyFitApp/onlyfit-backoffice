@@ -97,6 +97,32 @@ export async function updateOfferingTypeBilling(input: {
   return parseOfferingType(data);
 }
 
+/**
+ * Mensagem para o código que `control_update_offering_type_billing` levanta.
+ *
+ * A RPC recusa com `RAISE EXCEPTION '<código>'`, e o PostgREST devolve isso
+ * como objeto — não como `Error` —, então a tela caía sempre no texto genérico
+ * e escondia qual regra tinha barrado o salvamento.
+ */
+export function offeringTypeErrorMessage(error: unknown): string {
+  const raw =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error !== null && 'message' in error
+        ? String((error as { message: unknown }).message)
+        : String(error ?? '');
+  if (raw.includes('invalid_platform_fee_fixed')) {
+    return 'Cobrança recorrente não aceita taxa fixa. Zere a taxa fixa ou mude a cobrança para pagamento único.';
+  }
+  if (raw.includes('invalid_platform_fee_percent')) return 'A taxa percentual precisa estar entre 0 e 100.';
+  if (raw.includes('invalid_minimum_price')) return 'O valor mínimo não pode ser negativo.';
+  if (raw.includes('invalid_billing_interval')) return 'Escolha um intervalo válido para a cobrança recorrente.';
+  if (raw.includes('invalid_offering_type')) return 'Este tipo de oferta não existe mais. Atualize a lista.';
+  if (raw.includes('forbidden')) return 'Somente administradores podem alterar as regras de cobrança.';
+  console.error('[offering-types] falha ao salvar a regra de cobrança', error);
+  return 'Não foi possível salvar.';
+}
+
 export function billingTypeLabel(value: BillingType): string {
   if (value === 'recurring') return 'Recorrente';
   return 'Pagamento único';

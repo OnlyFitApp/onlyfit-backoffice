@@ -70,6 +70,7 @@ import type { PlatformStaffMember, StaffRole } from './lib/staff';
 import {
   billingIntervalLabel,
   billingTypeLabel,
+  offeringTypeErrorMessage,
   type BillingInterval,
   type BillingType,
   type OfferingTypeBilling,
@@ -449,7 +450,17 @@ function Sidebar({
   );
 }
 
-function OfferingTypeBillingRow({ item, canEdit }: { item: OfferingTypeBilling; canEdit: boolean }) {
+function OfferingTypeBillingRow({
+  item,
+  canEdit,
+  expanded,
+  onToggle,
+}: {
+  item: OfferingTypeBilling;
+  canEdit: boolean;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
   const updateMutation = useUpdateOfferingTypeBilling();
   const [billingType, setBillingType] = useState<BillingType>(item.billing_type);
   const [billingInterval, setBillingInterval] = useState<BillingInterval | null>(item.billing_interval);
@@ -485,6 +496,16 @@ function OfferingTypeBillingRow({ item, canEdit }: { item: OfferingTypeBilling; 
     ? billingIntervalLabel(nextInterval ?? 'month')
     : billingTypeLabel(billingType);
   const feePreview = `${formatPriceInput(feePercent ?? 0)}%${(feeFixed ?? 0) > 0 ? ` + ${formatCurrencyExact(feeFixed ?? 0)}` : ''}`;
+  const raisesMinimum = minimumPrice !== null && minimumPrice > item.minimum_price;
+
+  const reset = () => {
+    setBillingType(item.billing_type);
+    setBillingInterval(item.billing_interval);
+    setMinimumPriceInput(formatPriceInput(item.minimum_price));
+    setFeePercentInput(formatPriceInput(item.platform_fee_percent));
+    setFeeFixedInput(formatPriceInput(item.platform_fee_fixed));
+    setMessage('');
+  };
 
   const save = () => {
     setMessage('');
@@ -511,6 +532,11 @@ function OfferingTypeBillingRow({ item, canEdit }: { item: OfferingTypeBilling; 
       },
       {
         onSuccess: (result) => {
+          setBillingType(result.billing_type);
+          setBillingInterval(result.billing_interval);
+          setMinimumPriceInput(formatPriceInput(result.minimum_price));
+          setFeePercentInput(formatPriceInput(result.platform_fee_percent));
+          setFeeFixedInput(formatPriceInput(result.platform_fee_fixed));
           if (result.paused_offerings_count > 0) {
             setMessage(
               `${formatNumber(result.paused_offerings_count)} oferta(s) pausada(s). ` +
@@ -520,17 +546,16 @@ function OfferingTypeBillingRow({ item, canEdit }: { item: OfferingTypeBilling; 
           }
           setMessage('Configuração salva.');
         },
-        onError: (error) => setMessage(error instanceof Error ? error.message : 'Não foi possível salvar.'),
+        onError: (error) => setMessage(offeringTypeErrorMessage(error)),
       },
     );
   };
 
   return (
-    <article className={`offering-row ${dirty ? 'is-dirty' : ''}`}>
+    <article className={`offering-row ${expanded ? 'is-expanded' : ''} ${dirty ? 'is-dirty' : ''}`}>
       <div className="offering-main">
         <div className="offering-title-row">
           <strong>{item.name}</strong>
-          <span>{formatNumber(item.active_offerings_count)} ativa(s)</span>
         </div>
         <span>{item.description}</span>
         <div className="offering-badges">
@@ -540,24 +565,43 @@ function OfferingTypeBillingRow({ item, canEdit }: { item: OfferingTypeBilling; 
         </div>
       </div>
 
-      <div className="offering-rule-strip">
-        <div>
-          <span>Cobrança</span>
-          <strong>{cadence}</strong>
-        </div>
-        <div>
-          <span>Mínimo</span>
-          <strong>{formatCurrencyExact(minimumPrice ?? 0)}</strong>
-        </div>
-        <div>
-          <span>OnlyFit</span>
-          <strong>{feePreview}</strong>
-        </div>
+      <div className="offering-rule-value" data-label="Cobrança">
+        <strong>{cadence}</strong>
+      </div>
+      <div className="offering-rule-value numeric" data-label="Preço mínimo">
+        <strong>{formatCurrencyExact(minimumPrice ?? 0)}</strong>
+      </div>
+      <div className="offering-rule-value numeric" data-label="Taxa OnlyFit">
+        <strong>{feePreview}</strong>
+      </div>
+      <div className="offering-rule-value numeric" data-label="Ofertas ativas">
+        <strong>{formatNumber(item.active_offerings_count)}</strong>
       </div>
 
-      <details className="offering-edit-details">
-        <summary>{canEdit ? 'Editar regra' : 'Ver regra'}</summary>
-        <div className="billing-controls">
+      <button
+        className="offering-edit-trigger"
+        type="button"
+        aria-expanded={expanded}
+        onClick={onToggle}
+      >
+        {canEdit ? <Pencil size={15} /> : null}
+        {canEdit ? 'Editar' : 'Ver'}
+        <ChevronDown className={expanded ? 'rotate' : ''} size={16} />
+      </button>
+
+      {expanded && (
+        <div className="offering-editor">
+          <div className="offering-editor-heading">
+            <div>
+              <strong>{canEdit ? 'Configurar regra comercial' : 'Regra comercial'}</strong>
+              <span>{item.name}</span>
+            </div>
+            <button className="icon-button" type="button" aria-label="Fechar edição" onClick={onToggle}>
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="billing-controls">
           <label>
             <span>Cobrança</span>
             <select
@@ -567,7 +611,10 @@ function OfferingTypeBillingRow({ item, canEdit }: { item: OfferingTypeBilling; 
                 const next = event.target.value as BillingType;
                 setBillingType(next);
                 if (next !== 'recurring') setBillingInterval(null);
-                if (next === 'recurring' && !billingInterval) setBillingInterval('month');
+                if (next === 'recurring') {
+                  if (!billingInterval) setBillingInterval('month');
+                  setFeeFixedInput(formatPriceInput(0));
+                }
               }}
             >
               {billingTypeOptions.map((option) => (
@@ -591,64 +638,99 @@ function OfferingTypeBillingRow({ item, canEdit }: { item: OfferingTypeBilling; 
 
           <label>
             <span>Mínimo</span>
-            <input
-              value={minimumPriceInput}
-              disabled={!canEdit}
-              inputMode="decimal"
-              aria-invalid={isMinimumPriceInvalid}
-              onBlur={() => {
-                if (minimumPrice !== null) setMinimumPriceInput(formatPriceInput(minimumPrice));
-              }}
-              onChange={(event) => {
-                setMinimumPriceInput(event.target.value.replace(/[^\d.,]/g, ''));
-              }}
-            />
+            <span className="offering-input-unit">
+              <span>R$</span>
+              <input
+                value={minimumPriceInput}
+                disabled={!canEdit}
+                inputMode="decimal"
+                aria-invalid={isMinimumPriceInvalid}
+                aria-label="Preço mínimo em reais"
+                onBlur={() => {
+                  if (minimumPrice !== null) setMinimumPriceInput(formatPriceInput(minimumPrice));
+                }}
+                onChange={(event) => {
+                  setMinimumPriceInput(event.target.value.replace(/[^\d.,]/g, ''));
+                }}
+              />
+            </span>
+            {isMinimumPriceInvalid && <small>Informe um valor válido.</small>}
           </label>
 
           <label>
             <span>Taxa %</span>
-            <input
-              value={feePercentInput}
-              disabled={!canEdit}
-              inputMode="decimal"
-              aria-invalid={isFeePercentInvalid}
-              onBlur={() => {
-                if (feePercent !== null) setFeePercentInput(formatPriceInput(feePercent));
-              }}
-              onChange={(event) => {
-                setFeePercentInput(event.target.value.replace(/[^\d.,]/g, ''));
-              }}
-            />
+            <span className="offering-input-unit suffix">
+              <input
+                value={feePercentInput}
+                disabled={!canEdit}
+                inputMode="decimal"
+                aria-invalid={isFeePercentInvalid}
+                aria-label="Taxa percentual da OnlyFit"
+                onBlur={() => {
+                  if (feePercent !== null) setFeePercentInput(formatPriceInput(feePercent));
+                }}
+                onChange={(event) => {
+                  setFeePercentInput(event.target.value.replace(/[^\d.,]/g, ''));
+                }}
+              />
+              <span>%</span>
+            </span>
+            {isFeePercentInvalid && <small>Use um valor entre 0 e 100.</small>}
           </label>
 
           <label>
             <span>Taxa fixa</span>
-            <input
-              value={feeFixedInput}
-              disabled={!canEdit}
-              inputMode="decimal"
-              aria-invalid={isFeeFixedInvalid}
-              onBlur={() => {
-                if (feeFixed !== null) setFeeFixedInput(formatPriceInput(feeFixed));
-              }}
-              onChange={(event) => {
-                setFeeFixedInput(event.target.value.replace(/[^\d.,]/g, ''));
-              }}
-            />
+            <span className="offering-input-unit">
+              <span>R$</span>
+              <input
+                value={feeFixedInput}
+                disabled={!canEdit || isRecurring}
+                inputMode="decimal"
+                aria-invalid={isFeeFixedInvalid}
+                aria-label="Taxa fixa da OnlyFit em reais"
+                onBlur={() => {
+                  if (feeFixed !== null) setFeeFixedInput(formatPriceInput(feeFixed));
+                }}
+                onChange={(event) => {
+                  setFeeFixedInput(event.target.value.replace(/[^\d.,]/g, ''));
+                }}
+              />
+            </span>
+            {isFeeFixedInvalid && <small>Informe um valor válido.</small>}
           </label>
-
-          <button
-            className="button primary"
-            type="button"
-            disabled={!canEdit || !dirty || hasInvalid || updateMutation.isPending}
-            onClick={save}
-          >
-            {updateMutation.isPending ? <RefreshCw className="spin" size={16} /> : <CheckCircle2 size={16} />}
-            Salvar
-          </button>
         </div>
-      </details>
-      {message && <p className="row-message" role="status">{message}</p>}
+
+          {raisesMinimum && (
+            <div className="offering-impact-note" role="note">
+              <AlertTriangle size={17} />
+              Ofertas abaixo do novo mínimo serão pausadas e os profissionais responsáveis serão avisados.
+            </div>
+          )}
+
+          <div className="offering-editor-footer">
+            <span className={dirty ? 'is-visible' : ''} aria-live="polite">
+              {dirty ? 'Alterações não salvas' : 'Regra atualizada'}
+            </span>
+            {canEdit && (
+              <div>
+                <button className="button secondary" type="button" disabled={!dirty || updateMutation.isPending} onClick={reset}>
+                  Restaurar
+                </button>
+                <button
+                  className="button primary"
+                  type="button"
+                  disabled={!dirty || hasInvalid || updateMutation.isPending}
+                  onClick={save}
+                >
+                  {updateMutation.isPending ? <RefreshCw className="spin" size={16} /> : <Save size={16} />}
+                  Salvar regra
+                </button>
+              </div>
+            )}
+          </div>
+          {message && <p className="row-message" role="status">{message}</p>}
+        </div>
+      )}
     </article>
   );
 }
@@ -1113,6 +1195,7 @@ function FeedAlgorithmPage() {
 function OfferingTypesPage() {
   const { data = [], isLoading, isError, refetch, isFetching } = useOfferingTypeBilling(true);
   const { data: currentRole } = useCurrentStaffRole();
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
   const canEdit = currentRole === 'super_admin' || currentRole === 'admin';
   const totalActiveOfferings = data.reduce((sum, item) => sum + item.active_offerings_count, 0);
   const recurringCount = data.filter((item) => item.billing_type === 'recurring').length;
@@ -1124,7 +1207,7 @@ function OfferingTypesPage() {
         <div>
           <p className="section-label">Configuração</p>
           <h1>Tipos de oferta</h1>
-          <span>Defina a cobrança e o valor mínimo que profissionais não podem reduzir.</span>
+          <span>Gerencie cobrança, preço mínimo e taxa da plataforma por categoria.</span>
         </div>
         <div className="header-actions">
           <button className="button secondary" type="button" onClick={() => refetch()} disabled={isFetching}>
@@ -1146,26 +1229,37 @@ function OfferingTypesPage() {
           </div>
         ) : (
           <>
-            <div className="offering-type-overview">
-              <article>
-                <span>Tipos</span>
-                <strong>{formatNumber(data.length)}</strong>
-              </article>
-              <article>
-                <span>Ofertas ativas</span>
-                <strong>{formatNumber(totalActiveOfferings)}</strong>
-              </article>
-              <article>
-                <span>Recorrentes</span>
-                <strong>{formatNumber(recurringCount)}</strong>
-              </article>
-              <article>
-                <span>Com taxa fixa</span>
-                <strong>{formatNumber(fixedFeeCount)}</strong>
-              </article>
+            <div className="offering-type-overview" aria-label="Resumo dos tipos de oferta">
+              <span><strong>{formatNumber(data.length)}</strong> tipos</span>
+              <span><strong>{formatNumber(totalActiveOfferings)}</strong> ofertas ativas</span>
+              <span><strong>{formatNumber(recurringCount)}</strong> recorrentes</span>
+              <span><strong>{formatNumber(fixedFeeCount)}</strong> com taxa fixa</span>
             </div>
             <div className="offering-list">
-              {data.map((item) => <OfferingTypeBillingRow key={item.slug} item={item} canEdit={canEdit} />)}
+              <div className="offering-list-header" aria-hidden="true">
+                <span>Tipo de oferta</span>
+                <span>Cobrança</span>
+                <span>Preço mínimo</span>
+                <span>Taxa OnlyFit</span>
+                <span>Ativas</span>
+                <span>Ação</span>
+              </div>
+              {data.map((item) => (
+                <OfferingTypeBillingRow
+                  key={[
+                    item.slug,
+                    item.billing_type,
+                    item.billing_interval,
+                    item.minimum_price,
+                    item.platform_fee_percent,
+                    item.platform_fee_fixed,
+                  ].join(':')}
+                  item={item}
+                  canEdit={canEdit}
+                  expanded={expandedSlug === item.slug}
+                  onToggle={() => setExpandedSlug((current) => current === item.slug ? null : item.slug)}
+                />
+              ))}
             </div>
           </>
         )}

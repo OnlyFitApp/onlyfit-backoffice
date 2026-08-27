@@ -14,13 +14,24 @@ import {
   ListOrdered,
   Mail,
   RefreshCw,
+  Search,
   Send,
   Underline,
   X,
 } from 'lucide-react';
-import { type ChangeEvent, type FormEvent, useMemo, useRef, useState } from 'react';
-import { useSendOutboundEmail, useSentEmails } from '../hooks/useOutboundEmail';
-import { isOnlyFitSender, isValidEmail, splitEmailList, type SentEmail } from '../lib/outboundEmail';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useSendOutboundEmail, useSentEmail, useSentEmails } from '../hooks/useOutboundEmail';
+import {
+  EMAIL_SOURCE_OPTIONS,
+  emailSourceLabel,
+  isOnlyFitSender,
+  isValidEmail,
+  splitEmailList,
+  type PlatformEmailSource,
+  type SentEmail,
+  type SentEmailListItem,
+  type SentEmailStatus,
+} from '../lib/outboundEmail';
 
 const EMPTY_HTML = '';
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -33,7 +44,7 @@ function dateLabel(value: string | null): string {
   }).format(new Date(value));
 }
 
-function recipientSummary(email: SentEmail): string {
+function recipientSummary(email: SentEmailListItem | SentEmail): string {
   const first = email.to_emails[0] ?? '—';
   const extras = email.to_emails.length + email.cc_emails.length + email.bcc_emails.length - 1;
   return extras > 0 ? `${first} +${extras}` : first;
@@ -64,32 +75,45 @@ function ToolbarButton({
   );
 }
 
-function EmailPreview({ email, onClose }: { email: SentEmail; onClose: () => void }) {
+function EmailPreview({ emailId, onClose }: { emailId: string; onClose: () => void }) {
+  const query = useSentEmail(emailId);
+  const email = query.data ?? null;
+
   return (
     <aside className="email-history-detail" aria-labelledby="email-history-detail-title">
       <div className="email-history-detail-head">
         <div>
-          <span>{dateLabel(email.sent_at ?? email.created_at)}</span>
-          <h2 id="email-history-detail-title">{email.subject}</h2>
+          <span>{email ? dateLabel(email.sent_at ?? email.created_at) : '—'}</span>
+          <h2 id="email-history-detail-title">{email?.subject ?? 'Mensagem'}</h2>
         </div>
         <button className="icon-button" type="button" onClick={onClose} aria-label="Fechar detalhes"><X size={19} /></button>
       </div>
-      <dl className="email-history-meta">
-        <div><dt>De</dt><dd>{email.sender_name} &lt;{email.sender_email}&gt;</dd></div>
-        <div><dt>Para</dt><dd>{email.to_emails.join(', ')}</dd></div>
-        {email.cc_emails.length > 0 && <div><dt>Cc</dt><dd>{email.cc_emails.join(', ')}</dd></div>}
-        {email.bcc_emails.length > 0 && <div><dt>Cco</dt><dd>{email.bcc_emails.join(', ')}</dd></div>}
-        <div><dt>Resend ID</dt><dd>{email.resend_email_id ?? '—'}</dd></div>
-      </dl>
-      {email.status === 'failed' && email.error_message && (
-        <div className="inline-alert danger" role="alert"><AlertTriangle size={18} /> {email.error_message}</div>
+      {query.isLoading ? (
+        <div className="skeleton email-history-skeleton" />
+      ) : query.isError || !email ? (
+        <div className="inline-alert danger" role="alert"><AlertTriangle size={18} /> Não foi possível abrir esta mensagem.</div>
+      ) : (
+        <>
+          <dl className="email-history-meta">
+            <div><dt>Tipo</dt><dd>{emailSourceLabel(email.source)}</dd></div>
+            <div><dt>Origem</dt><dd>{email.sent_by ? 'Equipe' : 'Automático'}</dd></div>
+            <div><dt>De</dt><dd>{email.sender_name} &lt;{email.sender_email}&gt;</dd></div>
+            <div><dt>Para</dt><dd>{email.to_emails.join(', ')}</dd></div>
+            {email.cc_emails.length > 0 && <div><dt>Cc</dt><dd>{email.cc_emails.join(', ')}</dd></div>}
+            {email.bcc_emails.length > 0 && <div><dt>Cco</dt><dd>{email.bcc_emails.join(', ')}</dd></div>}
+            <div><dt>Resend ID</dt><dd>{email.resend_email_id ?? '—'}</dd></div>
+          </dl>
+          {email.status === 'failed' && email.error_message && (
+            <div className="inline-alert danger" role="alert"><AlertTriangle size={18} /> {email.error_message}</div>
+          )}
+          <iframe
+            className="email-history-frame"
+            title={`Conteúdo de ${email.subject}`}
+            sandbox=""
+            srcDoc={`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>body{box-sizing:border-box;margin:0;padding:24px;color:#202124;background:#fff;font:16px/1.55 Arial,sans-serif;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%;border-collapse:collapse}a{color:#567000}</style></head><body>${email.html_content}</body></html>`}
+          />
+        </>
       )}
-      <iframe
-        className="email-history-frame"
-        title={`Conteúdo de ${email.subject}`}
-        sandbox=""
-        srcDoc={`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>body{box-sizing:border-box;margin:0;padding:24px;color:#202124;background:#fff;font:16px/1.55 Arial,sans-serif;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%;border-collapse:collapse}a{color:#567000}</style></head><body>${email.html_content}</body></html>`}
-      />
     </aside>
   );
 }
@@ -97,18 +121,54 @@ function EmailPreview({ email, onClose }: { email: SentEmail; onClose: () => voi
 function EmailHistory() {
   const pageSize = 20;
   const [page, setPage] = useState(0);
-  const [selected, setSelected] = useState<SentEmail | null>(null);
-  const query = useSentEmails(pageSize, page * pageSize, true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [queryInput, setQueryInput] = useState('');
+  const [appliedQuery, setAppliedQuery] = useState('');
+  const [source, setSource] = useState<PlatformEmailSource | ''>('');
+  const [status, setStatus] = useState<SentEmailStatus | ''>('');
+  const [createdFrom, setCreatedFrom] = useState('');
+  const [createdTo, setCreatedTo] = useState('');
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setAppliedQuery(queryInput.trim());
+      setPage(0);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [queryInput]);
+
+  const filters = useMemo(() => ({
+    query: appliedQuery || null,
+    source: source || null,
+    status: status || null,
+    createdFrom: createdFrom || null,
+    createdTo: createdTo || null,
+    limit: pageSize,
+    offset: page * pageSize,
+  }), [appliedQuery, createdFrom, createdTo, page, source, status]);
+
+  const query = useSentEmails(filters, true);
   const items = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
   const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
+  const hasFilters = Boolean(appliedQuery || source || status || createdFrom || createdTo);
+
+  const clearFilters = () => {
+    setQueryInput('');
+    setAppliedQuery('');
+    setSource('');
+    setStatus('');
+    setCreatedFrom('');
+    setCreatedTo('');
+    setPage(0);
+  };
 
   return (
-    <div className={`email-history-layout ${selected ? 'has-detail' : ''}`}>
+    <div className={`email-history-layout ${selectedId ? 'has-detail' : ''}`}>
       <section className="email-history-list" aria-labelledby="email-history-title">
         <div className="email-history-list-head">
           <div>
-            <h2 id="email-history-title">Envios recentes</h2>
+            <h2 id="email-history-title">Todos os envios</h2>
             <span>{total} {total === 1 ? 'mensagem' : 'mensagens'}</span>
           </div>
           <button className="button secondary" type="button" onClick={() => query.refetch()} disabled={query.isFetching}>
@@ -116,24 +176,98 @@ function EmailHistory() {
           </button>
         </div>
 
+        <div className="email-history-filters" aria-label="Busca e filtros">
+          <div className="search-box email-history-search">
+            <Search size={16} />
+            <input
+              value={queryInput}
+              placeholder="Assunto, destinatário, remetente ou conteúdo"
+              aria-label="Pesquisar e-mails"
+              onChange={(event) => setQueryInput(event.target.value)}
+            />
+            {queryInput && (
+              <button className="icon-button" type="button" aria-label="Limpar busca" onClick={() => setQueryInput('')}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          <label className="email-history-filter">
+            <span>Tipo</span>
+            <select
+              value={source}
+              onChange={(event) => { setSource(event.target.value as PlatformEmailSource | ''); setPage(0); }}
+            >
+              <option value="">Todos</option>
+              {EMAIL_SOURCE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="email-history-filter">
+            <span>Situação</span>
+            <select
+              value={status}
+              onChange={(event) => { setStatus(event.target.value as SentEmailStatus | ''); setPage(0); }}
+            >
+              <option value="">Todas</option>
+              <option value="sent">Enviado</option>
+              <option value="failed">Falhou</option>
+              <option value="processing">Processando</option>
+            </select>
+          </label>
+          <label className="user-date-field">
+            <span>De</span>
+            <input
+              type="date"
+              value={createdFrom}
+              max={createdTo || undefined}
+              onChange={(event) => { setCreatedFrom(event.target.value); setPage(0); }}
+            />
+          </label>
+          <label className="user-date-field">
+            <span>até</span>
+            <input
+              type="date"
+              value={createdTo}
+              min={createdFrom || undefined}
+              onChange={(event) => { setCreatedTo(event.target.value); setPage(0); }}
+            />
+          </label>
+          {hasFilters && (
+            <button className="button ghost compact" type="button" onClick={clearFilters}>
+              <X size={14} /> Limpar
+            </button>
+          )}
+        </div>
+
         {query.isLoading ? (
           <div className="skeleton email-history-skeleton" />
         ) : query.isError ? (
           <div className="inline-alert danger" role="alert"><AlertTriangle size={18} /> Não foi possível carregar o histórico.</div>
         ) : items.length === 0 ? (
-          <div className="email-empty-state"><Mail size={28} /><strong>Nenhum envio ainda</strong><span>As mensagens enviadas aparecerão aqui.</span></div>
+          <div className="email-empty-state">
+            <Mail size={28} />
+            <strong>{hasFilters ? 'Nenhum resultado' : 'Nenhum envio ainda'}</strong>
+          </div>
         ) : (
           <div className="email-history-rows">
             {items.map((email) => (
               <button
-                className={`email-history-row ${selected?.id === email.id ? 'selected' : ''}`}
+                className={`email-history-row ${selectedId === email.id ? 'selected' : ''}`}
                 type="button"
                 key={email.id}
-                onClick={() => setSelected(email)}
+                onClick={() => setSelectedId(email.id)}
               >
                 <span className={`email-status-dot status-${email.status}`} aria-hidden="true" />
-                <span className="email-history-main"><strong>{email.subject}</strong><span>{recipientSummary(email)}</span></span>
-                <span className="email-history-time"><span>{email.status === 'sent' ? 'Enviado' : email.status === 'failed' ? 'Falhou' : 'Processando'}</span>{dateLabel(email.sent_at ?? email.created_at)}</span>
+                <span className="email-history-main">
+                  <strong>{email.subject}</strong>
+                  <span>{recipientSummary(email)}</span>
+                </span>
+                <span className="email-source-badge">{emailSourceLabel(email.source)}</span>
+                <span className="email-history-time">
+                  <span>{email.status === 'sent' ? 'Enviado' : email.status === 'failed' ? 'Falhou' : 'Processando'}</span>
+                  {dateLabel(email.sent_at ?? email.created_at)}
+                </span>
               </button>
             ))}
           </div>
@@ -149,7 +283,7 @@ function EmailHistory() {
           </div>
         )}
       </section>
-      {selected && <EmailPreview email={selected} onClose={() => setSelected(null)} />}
+      {selectedId && <EmailPreview emailId={selectedId} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }
@@ -324,7 +458,7 @@ export function EmailCenterPage() {
   return (
     <>
       <header className="page-header">
-        <div><p className="section-label">Comunicação</p><h1>E-mails</h1><span>Componha mensagens da OnlyFit e consulte os envios realizados.</span></div>
+        <div><p className="section-label">Comunicação</p><h1>E-mails</h1><span>Componha mensagens da OnlyFit e consulte todos os envios da plataforma.</span></div>
       </header>
       <section className="content email-center-page">
         <div className="finance-tabs" role="tablist" aria-label="E-mails">

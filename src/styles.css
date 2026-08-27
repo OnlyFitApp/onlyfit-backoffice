@@ -2175,6 +2175,9 @@ svg text {
 }
 
 .staff-form textarea {
+  /* Sem isto o textarea cai na monoespaçada do user agent e destoa do resto do formulário. */
+  font: inherit;
+  padding: 10px 12px;
   resize: vertical;
 }
 
@@ -2189,6 +2192,28 @@ svg text {
 
 .legal-field-wide {
   grid-column: 1 / -1;
+}
+
+.legal-document-hint {
+  grid-column: 1 / -1;
+  margin: -4px 0 2px;
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.legal-coverage-cell strong,
+.legal-coverage-cell span {
+  display: block;
+}
+
+.legal-coverage-cell strong {
+  color: rgb(var(--color-on-surface));
+}
+
+.legal-coverage-cell span {
+  margin-top: 3px;
+  font-size: 12px;
 }
 
 .legal-check {

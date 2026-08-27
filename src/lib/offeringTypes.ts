@@ -111,9 +111,7 @@ export function offeringTypeErrorMessage(error: unknown): string {
       : typeof error === 'object' && error !== null && 'message' in error
         ? String((error as { message: unknown }).message)
         : String(error ?? '');
-  if (raw.includes('invalid_platform_fee_fixed')) {
-    return 'Cobrança recorrente não aceita taxa fixa. Zere a taxa fixa ou mude a cobrança para pagamento único.';
-  }
+  if (raw.includes('invalid_platform_fee_fixed')) return 'A taxa fixa não pode ser negativa.';
   if (raw.includes('invalid_platform_fee_percent')) return 'A taxa percentual precisa estar entre 0 e 100.';
   if (raw.includes('invalid_minimum_price')) return 'O valor mínimo não pode ser negativo.';
   if (raw.includes('invalid_billing_interval')) return 'Escolha um intervalo válido para a cobrança recorrente.';

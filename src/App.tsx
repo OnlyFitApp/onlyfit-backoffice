@@ -611,10 +611,7 @@ function OfferingTypeBillingRow({
                 const next = event.target.value as BillingType;
                 setBillingType(next);
                 if (next !== 'recurring') setBillingInterval(null);
-                if (next === 'recurring') {
-                  if (!billingInterval) setBillingInterval('month');
-                  setFeeFixedInput(formatPriceInput(0));
-                }
+                if (next === 'recurring' && !billingInterval) setBillingInterval('month');
               }}
             >
               {billingTypeOptions.map((option) => (
@@ -684,7 +681,7 @@ function OfferingTypeBillingRow({
               <span>R$</span>
               <input
                 value={feeFixedInput}
-                disabled={!canEdit || isRecurring}
+                disabled={!canEdit}
                 inputMode="decimal"
                 aria-invalid={isFeeFixedInvalid}
                 aria-label="Taxa fixa da OnlyFit em reais"

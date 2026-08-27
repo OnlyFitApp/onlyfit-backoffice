@@ -1,25 +1,48 @@
 import { FormEvent, useState } from 'react';
 import { ExternalLink, FileText, RefreshCw, Upload } from 'lucide-react';
 import { useLegalDocuments, usePublishLegalDocument, useSetLegalDocumentActive } from '../hooks/useLegalDocuments';
-import type { LegalDocumentKind } from '../lib/legalDocuments';
+import {
+  LEGAL_DOCUMENT_CATALOG,
+  legalDocumentCatalogEntry,
+  legalDocumentName,
+  type LegalDocumentKey,
+  type LegalDocumentKind,
+} from '../lib/legalDocuments';
 import { formatDateTime, formatNumber } from '../lib/format';
 
 export function LegalDocumentsPage() {
   const query = useLegalDocuments();
   const publish = usePublishLegalDocument();
   const toggle = useSetLegalDocumentActive();
-  const [key, setKey] = useState('service_terms');
+  const initial = LEGAL_DOCUMENT_CATALOG.find((entry) => entry.key === 'service_terms')!;
+  const [key, setKey] = useState<LegalDocumentKey>(initial.key);
   const [version, setVersion] = useState('');
-  const [kind, setKind] = useState<LegalDocumentKind>('acceptance');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [acceptanceText, setAcceptanceText] = useState('');
-  const [actionLabel, setActionLabel] = useState('Registrar aceite');
-  const [required, setRequired] = useState(true);
+  const [kind, setKind] = useState<LegalDocumentKind>(initial.kind);
+  const [title, setTitle] = useState<string>(initial.title);
+  const [description, setDescription] = useState<string>(initial.description);
+  const [acceptanceText, setAcceptanceText] = useState<string>(initial.acceptanceText);
+  const [actionLabel, setActionLabel] = useState<string>(initial.actionLabel);
+  const [required, setRequired] = useState<boolean>(initial.isRequired);
   const [activate, setActivate] = useState(true);
-  const [sortOrder, setSortOrder] = useState(40);
+  const [sortOrder, setSortOrder] = useState<number>(initial.sortOrder);
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState('');
+
+  const selected = legalDocumentCatalogEntry(key);
+
+  /** Trocar de documento traz o formato publicado dele; o texto novo entra por cima. */
+  function selectDocument(nextKey: LegalDocumentKey) {
+    setKey(nextKey);
+    const entry = legalDocumentCatalogEntry(nextKey);
+    if (!entry) return;
+    setKind(entry.kind);
+    setSortOrder(entry.sortOrder);
+    setTitle(entry.title);
+    setDescription(entry.description);
+    setAcceptanceText(entry.acceptanceText);
+    setActionLabel(entry.actionLabel);
+    setRequired(entry.isRequired);
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -45,8 +68,9 @@ export function LegalDocumentsPage() {
       <form className="staff-create-panel legal-document-form" onSubmit={submit}>
         <div className="staff-create-copy"><Upload size={22} /><div><h2>Publicar versão</h2></div></div>
         <div className="staff-form">
-          <label><span>Chave</span><input value={key} onChange={(event) => setKey(event.target.value)} required pattern="[a-z][a-z0-9_]{2,79}" /></label>
+          <label><span>Documento</span><select value={key} onChange={(event) => selectDocument(event.target.value as LegalDocumentKey)}>{LEGAL_DOCUMENT_CATALOG.map((entry) => <option key={entry.key} value={entry.key}>{entry.name}</option>)}</select></label>
           <label><span>Versão</span><input value={version} onChange={(event) => setVersion(event.target.value)} required maxLength={40} /></label>
+          {selected ? <p className="legal-document-hint">{selected.summary}</p> : null}
           <label><span>Tipo</span><select value={kind} onChange={(event) => setKind(event.target.value as LegalDocumentKind)}><option value="acceptance">Aceite</option><option value="notice">Ciência</option><option value="declaration">Declaração</option></select></label>
           <label><span>Ordem</span><input type="number" min={0} max={10000} value={sortOrder} onChange={(event) => setSortOrder(Number(event.target.value))} /></label>
           <label className="legal-field-wide"><span>Título</span><input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={160} /></label>
@@ -66,7 +90,7 @@ export function LegalDocumentsPage() {
         {query.isLoading ? <div className="skeleton staff-skeleton" /> : null}
         {query.isError ? <p className="form-error" role="alert">Não foi possível carregar os documentos.</p> : null}
         {query.data?.length ? <div className="table-wrapper"><table className="staff-table"><thead><tr><th>Documento</th><th>Versão</th><th>Cobertura</th><th>Publicação</th><th>Estado</th><th><span className="sr-only">Ações</span></th></tr></thead><tbody>
-          {query.data.map((item) => <tr key={`${item.key}:${item.version}`}><td><strong>{item.title}</strong><span>{item.key}</span></td><td>{item.version}</td><td><strong>{formatNumber(item.acceptedCount)} aceites</strong><span>{formatNumber(item.pendingCount)} pendentes de {formatNumber(item.eligibleCount)}</span></td><td>{item.publishedAt ? formatDateTime(new Date(item.publishedAt)) : '—'}</td><td><span className={`role-badge ${item.isActive ? 'role-admin' : ''}`}>{item.isActive ? 'Ativo' : item.isCurrent ? 'Inativo' : 'Histórico'}</span></td><td className="staff-actions-cell"><a className="icon-button table-action" href={item.pdfUrl} target="_blank" rel="noreferrer" title="Abrir PDF"><ExternalLink size={16} /></a>{item.isCurrent ? <button className="button secondary" type="button" disabled={toggle.isPending} onClick={() => toggle.mutate({ key: item.key, active: !item.isActive })}>{item.isActive ? 'Desativar' : 'Ativar'}</button> : null}</td></tr>)}
+          {query.data.map((item) => <tr key={`${item.key}:${item.version}`}><td><strong>{item.title}</strong>{legalDocumentName(item.key) === item.title ? null : <span>{legalDocumentName(item.key)}</span>}</td><td>{item.version}</td><td className="legal-coverage-cell"><strong>{formatNumber(item.acceptedCount)} aceites</strong><span>{formatNumber(item.pendingCount)} pendentes de {formatNumber(item.eligibleCount)}</span></td><td>{item.publishedAt ? formatDateTime(new Date(item.publishedAt)) : '—'}</td><td><span className={`role-badge ${item.isActive ? 'role-admin' : ''}`}>{item.isActive ? 'Ativo' : item.isCurrent ? 'Inativo' : 'Histórico'}</span></td><td className="staff-actions-cell"><a className="icon-button table-action" href={item.pdfUrl} target="_blank" rel="noreferrer" title="Abrir PDF"><ExternalLink size={16} /></a>{item.isCurrent ? <button className="button secondary" type="button" disabled={toggle.isPending} onClick={() => toggle.mutate({ key: item.key, active: !item.isActive })}>{item.isActive ? 'Desativar' : 'Ativar'}</button> : null}</td></tr>)}
         </tbody></table></div> : null}
       </section>
     </section>

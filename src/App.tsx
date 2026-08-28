@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   BarChart3,
   BadgeCheck,
-  Bell,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
@@ -14,22 +13,18 @@ import {
   Gauge,
   HandCoins,
   Handshake,
-  Heart,
   KeyRound,
   LayoutDashboard,
   ListChecks,
   FileText,
   LogOut,
-  MessageCircle,
   Mail,
   MessageSquareOff,
   MessageSquareWarning,
   Menu,
   Moon,
   Pencil,
-  ReceiptText,
   RefreshCw,
-  Repeat2,
   Rss,
   Save,
   Shield,
@@ -48,14 +43,12 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { type CSSProperties, FormEvent, type ReactNode, useCallback, useMemo, useState } from 'react';
+import { type CSSProperties, FormEvent, useCallback, useMemo, useState } from 'react';
 import { useAuth } from './contexts/useAuth';
-import type { WeeklyActivity, WeeklyFinance } from './lib/dashboard';
-import { formatCurrency, formatCurrencyExact, formatDateTime, formatNumber } from './lib/format';
+import { formatCurrencyExact, formatDateTime, formatNumber } from './lib/format';
 import { PayoutQueuePanel, TransactionsPanel, ProviderIntegrationPanel, FinancialReconciliationPanel, FinancialReportsPanel } from './components/FinancePanels';
 import { normalizeEmail } from './lib/auth';
 import { supabase } from './lib/supabase';
-import { useDashboardSnapshot } from './hooks/useDashboardSnapshot';
 import { useOfferingTypeBilling, useUpdateOfferingTypeBilling } from './hooks/useOfferingTypeBilling';
 import { useOfferingCatalog } from './hooks/useOfferingCatalog';
 import { usePlatformPaymentSettings, useUpdatePlatformPaymentSettings } from './hooks/usePlatformPaymentSettings';
@@ -100,8 +93,8 @@ import { ProfessionalCredentialsPage } from './components/ProfessionalCredential
 import { ProfessionalSpecialtiesPage } from './components/ProfessionalSpecialtiesPage';
 import { LegalDocumentsPage } from './components/LegalDocumentsPage';
 import { ConsultancySettingsPage } from './components/ConsultancySettingsPage';
-import { NetworkHealthPage } from './components/NetworkHealthPages';
-import { isHealthSection, type HealthSectionId } from './lib/networkHealth';
+import { DashboardPage } from './components/DashboardPages';
+import { isDashboardSection, type DashboardSectionId } from './lib/networkHealth';
 
 const navItems = [
   {
@@ -110,14 +103,10 @@ const navItems = [
     icon: LayoutDashboard,
     children: [
       { id: 'health-overview', label: 'Visão geral', icon: LayoutDashboard },
-      { id: 'health-acquisition', label: 'Aquisição', icon: UserPlus },
-      { id: 'health-activation', label: 'Ativação', icon: Sparkles },
+      { id: 'health-growth', label: 'Crescimento', icon: TrendingUp },
       { id: 'health-engagement', label: 'Engajamento', icon: Activity },
-      { id: 'health-retention', label: 'Retenção', icon: TrendingUp },
-      { id: 'health-network', label: 'Rede', icon: Repeat2 },
       { id: 'health-business', label: 'Negócio', icon: WalletCards },
-      { id: 'health-users', label: 'Usuários', icon: UsersRound },
-      { id: 'dashboard', label: 'Operação', icon: Gauge },
+      { id: 'health-operations', label: 'Operação', icon: Gauge },
     ],
   },
   {
@@ -126,6 +115,7 @@ const navItems = [
     icon: UsersRound,
     children: [
       { id: 'members', label: 'Diretório', icon: UsersRound },
+      { id: 'health-users', label: 'Recortes da rede', icon: Shuffle },
       { id: 'invite-only', label: 'Invite Only', icon: Ticket },
       { id: 'users', label: 'Equipe', icon: Users },
     ],
@@ -185,12 +175,13 @@ const navItems = [
       { id: 'legal-documents', label: 'Documentos legais', icon: FileText },
     ],
   },
-  { label: 'Alertas', icon: Bell, disabled: true },
 ] as const;
+
+const INITIAL_SECTION: SectionId = 'health-overview';
 
 function groupIdForSection(section: SectionId): string | null {
   for (const item of navItems) {
-    if ('groupId' in item && item.children.some((child) => child.id === section)) {
+    if (item.children.some((child) => child.id === section)) {
       return item.groupId;
     }
   }
@@ -198,8 +189,7 @@ function groupIdForSection(section: SectionId): string | null {
 }
 
 type SectionId =
-  | 'dashboard'
-  | HealthSectionId
+  | DashboardSectionId
   | 'members'
   | 'feed'
   | 'affinity-groups'
@@ -391,67 +381,44 @@ function Sidebar({
         <nav className="nav-list" aria-label="Menu principal">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const hasActiveChild = item.children.some((child) => child.id === activeSection);
+            const isOpen = collapsed ? hasActiveChild : openGroups.has(item.groupId);
 
-            if ('groupId' in item) {
-              const hasActiveChild = item.children.some((child) => child.id === activeSection);
-              const isOpen = collapsed ? hasActiveChild : openGroups.has(item.groupId);
-              return (
-                <div key={item.groupId} className="nav-group">
-                  <button
-                    className={`nav-item nav-group-toggle ${hasActiveChild ? 'has-active-child' : ''}`}
-                    type="button"
-                    aria-expanded={isOpen}
-                    onClick={() => onToggleGroup(item.groupId)}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <Icon size={18} />
-                    {!collapsed && <span>{item.label}</span>}
-                    {!collapsed && (
-                      <ChevronDown className={`nav-chevron ${isOpen ? 'open' : ''}`} size={16} />
-                    )}
-                  </button>
-                  {isOpen && (
-                    <div className="nav-sublist">
-                      {item.children.map((child) => {
-                        const ChildIcon = child.icon;
-                        const isChildActive = child.id === activeSection;
-                        return (
-                          <button
-                            key={child.id}
-                            className={`nav-item nav-subitem ${isChildActive ? 'active' : ''}`}
-                            type="button"
-                            onClick={() => onNavigate(child.id)}
-                            title={collapsed ? child.label : undefined}
-                          >
-                            <ChildIcon size={16} />
-                            {!collapsed && <span>{child.label}</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
-            const itemId = 'id' in item ? item.id : null;
-            const isActive = itemId === activeSection;
-            const isDisabled = 'disabled' in item && item.disabled === true;
             return (
-              <button
-                key={item.label}
-                className={`nav-item ${isActive ? 'active' : ''}`}
-                type="button"
-                disabled={isDisabled}
-                onClick={() => {
-                  if (typeof itemId === 'string') onNavigate(itemId as SectionId);
-                }}
-                title={collapsed ? item.label : undefined}
-              >
-                <Icon size={18} />
-                {!collapsed && <span>{item.label}</span>}
-                {!collapsed && isDisabled && <small>em breve</small>}
-              </button>
+              <div key={item.groupId} className="nav-group">
+                <button
+                  className={`nav-item nav-group-toggle ${hasActiveChild ? 'has-active-child' : ''}`}
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => onToggleGroup(item.groupId)}
+                  title={collapsed ? item.label : undefined}
+                >
+                  <Icon size={18} />
+                  {!collapsed && <span>{item.label}</span>}
+                  {!collapsed && (
+                    <ChevronDown className={`nav-chevron ${isOpen ? 'open' : ''}`} size={16} />
+                  )}
+                </button>
+                {isOpen && (
+                  <div className="nav-sublist">
+                    {item.children.map((child) => {
+                      const ChildIcon = child.icon;
+                      return (
+                        <button
+                          key={child.id}
+                          className={`nav-item nav-subitem ${child.id === activeSection ? 'active' : ''}`}
+                          type="button"
+                          onClick={() => onNavigate(child.id)}
+                          title={collapsed ? child.label : undefined}
+                        >
+                          <ChildIcon size={16} />
+                          {!collapsed && <span>{child.label}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
@@ -1879,413 +1846,6 @@ function FinancePage() {
   );
 }
 
-function MetricCard({
-  title,
-  value,
-  detail,
-  icon: Icon,
-  tone = 'neutral',
-}: {
-  title: string;
-  value: string;
-  detail: string;
-  icon: typeof Activity;
-  tone?: 'neutral' | 'finance' | 'attention';
-}) {
-  return (
-    <article className={`metric-card metric-${tone}`}>
-      <div className="metric-title">
-        <span>{title}</span>
-        <Icon size={18} />
-      </div>
-      <strong>{value}</strong>
-      <p>{detail}</p>
-    </article>
-  );
-}
-
-function DashboardSection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="dashboard-section">
-      <div className="dashboard-section-head">
-        <div>
-          <h2>{title}</h2>
-          <p>{description}</p>
-        </div>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function AppActivityChart({ activity }: { activity: WeeklyActivity[] }) {
-  const width = 720;
-  const height = 220;
-  const max = Math.max(
-    1,
-    ...activity.flatMap((point) => [
-      point.completed_sessions,
-      point.posts_created,
-      point.saves_created,
-      point.comments_created,
-    ]),
-  );
-  const denominator = Math.max(1, activity.length - 1);
-  const points = activity.map((point, index) => {
-    const x = 24 + (index * (width - 48)) / denominator;
-    const date = new Date(`${point.date}T12:00:00`);
-    return {
-      ...point,
-      label: new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(date).replace('.', ''),
-      x,
-      sessionsY: height - 28 - (point.completed_sessions / max) * (height - 56),
-      postsY: height - 28 - (point.posts_created / max) * (height - 56),
-      savesY: height - 28 - (point.saves_created / max) * (height - 56),
-      commentsY: height - 28 - (point.comments_created / max) * (height - 56),
-    };
-  });
-  const pathFor = (key: 'sessionsY' | 'postsY' | 'savesY' | 'commentsY') => (
-    points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point[key]}`).join(' ')
-  );
-  const totals = activity.reduce(
-    (sum, point) => ({
-      completed_sessions: sum.completed_sessions + point.completed_sessions,
-      posts_created: sum.posts_created + point.posts_created,
-      saves_created: sum.saves_created + point.saves_created,
-      comments_created: sum.comments_created + point.comments_created,
-    }),
-    { completed_sessions: 0, posts_created: 0, saves_created: 0, comments_created: 0 },
-  );
-  const total = totals.completed_sessions + totals.posts_created + totals.saves_created + totals.comments_created;
-
-  return (
-    <figure className="chart-panel">
-      <figcaption>
-        <div>
-          <strong>Atividade dos últimos 7 dias</strong>
-          <span>Treinos, posts, comentários e salvamentos por dia</span>
-        </div>
-        <div className="chart-total">
-          <BarChart3 size={16} />
-          <strong>{formatNumber(total)}</strong>
-          <span>ações no período</span>
-        </div>
-      </figcaption>
-      <div className="chart-legend" aria-label="Legenda do gráfico de atividade">
-        <span><i className="legend-workouts" />Treinos</span>
-        <span><i className="legend-posts" />Posts</span>
-        <span><i className="legend-comments" />Comentários</span>
-        <span><i className="legend-saves" />Salvos</span>
-      </div>
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Ações do app nos últimos sete dias">
-        {[0, 1, 2, 3].map((line) => {
-          const y = 28 + line * 44;
-          return <line key={line} x1="24" x2={width - 24} y1={y} y2={y} className="grid-line" />;
-        })}
-        {points.length > 0 && (
-          <>
-            <path d={pathFor('sessionsY')} className="chart-line chart-line-workouts" />
-            <path d={pathFor('postsY')} className="chart-line chart-line-posts" />
-            <path d={pathFor('commentsY')} className="chart-line chart-line-comments" />
-            <path d={pathFor('savesY')} className="chart-line chart-line-saves" />
-          </>
-        )}
-        {points.map((point) => (
-          <g key={point.date}>
-            <circle cx={point.x} cy={point.sessionsY} r="4" className="chart-dot chart-dot-workouts" />
-            <text x={point.x} y={height - 8} textAnchor="middle">{point.label}</text>
-          </g>
-        ))}
-      </svg>
-      <div className="chart-values" aria-label="Valores diários">
-        {points.map((point) => (
-          <span key={point.date}>
-            <small>{point.label}</small>
-            <strong>{formatNumber(point.completed_sessions + point.posts_created + point.comments_created + point.saves_created)}</strong>
-          </span>
-        ))}
-      </div>
-    </figure>
-  );
-}
-
-function FinanceChart({ finance }: { finance: WeeklyFinance[] }) {
-  const width = 720;
-  const height = 220;
-  const max = Math.max(1, ...finance.map((point) => point.gross_value));
-  const bars = finance.map((point, index) => {
-    const availableWidth = width - 48;
-    const slot = availableWidth / Math.max(1, finance.length);
-    const barWidth = Math.max(18, slot * 0.5);
-    const barHeight = (point.gross_value / max) * (height - 64);
-    const date = new Date(`${point.date}T12:00:00`);
-    return {
-      ...point,
-      label: new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(date).replace('.', ''),
-      x: 24 + index * slot + (slot - barWidth) / 2,
-      y: height - 28 - barHeight,
-      barWidth,
-      barHeight,
-    };
-  });
-  const total = finance.reduce((sum, point) => sum + point.gross_value, 0);
-
-  return (
-    <figure className="chart-panel">
-      <figcaption>
-        <div>
-          <strong>Receita confirmada nos últimos 7 dias</strong>
-          <span>Valor bruto por data de confirmação</span>
-        </div>
-        <div className="chart-total">
-          <ReceiptText size={16} />
-          <strong>{formatCurrency(total)}</strong>
-          <span>no período</span>
-        </div>
-      </figcaption>
-      {total === 0 ? (
-        <p className="empty-copy">Nenhuma transação financeira confirmada neste período.</p>
-      ) : (
-        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Receita confirmada nos últimos sete dias">
-          {[0, 1, 2, 3].map((line) => {
-            const y = 28 + line * 44;
-            return <line key={line} x1="24" x2={width - 24} y1={y} y2={y} className="grid-line" />;
-          })}
-          {bars.map((bar) => (
-            <g key={bar.date}>
-              <rect
-                className="finance-bar"
-                x={bar.x}
-                y={bar.y}
-                width={bar.barWidth}
-                height={Math.max(2, bar.barHeight)}
-                rx="6"
-              />
-              <text x={bar.x + bar.barWidth / 2} y={height - 8} textAnchor="middle">{bar.label}</text>
-            </g>
-          ))}
-        </svg>
-      )}
-      <div className="chart-values" aria-label="Valores financeiros diários">
-        {bars.map((bar) => (
-          <span key={bar.date}>
-            <small>{bar.label}</small>
-            <strong>{formatCurrency(bar.gross_value)}</strong>
-          </span>
-        ))}
-      </div>
-    </figure>
-  );
-}
-
-function SystemEventsPanel({ outbox }: { outbox: Record<string, number> }) {
-  const statuses = Object.entries(outbox).sort((left, right) => right[1] - left[1]);
-
-  return (
-    <aside className="ops-panel">
-      <div>
-        <strong>Eventos do sistema</strong>
-        <span>Fila operacional por status</span>
-      </div>
-      {statuses.length === 0 ? (
-        <p className="empty-copy">Nenhum evento na fila.</p>
-      ) : (
-        <dl className="status-list">
-          {statuses.map(([status, count]) => (
-            <div key={status}>
-              <dt>{status}</dt>
-              <dd>{formatNumber(count)}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-    </aside>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="dashboard-grid" aria-label="Carregando dashboard">
-      {Array.from({ length: 6 }, (_, index) => <div className="skeleton" key={index} />)}
-    </div>
-  );
-}
-
-function Dashboard() {
-  const { data, isLoading, isError, refetch, isFetching } = useDashboardSnapshot(true);
-
-  const appMetrics = useMemo(
-    () => data ? [
-      {
-        title: 'Usuários totais',
-        value: formatNumber(data.overview.profiles_total),
-        detail: `${formatNumber(data.overview.profiles_created_today)} novos hoje`,
-        icon: Users,
-      },
-      {
-        title: 'Treinos hoje',
-        value: formatNumber(data.overview.workout_sessions_completed_today),
-        detail: `${formatNumber(data.appActivity.workout_sessions_total)} sessões concluídas no histórico`,
-        icon: Dumbbell,
-      },
-      {
-        title: 'Posts publicados',
-        value: formatNumber(data.appActivity.posts_total),
-        detail: `${formatNumber(data.appActivity.posts_published_today)} novos hoje`,
-        icon: Rss,
-      },
-      {
-        title: 'Curtidas',
-        value: formatNumber(data.appActivity.post_likes_total),
-        detail: 'Interações registradas em posts',
-        icon: Heart,
-      },
-      {
-        title: 'Comentários',
-        value: formatNumber(data.appActivity.post_comments_total),
-        detail: 'Conversas registradas no feed',
-        icon: MessageCircle,
-      },
-      {
-        title: 'Denúncias pendentes',
-        value: formatNumber(data.overview.pending_content_reports),
-        detail: 'Fila de moderação aguardando triagem',
-        icon: AlertTriangle,
-        tone: data.overview.pending_content_reports > 0 ? 'attention' as const : 'neutral' as const,
-      },
-    ] : [],
-    [data],
-  );
-
-  const financeMetrics = useMemo(
-    () => data ? [
-      {
-        title: 'Receita acumulada',
-        value: formatCurrency(data.finance.gross_revenue_total),
-        detail: `${formatNumber(data.finance.transactions_total)} transações registradas`,
-        icon: CreditCard,
-        tone: 'finance' as const,
-      },
-      {
-        title: 'Receita no mês',
-        value: formatCurrency(data.finance.transactions_paid_month_value),
-        detail: `${formatNumber(data.finance.transactions_paid_month_count)} pagamentos confirmados`,
-        icon: ReceiptText,
-        tone: 'finance' as const,
-      },
-      {
-        title: 'Pagamentos hoje',
-        value: formatCurrency(data.finance.transactions_paid_today_value),
-        detail: `${formatNumber(data.finance.transactions_paid_today_count)} cobranças confirmadas`,
-        icon: Gauge,
-        tone: 'finance' as const,
-      },
-      {
-        title: 'Comissão acumulada',
-        value: formatCurrency(data.finance.platform_commission_total),
-        detail: 'Receita OnlyFit retida nas transações',
-        icon: WalletCards,
-        tone: 'finance' as const,
-      },
-      {
-        title: 'Assinaturas ativas',
-        value: formatNumber(data.finance.active_subscriptions_total),
-        detail: 'Recorrências vigentes na plataforma',
-        icon: Activity,
-        tone: 'finance' as const,
-      },
-      {
-        title: 'Liquidação pendente',
-        value: formatCurrency(data.finance.pending_settlement_value),
-        detail: 'Valor líquido ainda não liquidado',
-        icon: HandCoins,
-        tone: 'finance' as const,
-      },
-    ] : [],
-    [data],
-  );
-
-  return (
-    <>
-      <header className="page-header">
-        <div>
-          <p className="section-label">Dashboard</p>
-          <h1>Visão geral da plataforma</h1>
-          <span>{data ? `Atualizado em ${formatDateTime(new Date(data.generatedAt))}` : 'Aguardando dados do banco'}</span>
-        </div>
-        <div className="header-actions">
-          <button className="button secondary" type="button" onClick={() => refetch()} disabled={isFetching}>
-            <RefreshCw className={isFetching ? 'spin' : ''} size={16} />
-            Atualizar
-          </button>
-        </div>
-      </header>
-
-      <section className="content">
-        {isError && (
-          <div className="inline-alert soft" role="alert">
-            <AlertTriangle size={18} />
-            O snapshot do dashboard não respondeu agora. Tente atualizar; quando uma fonte ainda não tiver dados, o painel mostra zero e uma mensagem no bloco correspondente.
-          </div>
-        )}
-
-        {isLoading ? (
-          <DashboardSkeleton />
-        ) : data ? (
-          <>
-            {data.notes.length > 0 && (
-              <div className="inline-alert soft" role="status">
-                <AlertTriangle size={18} />
-                {data.notes.join(' ')}
-              </div>
-            )}
-
-            <DashboardSection
-              title="Ações no app"
-              description="Uso, conteúdo e moderação."
-            >
-              <div className="dashboard-grid">
-                {appMetrics.map((metric) => <MetricCard key={metric.title} {...metric} />)}
-              </div>
-            </DashboardSection>
-
-            <DashboardSection
-              title="Financeiro"
-              description="Cobranças, comissão e liquidação."
-            >
-              <div className="dashboard-grid">
-                {financeMetrics.map((metric) => <MetricCard key={metric.title} {...metric} />)}
-              </div>
-              {data.finance.transactions_total === 0 && (
-                <div className="inline-alert soft" role="status">
-                  <CreditCard size={18} />
-                  Nenhuma transação financeira foi registrada ainda. Os indicadores ficam zerados até a primeira cobrança confirmada.
-                </div>
-              )}
-            </DashboardSection>
-          </>
-        ) : null}
-
-        {data && (
-          <div className="lower-grid">
-            <AppActivityChart activity={data.weeklyActivity} />
-            <FinanceChart finance={data.weeklyFinance} />
-            <SystemEventsPanel outbox={data.outbox} />
-          </div>
-        )}
-      </section>
-    </>
-  );
-}
-
 function staffErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   if (message.includes('weak_password')) {
@@ -2663,8 +2223,13 @@ function AppShell() {
   const { signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('onlyfit.backoffice.sidebar') === 'collapsed');
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<SectionId>('dashboard');
-  const [openGroups, setOpenGroups] = useState<Set<string>>(loadStoredOpenGroups);
+  const [activeSection, setActiveSection] = useState<SectionId>(INITIAL_SECTION);
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+    const groups = loadStoredOpenGroups();
+    const group = groupIdForSection(INITIAL_SECTION);
+    if (group) groups.add(group);
+    return groups;
+  });
   const [emailDraftTo, setEmailDraftTo] = useState('');
 
   const handleToggle = () => {
@@ -2721,8 +2286,8 @@ function AppShell() {
           </button>
           <AppLogo />
         </header>
-        {isHealthSection(activeSection) && (
-          <NetworkHealthPage
+        {isDashboardSection(activeSection) && (
+          <DashboardPage
             section={activeSection}
             onNavigate={(section) => handleNavigate(section)}
             onComposeEmail={(emails) => {
@@ -2730,7 +2295,6 @@ function AppShell() {
             }}
           />
         )}
-        {activeSection === 'dashboard' && <Dashboard />}
         {activeSection === 'members' && <UsersDirectoryPage />}
         {activeSection === 'feed' && <FeedAlgorithmPage />}
         {activeSection === 'affinity-groups' && <AffinityGroupsPage />}

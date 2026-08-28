@@ -115,21 +115,19 @@ export type NetworkUserSegment =
   | 'dau'
   | 'mau';
 
-export const HEALTH_SECTION_IDS = [
+export const DASHBOARD_SECTION_IDS = [
   'health-overview',
-  'health-acquisition',
-  'health-activation',
+  'health-growth',
   'health-engagement',
-  'health-retention',
-  'health-network',
   'health-business',
+  'health-operations',
   'health-users',
 ] as const;
 
-export type HealthSectionId = (typeof HEALTH_SECTION_IDS)[number];
+export type DashboardSectionId = (typeof DASHBOARD_SECTION_IDS)[number];
 
-export function isHealthSection(section: string): section is HealthSectionId {
-  return (HEALTH_SECTION_IDS as readonly string[]).includes(section);
+export function isDashboardSection(section: string): section is DashboardSectionId {
+  return (DASHBOARD_SECTION_IDS as readonly string[]).includes(section);
 }
 
 export const NETWORK_USER_SEGMENTS: ReadonlyArray<{ id: NetworkUserSegment; label: string }> = [

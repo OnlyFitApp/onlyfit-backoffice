@@ -3152,6 +3152,47 @@ svg text {
   font-size: 12px;
 }
 
+.health-kpi-button {
+  display: block;
+  width: 100%;
+  color: inherit;
+  text-align: left;
+}
+
+.health-kpi-button:hover {
+  border-color: rgb(var(--color-primary));
+}
+
+.health-trend {
+  font-weight: 800;
+}
+
+.health-trend-up { color: rgb(var(--color-primary)); }
+.health-trend-down { color: rgb(var(--color-on-surface-variant)); }
+.health-trend-flat { color: rgb(var(--color-outline)); }
+
+.health-definition {
+  margin: 0;
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.health-users-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgb(var(--color-on-surface-variant));
+  font-size: 13px;
+}
+
+.health-compare-table td,
+.health-compare-table th {
+  font-variant-numeric: tabular-nums;
+}
+
 .user-detail-header > div:first-child {
   display: grid;
   gap: 12px;
@@ -4343,6 +4384,11 @@ svg text {
 
   .user-pagination {
     justify-content: space-between;
+  }
+
+  .health-users-toolbar {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .user-dialog {

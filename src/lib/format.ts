@@ -2,6 +2,22 @@ export function formatNumber(value: number): string {
   return new Intl.NumberFormat('pt-BR').format(value);
 }
 
+export function formatPercent(value: number | null | undefined, digits = 1): string {
+  if (value == null || Number.isNaN(value)) return '—';
+  return `${value.toLocaleString('pt-BR', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })}%`;
+}
+
+export function formatDecimal(value: number | null | undefined, digits = 2): string {
+  if (value == null || Number.isNaN(value)) return '—';
+  return value.toLocaleString('pt-BR', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',

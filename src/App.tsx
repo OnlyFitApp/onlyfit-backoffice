@@ -29,6 +29,7 @@ import {
   Pencil,
   ReceiptText,
   RefreshCw,
+  Repeat2,
   Rss,
   Save,
   Shield,
@@ -40,6 +41,7 @@ import {
   Swords,
   Tags,
   Ticket,
+  TrendingUp,
   UserPlus,
   Users,
   UsersRound,
@@ -98,9 +100,26 @@ import { ProfessionalCredentialsPage } from './components/ProfessionalCredential
 import { ProfessionalSpecialtiesPage } from './components/ProfessionalSpecialtiesPage';
 import { LegalDocumentsPage } from './components/LegalDocumentsPage';
 import { ConsultancySettingsPage } from './components/ConsultancySettingsPage';
+import { NetworkHealthPage } from './components/NetworkHealthPages';
+import { isHealthSection, type HealthSectionId } from './lib/networkHealth';
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  {
+    groupId: 'dashboard',
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    children: [
+      { id: 'health-overview', label: 'Visão geral', icon: LayoutDashboard },
+      { id: 'health-acquisition', label: 'Aquisição', icon: UserPlus },
+      { id: 'health-activation', label: 'Ativação', icon: Sparkles },
+      { id: 'health-engagement', label: 'Engajamento', icon: Activity },
+      { id: 'health-retention', label: 'Retenção', icon: TrendingUp },
+      { id: 'health-network', label: 'Rede', icon: Repeat2 },
+      { id: 'health-business', label: 'Negócio', icon: WalletCards },
+      { id: 'health-users', label: 'Usuários', icon: UsersRound },
+      { id: 'dashboard', label: 'Operação', icon: Gauge },
+    ],
+  },
   {
     groupId: 'users',
     label: 'Usuários',
@@ -180,6 +199,7 @@ function groupIdForSection(section: SectionId): string | null {
 
 type SectionId =
   | 'dashboard'
+  | HealthSectionId
   | 'members'
   | 'feed'
   | 'affinity-groups'
@@ -424,7 +444,7 @@ function Sidebar({
                 type="button"
                 disabled={isDisabled}
                 onClick={() => {
-                  if (itemId) onNavigate(itemId);
+                  if (typeof itemId === 'string') onNavigate(itemId as SectionId);
                 }}
                 title={collapsed ? item.label : undefined}
               >
@@ -2645,6 +2665,7 @@ function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionId>('dashboard');
   const [openGroups, setOpenGroups] = useState<Set<string>>(loadStoredOpenGroups);
+  const [emailDraftTo, setEmailDraftTo] = useState('');
 
   const handleToggle = () => {
     setCollapsed((current) => {
@@ -2664,6 +2685,22 @@ function AppShell() {
     });
   };
 
+  const handleNavigate = (section: SectionId, composeTo?: string) => {
+    if (composeTo !== undefined) setEmailDraftTo(composeTo);
+    else if (section !== 'email-center') setEmailDraftTo('');
+    setActiveSection(section);
+    setMobileOpen(false);
+    const group = groupIdForSection(section);
+    if (group) {
+      setOpenGroups((current) => {
+        if (current.has(group)) return current;
+        const next = new Set(current).add(group);
+        localStorage.setItem('onlyfit.backoffice.sidebar.groups', JSON.stringify([...next]));
+        return next;
+      });
+    }
+  };
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -2672,19 +2709,7 @@ function AppShell() {
         mobileOpen={mobileOpen}
         openGroups={openGroups}
         onCloseMobile={() => setMobileOpen(false)}
-        onNavigate={(section) => {
-          setActiveSection(section);
-          setMobileOpen(false);
-          const group = groupIdForSection(section);
-          if (group) {
-            setOpenGroups((current) => {
-              if (current.has(group)) return current;
-              const next = new Set(current).add(group);
-              localStorage.setItem('onlyfit.backoffice.sidebar.groups', JSON.stringify([...next]));
-              return next;
-            });
-          }
-        }}
+        onNavigate={handleNavigate}
         onSignOut={signOut}
         onToggle={handleToggle}
         onToggleGroup={handleToggleGroup}
@@ -2696,6 +2721,15 @@ function AppShell() {
           </button>
           <AppLogo />
         </header>
+        {isHealthSection(activeSection) && (
+          <NetworkHealthPage
+            section={activeSection}
+            onNavigate={(section) => handleNavigate(section)}
+            onComposeEmail={(emails) => {
+              handleNavigate('email-center', emails.join(', '));
+            }}
+          />
+        )}
         {activeSection === 'dashboard' && <Dashboard />}
         {activeSection === 'members' && <UsersDirectoryPage />}
         {activeSection === 'feed' && <FeedAlgorithmPage />}
@@ -2711,7 +2745,7 @@ function AppShell() {
         {activeSection === 'consultancies' && <ConsultancySettingsPage />}
         {activeSection === 'finance' && <FinancePage />}
         {activeSection === 'beta-feedback' && <BetaFeedbackPage />}
-        {activeSection === 'email-center' && <EmailCenterPage />}
+        {activeSection === 'email-center' && <EmailCenterPage initialTo={emailDraftTo} />}
         {activeSection === 'invite-only' && <InviteOnlyPage />}
         {activeSection === 'first-contact' && <FirstContactPage />}
         {activeSection === 'professional-credentials' && <ProfessionalCredentialsPage />}

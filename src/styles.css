@@ -1044,6 +1044,21 @@ textarea:focus-visible {
   line-height: 1.4;
 }
 
+.metric-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.metric-compare {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: rgb(var(--color-on-surface));
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
 .lower-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) 320px;
@@ -1051,10 +1066,19 @@ textarea:focus-visible {
   gap: 12px;
 }
 
+.lower-grid.split {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
 .chart-panel {
   min-width: 0;
   margin: 0;
   padding: 18px;
+}
+
+/* Gráfico solto na seção esticaria o viewBox e inflaria traços e rótulos. */
+.dashboard-section > .chart-panel {
+  max-width: 960px;
 }
 
 .chart-panel figcaption {
@@ -3152,14 +3176,16 @@ svg text {
   font-size: 12px;
 }
 
-.health-kpi-button {
+.metric-card-button {
   display: block;
   width: 100%;
+  cursor: pointer;
   color: inherit;
   text-align: left;
 }
 
-.health-kpi-button:hover {
+.metric-card-button:hover,
+.metric-card-button:focus-visible {
   border-color: rgb(var(--color-primary));
 }
 
@@ -3176,6 +3202,11 @@ svg text {
   color: rgb(var(--color-on-surface-variant));
   font-size: 13px;
   line-height: 1.5;
+}
+
+.health-definition strong {
+  margin-right: 6px;
+  color: rgb(var(--color-on-surface));
 }
 
 .health-users-toolbar {
@@ -4106,7 +4137,8 @@ svg text {
 }
 
 @media (max-width: 1280px) {
-  .lower-grid {
+  .lower-grid,
+  .lower-grid.split {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -4128,7 +4160,8 @@ svg text {
 }
 
 @media (max-width: 1080px) {
-  .lower-grid {
+  .lower-grid,
+  .lower-grid.split {
     grid-template-columns: 1fr;
   }
 

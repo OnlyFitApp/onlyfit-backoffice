@@ -41,3 +41,15 @@ export function formatDateTime(date: Date): string {
     timeStyle: 'short',
   }).format(date);
 }
+
+/**
+ * Os snapshots devolvem o dia ora como `2026-07-30`, ora como `2026-07-30T00:00:00+00:00`.
+ * Fixar o meio-dia local a partir do prefixo evita data inválida e evita o fuso puxar o rótulo
+ * para o dia anterior.
+ */
+export function parseSnapshotDay(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) return null;
+  const date = new Date(`${match[1]}-${match[2]}-${match[3]}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}

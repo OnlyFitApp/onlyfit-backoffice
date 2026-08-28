@@ -288,12 +288,12 @@ function EmailHistory() {
   );
 }
 
-function EmailComposer({ onSent }: { onSent: () => void }) {
+function EmailComposer({ onSent, initialTo = '' }: { onSent: () => void; initialTo?: string }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [senderName, setSenderName] = useState('OnlyFit');
   const [from, setFrom] = useState('');
-  const [toInput, setToInput] = useState('');
+  const [toInput, setToInput] = useState(initialTo);
   const [ccInput, setCcInput] = useState('');
   const [bccInput, setBccInput] = useState('');
   const [subject, setSubject] = useState('');
@@ -453,7 +453,7 @@ function EmailComposer({ onSent }: { onSent: () => void }) {
   );
 }
 
-export function EmailCenterPage() {
+export function EmailCenterPage({ initialTo = '' }: { initialTo?: string }) {
   const [tab, setTab] = useState<'compose' | 'history'>('compose');
   return (
     <>
@@ -465,7 +465,7 @@ export function EmailCenterPage() {
           <button type="button" role="tab" aria-selected={tab === 'compose'} onClick={() => setTab('compose')}><Send size={15} /> Novo e-mail</button>
           <button type="button" role="tab" aria-selected={tab === 'history'} onClick={() => setTab('history')}><Clock3 size={15} /> Histórico</button>
         </div>
-        {tab === 'compose' ? <EmailComposer onSent={() => setTab('history')} /> : <EmailHistory />}
+        {tab === 'compose' ? <EmailComposer key={initialTo} onSent={() => setTab('history')} initialTo={initialTo} /> : <EmailHistory />}
       </section>
     </>
   );

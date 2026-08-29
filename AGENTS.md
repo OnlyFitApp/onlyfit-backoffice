@@ -15,6 +15,12 @@ Migrations e Edge Functions pertencem ao `onlyfit-supabase` e são implantadas p
 
 ## Fluxo obrigatório do Trello
 
+> **Identificação do desenvolvedor.** Antes de aplicar este fluxo, procure
+> `.claude/DANIEL.md` a partir do workspace. Se o arquivo existir, o
+> desenvolvedor é Daniel e não é necessário haver card no Trello. Se não
+> existir, o desenvolvedor é Matheus e todas as regras deste fluxo são
+> obrigatórias.
+
 - A fonte das tarefas é o quadro Onlyfit: https://trello.com/b/INcLFTEw/onlyfit.
 - Só desenvolva cards que já estejam em `Implementar (Baico, Dani)`; leia descrição, comentários, checklists, anexos e ajustes antes de editar.
 - Antes de qualquer alteração, abra `Membros` no card e adicione `matheus martins` (`matheusmartins42`, ARI `ari:cloud:trello::user/6a90ed725beaa073d9bdadc2`), confirmando que ele aparece como membro do cartão. Não use etiqueta com nome nem apenas uma menção. Se a integração não permitir atribuir, pare e informe; não pule a etapa.

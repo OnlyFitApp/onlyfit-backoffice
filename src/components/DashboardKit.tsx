@@ -1,7 +1,6 @@
 import { Component, type ComponentType, type ErrorInfo, type ReactNode } from 'react';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { trendLabel, trendOf, type TrendDirection } from '../lib/networkHealth';
-import { extractAcronym } from '../lib/metricDefinitions';
 
 export type MetricIcon = ComponentType<{ size?: number | string }>;
 
@@ -20,31 +19,6 @@ export function TrendMark({ current, previous, invert = false }: Omit<MetricComp
     : direction;
   return (
     <span className={`health-trend health-trend-${visual}`} aria-hidden="true">{trendLabel(direction)}</span>
-  );
-}
-
-function MetricTitle({ title, icon: Icon }: { title: string; icon: MetricIcon }) {
-  const acronymData = extractAcronym(title);
-
-  if (!acronymData) {
-    return (
-      <div className="metric-title">
-        <span>{title}</span>
-        <Icon size={18} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="metric-title">
-      <span className="metric-title-with-tooltip">
-        {title}
-        <span className="metric-tooltip-trigger" data-tooltip={acronymData.definition}>
-          <Info size={14} aria-label={`Informação: ${acronymData.definition}`} />
-        </span>
-      </span>
-      <Icon size={18} />
-    </div>
   );
 }
 
@@ -70,7 +44,10 @@ export function MetricCard({
 
   const body = (
     <>
-      <MetricTitle title={title} icon={Icon} />
+      <div className="metric-title">
+        <span>{title}</span>
+        <Icon size={18} />
+      </div>
       <strong>{value}</strong>
       {(showComparison || detail) && (
         <p className="metric-foot">

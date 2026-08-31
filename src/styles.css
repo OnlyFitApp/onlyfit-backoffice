@@ -1628,6 +1628,9 @@ svg text {
 .finance-section {
   display: flex;
   flex-direction: column;
+  /* Item de grid/flex nao encolhe abaixo do conteudo sem isto, e a tabela
+     empurra a pagina em vez de rolar dentro de .table-wrapper. */
+  min-width: 0;
   gap: 18px;
   border: 1px solid rgb(var(--color-outline-variant));
   border-radius: 12px;
@@ -2238,6 +2241,25 @@ svg text {
 .legal-coverage-cell span {
   margin-top: 3px;
   font-size: 12px;
+}
+
+.legal-journey-select {
+  min-height: 2.5rem;
+  max-width: 15rem;
+  width: 100%;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 10px;
+  background: rgb(var(--color-surface-container-low));
+  color: rgb(var(--color-on-surface));
+  padding: 0 10px;
+}
+
+.legal-journey-select:disabled {
+  opacity: 0.6;
+}
+
+.legal-journey-past {
+  color: rgb(var(--color-on-surface-variant));
 }
 
 .legal-check {

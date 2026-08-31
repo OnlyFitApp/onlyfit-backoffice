@@ -64,6 +64,51 @@ export const LEGAL_DOCUMENT_CATALOG = [
     isRequired: true,
     sortOrder: 40,
   },
+  {
+    key: 'operational_data_consent',
+    name: 'Consentimento para dados operacionais',
+    summary:
+      'Apresentado na contratação de consultoria quando a oferta solicita acesso a Treino, Nutrição ou Protocolos.',
+    kind: 'acceptance' as LegalDocumentKind,
+    title: 'Consentimento para dados operacionais',
+    description:
+      'Documento de consentimento específico para os dados operacionais declarados na oferta de consultoria.',
+    // O texto exibido para aceite e o PDF são fornecidos ou aprovados pelo jurídico.
+    acceptanceText: '',
+    actionLabel: 'Registrar consentimento',
+    isRequired: true,
+    sortOrder: 50,
+  },
+  {
+    key: 'health_data_consent',
+    name: 'Consentimento para dados de saúde',
+    summary:
+      'Apresentado na contratação de consultoria quando a oferta solicita tratamento ou compartilhamento de dados de saúde.',
+    kind: 'acceptance' as LegalDocumentKind,
+    title: 'Consentimento para dados de saúde',
+    description:
+      'Documento de consentimento específico para o tratamento e o compartilhamento de dados de saúde declarados na oferta.',
+    // O texto exibido para aceite e o PDF são fornecidos ou aprovados pelo jurídico.
+    acceptanceText: '',
+    actionLabel: 'Registrar consentimento',
+    isRequired: true,
+    sortOrder: 60,
+  },
+  {
+    key: 'physical_activity_risk_acknowledgement',
+    name: 'Declaração de ciência dos riscos da atividade física',
+    summary:
+      'Apresentada na contratação de consultoria quando a oferta envolver atividade física.',
+    kind: 'declaration' as LegalDocumentKind,
+    title: 'Declaração de ciência dos riscos da atividade física',
+    description:
+      'Documento de declaração de ciência dos riscos aplicáveis à atividade física prevista na oferta de consultoria.',
+    // O texto exibido para aceite e o PDF são fornecidos ou aprovados pelo jurídico.
+    acceptanceText: '',
+    actionLabel: 'Registrar declaração',
+    isRequired: true,
+    sortOrder: 70,
+  },
 ] as const;
 
 export type LegalDocumentCatalogEntry = (typeof LEGAL_DOCUMENT_CATALOG)[number];

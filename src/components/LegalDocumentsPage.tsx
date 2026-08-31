@@ -1,10 +1,17 @@
 import { FormEvent, useState } from 'react';
 import { ExternalLink, FileText, RefreshCw, Upload } from 'lucide-react';
-import { useLegalDocuments, usePublishLegalDocument, useSetLegalDocumentActive } from '../hooks/useLegalDocuments';
+import {
+  useLegalDocuments,
+  usePublishLegalDocument,
+  useSetLegalDocumentActive,
+  useSetLegalDocumentJourney,
+} from '../hooks/useLegalDocuments';
 import {
   LEGAL_DOCUMENT_CATALOG,
+  LEGAL_JOURNEYS,
   legalDocumentCatalogEntry,
   legalDocumentName,
+  type LegalDocumentJourney,
   type LegalDocumentKey,
   type LegalDocumentKind,
 } from '../lib/legalDocuments';
@@ -14,6 +21,7 @@ export function LegalDocumentsPage() {
   const query = useLegalDocuments();
   const publish = usePublishLegalDocument();
   const toggle = useSetLegalDocumentActive();
+  const journey = useSetLegalDocumentJourney();
   const initial = LEGAL_DOCUMENT_CATALOG.find((entry) => entry.key === 'service_terms')!;
   const [key, setKey] = useState<LegalDocumentKey>(initial.key);
   const [version, setVersion] = useState('');
@@ -89,8 +97,9 @@ export function LegalDocumentsPage() {
         <div className="staff-create-copy"><FileText size={22} /><div><h2 id="legal-version-title">Versões e cobertura</h2><p>{formatNumber(query.data?.length ?? 0)} versões publicadas</p></div></div>
         {query.isLoading ? <div className="skeleton staff-skeleton" /> : null}
         {query.isError ? <p className="form-error" role="alert">Não foi possível carregar os documentos.</p> : null}
-        {query.data?.length ? <div className="table-wrapper"><table className="staff-table"><thead><tr><th>Documento</th><th>Versão</th><th>Cobertura</th><th>Publicação</th><th>Estado</th><th><span className="sr-only">Ações</span></th></tr></thead><tbody>
-          {query.data.map((item) => <tr key={`${item.key}:${item.version}`}><td><strong>{item.title}</strong>{legalDocumentName(item.key) === item.title ? null : <span>{legalDocumentName(item.key)}</span>}</td><td>{item.version}</td><td className="legal-coverage-cell"><strong>{formatNumber(item.acceptedCount)} aceites</strong><span>{formatNumber(item.pendingCount)} pendentes de {formatNumber(item.eligibleCount)}</span></td><td>{item.publishedAt ? formatDateTime(new Date(item.publishedAt)) : '—'}</td><td><span className={`role-badge ${item.isActive ? 'role-admin' : ''}`}>{item.isActive ? 'Ativo' : item.isCurrent ? 'Inativo' : 'Histórico'}</span></td><td className="staff-actions-cell"><a className="icon-button table-action" href={item.pdfUrl} target="_blank" rel="noreferrer" title="Abrir PDF"><ExternalLink size={16} /></a>{item.isCurrent ? <button className="button secondary" type="button" disabled={toggle.isPending} onClick={() => toggle.mutate({ key: item.key, active: !item.isActive })}>{item.isActive ? 'Desativar' : 'Ativar'}</button> : null}</td></tr>)}
+        {journey.isError ? <p className="form-error" role="alert">Não foi possível mudar a jornada do documento.</p> : null}
+        {query.data?.length ? <div className="table-wrapper"><table className="staff-table"><thead><tr><th>Documento</th><th>Jornada</th><th>Versão</th><th>Cobertura</th><th>Publicação</th><th>Estado</th><th><span className="sr-only">Ações</span></th></tr></thead><tbody>
+          {query.data.map((item) => <tr key={`${item.key}:${item.version}`}><td><strong>{item.title}</strong>{legalDocumentName(item.key) === item.title ? null : <span>{legalDocumentName(item.key)}</span>}</td><td>{item.isCurrent ? <select className="legal-journey-select" aria-label={`Jornada de ${item.title}`} value={item.journey ?? ''} disabled={journey.isPending} onChange={(event) => journey.mutate({ key: item.key, journey: (event.target.value || null) as LegalDocumentJourney | null })}><option value="">Nenhuma</option>{LEGAL_JOURNEYS.map((entry) => <option key={entry.value} value={entry.value}>{entry.label}</option>)}</select> : <span className="legal-journey-past">—</span>}</td><td>{item.version}</td><td className="legal-coverage-cell"><strong>{formatNumber(item.acceptedCount)} aceites</strong><span>{formatNumber(item.pendingCount)} pendentes de {formatNumber(item.eligibleCount)}</span></td><td>{item.publishedAt ? formatDateTime(new Date(item.publishedAt)) : '—'}</td><td><span className={`role-badge ${item.isActive ? 'role-admin' : ''}`}>{item.isActive ? 'Ativo' : item.isCurrent ? 'Inativo' : 'Histórico'}</span></td><td className="staff-actions-cell"><a className="icon-button table-action" href={item.pdfUrl} target="_blank" rel="noreferrer" title="Abrir PDF"><ExternalLink size={16} /></a>{item.isCurrent ? <button className="button secondary" type="button" disabled={toggle.isPending} onClick={() => toggle.mutate({ key: item.key, active: !item.isActive })}>{item.isActive ? 'Desativar' : 'Ativar'}</button> : null}</td></tr>)}
         </tbody></table></div> : null}
       </section>
     </section>

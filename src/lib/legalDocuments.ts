@@ -3,6 +3,25 @@ import { supabase } from './supabase';
 export type LegalDocumentKind = 'acceptance' | 'notice' | 'declaration';
 
 /**
+ * A jornada que exige o documento. É ela que o produto consulta: o cadastro
+ * pede os documentos de `signup`, e não uma lista de chaves fixa no código.
+ * Documento sem jornada não entra em fluxo nenhum e continua apenas na central
+ * de Privacidade e Termos.
+ */
+export const LEGAL_JOURNEYS = [
+  { value: 'signup', label: 'Cadastro' },
+  { value: 'consultancy_hire', label: 'Contratação de consultoria' },
+  { value: 'become_professional', label: 'Tornar-me profissional' },
+  { value: 'account_deletion', label: 'Exclusão de conta' },
+] as const;
+
+export type LegalDocumentJourney = (typeof LEGAL_JOURNEYS)[number]['value'];
+
+export function legalJourneyLabel(value: string | null): string {
+  return LEGAL_JOURNEYS.find((entry) => entry.value === value)?.label ?? 'Nenhuma';
+}
+
+/**
  * Os documentos legais que a plataforma reconhece. A chave é PK em
  * `legal_documents`: existe um único documento vigente por chave, global, sem
  * variação por profissional, organização ou oferta. Publicar uma versão nova
@@ -134,6 +153,7 @@ export type LegalDocumentVersion = {
   actionLabel: string;
   isRequired: boolean;
   sortOrder: number;
+  journey: string | null;
   publishedAt: string;
   isCurrent: boolean;
   isActive: boolean;
@@ -170,6 +190,7 @@ export async function listLegalDocuments(): Promise<LegalDocumentVersion[]> {
       title: text(row.title), description: text(row.description), pdfUrl: text(row.pdf_url),
       acceptanceText: text(row.acceptance_text), actionLabel: text(row.action_label),
       isRequired: row.is_required === true, sortOrder: number(row.sort_order),
+      journey: row.journey == null ? null : text(row.journey) || null,
       publishedAt: text(row.published_at), isCurrent: row.is_current === true,
       isActive: row.is_active === true, acceptedCount: number(row.accepted_count),
       eligibleCount: number(row.eligible_count), pendingCount: number(row.pending_count),
@@ -200,6 +221,18 @@ export async function publishLegalDocument(input: PublishLegalDocumentInput): Pr
     p_is_required: input.isRequired,
     p_sort_order: input.sortOrder,
     p_activate: input.activate,
+  });
+  if (error) throw error;
+}
+
+/** A jornada é ato próprio: publicar versão nova não mexe nela. */
+export async function setLegalDocumentJourney(
+  key: string,
+  journey: LegalDocumentJourney | null,
+): Promise<void> {
+  const { error } = await supabase.rpc('control_set_legal_document_journey', {
+    p_key: key,
+    p_journey: journey,
   });
   if (error) throw error;
 }

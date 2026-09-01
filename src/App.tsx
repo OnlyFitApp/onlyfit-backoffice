@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   BarChart3,
   BadgeCheck,
+  BookOpen,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
@@ -93,6 +94,7 @@ import { ProfessionalCredentialsPage } from './components/ProfessionalCredential
 import { ProfessionalSpecialtiesPage } from './components/ProfessionalSpecialtiesPage';
 import { LegalDocumentsPage } from './components/LegalDocumentsPage';
 import { ConsultancySettingsPage } from './components/ConsultancySettingsPage';
+import { MemberAreaOperationsPage } from './components/MemberAreaOperationsPage';
 import { DashboardPage } from './components/DashboardPages';
 import { isDashboardSection, type DashboardSectionId } from './lib/networkHealth';
 
@@ -169,6 +171,7 @@ const navItems = [
     icon: SlidersHorizontal,
     children: [
       { id: 'company-verification', label: 'Verificação de empresas', icon: BadgeCheck },
+      { id: 'member-area-operations', label: 'Área de membros', icon: BookOpen },
       { id: 'finance', label: 'Financeiro', icon: CreditCard },
       { id: 'beta-feedback', label: 'Feedback Beta', icon: MessageSquareWarning },
       { id: 'email-center', label: 'E-mails', icon: Mail },
@@ -212,7 +215,8 @@ type SectionId =
   | 'users'
   | 'review-moderation'
   | 'community-moderation'
-  | 'company-verification';
+  | 'company-verification'
+  | 'member-area-operations';
 
 const billingTypeOptions: ReadonlyArray<{ value: BillingType; label: string }> = [
   { value: 'one_time', label: 'Pagamento único' },
@@ -2318,6 +2322,7 @@ function AppShell() {
         {activeSection === 'review-moderation' && <ReviewModerationPage />}
         {activeSection === 'company-verification' && <CompanyVerificationPage />}
         {activeSection === 'community-moderation' && <CommunityModerationPage />}
+        {activeSection === 'member-area-operations' && <MemberAreaOperationsPage />}
       </div>
     </div>
   );

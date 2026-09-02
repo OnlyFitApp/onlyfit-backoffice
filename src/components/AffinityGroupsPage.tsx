@@ -517,7 +517,8 @@ function DeactivateAffinityDialog({ group, onCancel, onSuccess }: {
     ['Publicações', impact.posts],
     ['Comunidades', impact.communities],
     ['Organizações', impact.organizations],
-    ['Outros vínculos', impact.places + impact.featured_ambassadors + impact.organization_events + impact.operation_cohorts + impact.user_goals + impact.saved_preferences + impact.offerings],
+    ['Rede comercial', impact.ambassador_assignments + impact.ambassador_memberships + impact.ambassador_network_settings + impact.ambassador_compensation_policies],
+    ['Outros vínculos', impact.places + impact.organization_events + impact.operation_cohorts + impact.user_goals + impact.saved_preferences + impact.offerings],
   ] as const : [], [impact]);
 
   const submit = () => {

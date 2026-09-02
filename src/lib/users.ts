@@ -17,7 +17,6 @@ export type UserListItem = {
   is_creator: boolean;
   is_professional: boolean;
   professional_shell_enabled: boolean;
-  is_ambassador: boolean;
   app_lockdown: boolean;
   staff_role: string | null;
   last_sign_in_at: string | null;
@@ -79,7 +78,6 @@ export type UserProfileRecord = {
   is_creator: boolean;
   is_professional: boolean;
   professional_shell_enabled: boolean;
-  is_ambassador: boolean;
   is_identity_verified: boolean;
   onboarding_completed: boolean;
   profile_completion_pending: boolean;
@@ -230,7 +228,6 @@ function parseListItem(value: unknown): UserListItem {
     is_creator: boolFrom(row.is_creator),
     is_professional: boolFrom(row.is_professional),
     professional_shell_enabled: boolFrom(row.professional_shell_enabled),
-    is_ambassador: boolFrom(row.is_ambassador),
     app_lockdown: boolFrom(row.app_lockdown),
     staff_role: stringOrNull(row.staff_role),
     last_sign_in_at: stringOrNull(row.last_sign_in_at),
@@ -270,7 +267,6 @@ function parseProfile(value: unknown): UserProfileRecord {
     is_creator: boolFrom(row.is_creator),
     is_professional: boolFrom(row.is_professional),
     professional_shell_enabled: boolFrom(row.professional_shell_enabled),
-    is_ambassador: boolFrom(row.is_ambassador),
     is_identity_verified: boolFrom(row.is_identity_verified),
     onboarding_completed: boolFrom(row.onboarding_completed),
     profile_completion_pending: boolFrom(row.profile_completion_pending),

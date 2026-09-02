@@ -60,7 +60,6 @@ type FormState = {
   is_creator: boolean;
   is_professional: boolean;
   professional_shell_enabled: boolean;
-  is_ambassador: boolean;
   is_identity_verified: boolean;
   onboarding_completed: boolean;
   profile_completion_pending: boolean;
@@ -80,7 +79,7 @@ const TEXT_FIELDS = [
 const NUMBER_FIELDS = ['level', 'xp', 'streak', 'pulse_coins'] as const;
 
 const BOOLEAN_FIELDS = [
-  'is_creator', 'is_professional', 'professional_shell_enabled', 'is_ambassador',
+  'is_creator', 'is_professional', 'professional_shell_enabled',
   'is_identity_verified', 'onboarding_completed', 'profile_completion_pending', 'app_lockdown',
 ] as const;
 
@@ -132,7 +131,6 @@ const booleanLabels: Record<(typeof BOOLEAN_FIELDS)[number], string> = {
   is_creator: 'Criador de conteúdo',
   is_professional: 'Profissional',
   professional_shell_enabled: 'Modo profissional ativo no app',
-  is_ambassador: 'Embaixador',
   is_identity_verified: 'Identidade verificada',
   onboarding_completed: 'Onboarding concluído',
   profile_completion_pending: 'Cadastro pendente de conclusão',
@@ -813,7 +811,6 @@ export function UserDetail({
                 {profile.app_lockdown && <span className="role-badge alert">Bloqueado</span>}
                 {profile.is_professional && <span className="role-badge">Profissional</span>}
                 {profile.is_creator && <span className="role-badge">Criador</span>}
-                {profile.is_ambassador && <span className="role-badge">Embaixador</span>}
                 {profile.is_identity_verified && <span className="role-badge">Identidade verificada</span>}
               </div>
             </div>

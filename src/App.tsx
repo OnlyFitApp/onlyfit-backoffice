@@ -44,7 +44,7 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { type CSSProperties, FormEvent, useCallback, useMemo, useState } from 'react';
+import { type CSSProperties, FormEvent, lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useAuth } from './contexts/useAuth';
 import { formatCurrencyExact, formatDateTime, formatNumber } from './lib/format';
 import { PayoutQueuePanel, TransactionsPanel, ProviderIntegrationPanel, FinancialReconciliationPanel, FinancialReportsPanel } from './components/FinancePanels';
@@ -98,6 +98,9 @@ import { MemberAreaOperationsPage } from './components/MemberAreaOperationsPage'
 import { DashboardPage } from './components/DashboardPages';
 import { isDashboardSection, type DashboardSectionId } from './lib/networkHealth';
 
+const AmbassadorNetworkPage = lazy(() => import('./components/AmbassadorNetworkPage').then((module) => ({ default: module.AmbassadorNetworkPage })));
+const AmbassadorCompensationPage = lazy(() => import('./components/AmbassadorCompensationPage').then((module) => ({ default: module.AmbassadorCompensationPage })));
+
 const navItems = [
   {
     groupId: 'dashboard',
@@ -142,6 +145,8 @@ const navItems = [
       { id: 'offering-types', label: 'Tipos de oferta', icon: HandCoins },
       { id: 'offerings', label: 'Ofertas', icon: ShoppingBag },
       { id: 'consultancies', label: 'Consultorias', icon: Handshake },
+      { id: 'ambassador-network', label: 'Rede de Embaixadores', icon: UsersRound },
+      { id: 'ambassador-compensation', label: 'Remuneração', icon: HandCoins },
     ],
   },
   {
@@ -205,6 +210,8 @@ type SectionId =
   | 'offering-types'
   | 'offerings'
   | 'consultancies'
+  | 'ambassador-network'
+  | 'ambassador-compensation'
   | 'finance'
   | 'beta-feedback'
   | 'email-center'
@@ -2311,6 +2318,8 @@ function AppShell() {
         {activeSection === 'offering-types' && <OfferingTypesPage />}
         {activeSection === 'offerings' && <OfferingCatalogPage />}
         {activeSection === 'consultancies' && <ConsultancySettingsPage />}
+        {activeSection === 'ambassador-network' && <Suspense fallback={<div className="content ambassador-loading"><RefreshCw className="spin" size={24} aria-label="Carregando rede de embaixadores" /></div>}><AmbassadorNetworkPage /></Suspense>}
+        {activeSection === 'ambassador-compensation' && <Suspense fallback={<div className="content ambassador-loading"><RefreshCw className="spin" size={24} aria-label="Carregando remuneração" /></div>}><AmbassadorCompensationPage /></Suspense>}
         {activeSection === 'finance' && <FinancePage />}
         {activeSection === 'beta-feedback' && <BetaFeedbackPage />}
         {activeSection === 'email-center' && <EmailCenterPage initialTo={emailDraftTo} />}

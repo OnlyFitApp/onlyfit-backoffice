@@ -11,12 +11,15 @@ export type AffinityImpact = {
   communities: number;
   organizations: number;
   places: number;
-  featured_ambassadors: number;
   organization_events: number;
   operation_cohorts: number;
   user_goals: number;
   saved_preferences: number;
   offerings: number;
+  ambassador_assignments: number;
+  ambassador_memberships: number;
+  ambassador_network_settings: number;
+  ambassador_compensation_policies: number;
   total_links: number;
   token: string;
 };
@@ -64,12 +67,15 @@ function impactFrom(value: unknown): AffinityImpact {
     communities: numberFrom(row.communities),
     organizations: numberFrom(row.organizations),
     places: numberFrom(row.places),
-    featured_ambassadors: numberFrom(row.featured_ambassadors),
     organization_events: numberFrom(row.organization_events),
     operation_cohorts: numberFrom(row.operation_cohorts),
     user_goals: numberFrom(row.user_goals),
     saved_preferences: numberFrom(row.saved_preferences),
     offerings: numberFrom(row.offerings),
+    ambassador_assignments: numberFrom(row.ambassador_assignments),
+    ambassador_memberships: numberFrom(row.ambassador_memberships),
+    ambassador_network_settings: numberFrom(row.ambassador_network_settings),
+    ambassador_compensation_policies: numberFrom(row.ambassador_compensation_policies),
     total_links: numberFrom(row.total_links),
     token: typeof row.token === 'string' ? row.token : '',
   };
@@ -197,6 +203,7 @@ export function affinityGroupErrorMessage(error: unknown): string {
   if (message.includes('last_active_affinity_group')) return 'O último grupo ativo não pode ser desativado.';
   if (message.includes('affinity_group_impact_changed')) return 'Os vínculos mudaram. Revise o impacto atualizado e confirme novamente.';
   if (message.includes('affinity_group_confirmation_mismatch')) return 'O nome digitado não confere.';
+  if (message.includes('affinity_group_has_active_ambassador_network')) return 'A vertical possui configuração ou vínculos na Rede de Embaixadores. Encerre-os antes de desativar.';
   if (message.includes('invalid_affinity_group_order')) return 'A ordem mudou em outra sessão. Atualize a lista e tente novamente.';
   if (message.includes('forbidden')) return 'Seu perfil não possui permissão para esta ação.';
   return 'Não foi possível concluir a ação. Tente novamente.';

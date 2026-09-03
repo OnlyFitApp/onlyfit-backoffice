@@ -6,6 +6,7 @@ import {
   listAmbassadorAudit,
   listAmbassadorMemberships,
   listAmbassadorRequests,
+  prepareAmbassadorCandidate,
   reviewAmbassadorMembership,
   reviewAmbassadorPromotion,
   refreshAmbassadorLegacyInventory,
@@ -58,6 +59,7 @@ function useAmbassadorMutation<TInput, TOutput = void>(mutationFn: (input: TInpu
 export const useSaveCommercialRegion = () => useAmbassadorMutation(saveCommercialRegion);
 export const useSetCommercialRegionActive = () => useAmbassadorMutation(setCommercialRegionActive);
 export const useSaveAmbassadorAssignment = () => useAmbassadorMutation(saveAmbassadorAssignment);
+export const usePrepareAmbassadorCandidate = () => useAmbassadorMutation(prepareAmbassadorCandidate);
 export const useTransitionAmbassadorAssignment = () => useAmbassadorMutation(transitionAmbassadorAssignment);
 export const useTransferAmbassadorAssociate = () => useAmbassadorMutation(transferAmbassadorAssociate);
 export const useReviewAmbassadorMembership = () => useAmbassadorMutation(reviewAmbassadorMembership);

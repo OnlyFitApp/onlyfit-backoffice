@@ -96,6 +96,9 @@ export type AmbassadorCandidate = {
   username: string | null;
   avatarUrl: string | null;
   followerCount: number;
+  isProfessional: boolean;
+  hasBrCpf: boolean;
+  hasActiveWaiver: boolean;
   activeAssignmentCount: number;
   activeAssignments: Array<{
     assignmentId: string;
@@ -275,6 +278,8 @@ export async function searchAmbassadorCandidates(query: string): Promise<Ambassa
   return Array.isArray(data) ? data.map((value) => { const row = record(value); return {
     id: String(row.id ?? ''), profileName: String(row.profile_name ?? ''), username: stringOrNull(row.username),
     avatarUrl: stringOrNull(row.avatar_url), followerCount: number(row.follower_count),
+    isProfessional: row.is_professional === true, hasBrCpf: row.has_br_cpf === true,
+    hasActiveWaiver: row.has_active_waiver === true,
     activeAssignmentCount: number(row.active_assignment_count),
     activeAssignments: Array.isArray(row.active_assignments) ? row.active_assignments.map((entry) => {
       const assignment = record(entry); return {
@@ -287,6 +292,15 @@ export async function searchAmbassadorCandidates(query: string): Promise<Ambassa
   }; }) : [];
 }
 
+export async function prepareAmbassadorCandidate(input: { profileId: string; reason: string; expiresAt?: string }): Promise<void> {
+  const { error } = await supabase.rpc('control_prepare_ambassador_candidate', {
+    p_profile_id: input.profileId,
+    p_reason: input.reason,
+    p_expires_at: input.expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  });
+  if (error) throw error;
+}
+
 export type RegionInput = Omit<CommercialRegion, 'id' | 'active' | 'assignmentCount' | 'currentMembershipCount' | 'createdAt' | 'updatedAt'> & { id?: string; expectedUpdatedAt?: string };
 export async function saveCommercialRegion(input: RegionInput): Promise<void> {
   const { error } = await supabase.rpc('control_save_commercial_region', { p_region_id: input.id ?? null, p_name: input.name, p_slug: input.slug, p_scope_type: input.scopeType, p_country_code: input.countryCode, p_state_code: input.stateCode, p_city_name: input.cityName, p_parent_id: input.parentId, p_specificity: input.specificity, p_priority: input.priority, p_expected_updated_at: input.expectedUpdatedAt ?? null });
@@ -295,7 +309,8 @@ export async function saveCommercialRegion(input: RegionInput): Promise<void> {
 export async function setCommercialRegionActive(input: { id: string; active: boolean; expectedUpdatedAt: string }): Promise<void> { const { error } = await supabase.rpc('control_set_commercial_region_active', { p_region_id: input.id, p_active: input.active, p_expected_updated_at: input.expectedUpdatedAt }); if (error) throw error; }
 
 export type AssignmentInput = { id?: string; profileId: string; role: AmbassadorRole; affinityGroupKey: string; regionId: string; principalAssignmentId: string | null; publicVisible: boolean; displayOrder: number; headline: string; badgeLabel: string; contractReference: string; startsAt: string | null; endsAt: string | null; expectedUpdatedAt?: string };
-export async function saveAmbassadorAssignment(input: AssignmentInput): Promise<void> { const { error } = await supabase.rpc('control_save_ambassador_assignment', { p_assignment_id: input.id ?? null, p_profile_id: input.profileId, p_role: input.role, p_affinity_group_key: input.affinityGroupKey, p_region_id: input.regionId, p_principal_assignment_id: input.principalAssignmentId, p_public_visible: input.publicVisible, p_display_order: input.displayOrder, p_headline: input.headline || null, p_badge_label: input.badgeLabel || null, p_contract_reference: input.contractReference || null, p_starts_at: input.startsAt, p_ends_at: input.endsAt, p_expected_updated_at: input.expectedUpdatedAt ?? null }); if (error) throw error; }
+export type SavedAmbassadorAssignment = { id: string; status: AmbassadorStatus; publicVisible: boolean; updatedAt: string };
+export async function saveAmbassadorAssignment(input: AssignmentInput): Promise<SavedAmbassadorAssignment> { const { data, error } = await supabase.rpc('control_save_ambassador_assignment', { p_assignment_id: input.id ?? null, p_profile_id: input.profileId, p_role: input.role, p_affinity_group_key: input.affinityGroupKey, p_region_id: input.regionId, p_principal_assignment_id: input.principalAssignmentId, p_public_visible: input.publicVisible, p_display_order: input.displayOrder, p_headline: input.headline || null, p_badge_label: input.badgeLabel || null, p_contract_reference: input.contractReference || null, p_starts_at: input.startsAt, p_ends_at: input.endsAt, p_expected_updated_at: input.expectedUpdatedAt ?? null }); if (error) throw error; const row = record(data); return { id: String(row.id ?? ''), status: String(row.status ?? 'draft') as AmbassadorStatus, publicVisible: row.public_visible === true, updatedAt: String(row.updated_at ?? '') }; }
 export async function getAmbassadorAssignmentImpact(id: string): Promise<AmbassadorImpact> { const { data, error } = await supabase.rpc('control_get_ambassador_assignment_impact', { p_assignment_id: id }); if (error) throw error; return impactFrom(data); }
 export async function transitionAmbassadorAssignment(input: { id: string; action: string; publicVisible: boolean; expectedUpdatedAt: string }): Promise<void> { const { error } = await supabase.rpc('control_transition_ambassador_assignment', { p_assignment_id: input.id, p_action: input.action, p_public_visible: input.publicVisible, p_expected_updated_at: input.expectedUpdatedAt }); if (error) throw error; }
 export async function transferAmbassadorAssociate(input: { id: string; principalAssignmentId: string | null; expectedUpdatedAt: string }): Promise<void> { const { error } = await supabase.rpc('control_transfer_ambassador_associate', { p_assignment_id: input.id, p_principal_assignment_id: input.principalAssignmentId, p_expected_updated_at: input.expectedUpdatedAt }); if (error) throw error; }
@@ -362,6 +377,8 @@ export function ambassadorErrorMessage(error: unknown): string {
   if (message.includes('active_network')) return 'Existem vínculos ativos que precisam ser encerrados ou transferidos primeiro.';
   if (message.includes('requires_transfer')) return 'Use a ação de transferência para mudar a estrutura de uma atribuição ativa.';
   if (message.includes('invalid_principal')) return 'O Principal precisa estar ativo na mesma vertical e região.';
+  if (message.includes('ambassador_candidate_not_found')) return 'O usuário selecionado não existe mais. Faça uma nova busca.';
+  if (message.includes('invalid_ambassador_candidate_preparation')) return 'Revise o motivo e o prazo da habilitação profissional.';
   if (message.includes('storekit_financial_runtime_not_connected')) return 'O piloto financeiro está bloqueado até a integração e validação do StoreKit.';
   if (message.includes('readiness_checks_incomplete')) return 'Conclua todos os gates obrigatórios antes de avançar.';
   return 'Não foi possível concluir a operação.';

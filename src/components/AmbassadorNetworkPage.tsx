@@ -23,6 +23,7 @@ import {
   useAmbassadorCandidates,
   useAmbassadorMemberships,
   useAmbassadorOperations,
+  usePrepareAmbassadorCandidate,
   useAmbassadorRequests,
   useAmbassadorSnapshot,
   useRefreshAmbassadorLegacyInventory,
@@ -46,6 +47,7 @@ import { useCurrentStaffRole } from '../hooks/useStaffManagement';
 import {
   ambassadorErrorMessage,
   type AmbassadorAssignment,
+  type AmbassadorCandidate,
   type AmbassadorMembership,
   type AmbassadorNetworkSetting,
   type AmbassadorPromotion,
@@ -68,6 +70,8 @@ type AssignmentDraft = {
   expectedUpdatedAt?: string;
   profileId: string;
   profileLabel: string;
+  profileIsProfessional: boolean;
+  profileHasBrCpf: boolean;
   role: 'principal' | 'associate';
   affinityGroupKey: string;
   regionId: string;
@@ -80,6 +84,8 @@ type AssignmentDraft = {
   startsAt: string;
   endsAt: string;
 };
+
+const defaultAmbassadorPreparationReason = 'Embaixador de pré-lançamento; documento fiscal será exigido antes de pagamentos.';
 
 type RegionDraft = {
   id?: string;
@@ -120,13 +126,15 @@ function slugify(value: string) {
 function assignmentDraft(item?: AmbassadorAssignment): AssignmentDraft {
   return item ? {
     id: item.id, expectedUpdatedAt: item.updatedAt, profileId: item.profileId, profileLabel: item.profileName,
+    profileIsProfessional: true, profileHasBrCpf: true,
     role: item.role, affinityGroupKey: item.affinityGroupKey, regionId: item.regionId,
     principalAssignmentId: item.principalAssignmentId ?? '', publicVisible: item.publicVisible,
     displayOrder: String(item.displayOrder), headline: item.headline ?? '', badgeLabel: item.badgeLabel ?? '',
     contractReference: item.contractReference ?? '', startsAt: item.startsAt?.slice(0, 16) ?? '', endsAt: item.endsAt?.slice(0, 16) ?? '',
   } : {
-    profileId: '', profileLabel: '', role: 'associate', affinityGroupKey: '', regionId: '', principalAssignmentId: '',
-    publicVisible: false, displayOrder: '0', headline: '', badgeLabel: '', contractReference: '', startsAt: '', endsAt: '',
+    profileId: '', profileLabel: '', profileIsProfessional: false, profileHasBrCpf: false,
+    role: 'principal', affinityGroupKey: '', regionId: '', principalAssignmentId: '',
+    publicVisible: true, displayOrder: '0', headline: '', badgeLabel: '', contractReference: '', startsAt: '', endsAt: '',
   };
 }
 
@@ -224,7 +232,7 @@ export function AmbassadorNetworkPage() {
         {snapshot.data ? <AmbassadorTabPanel id="network" activeTab={tab}><NetworkTab
             snapshot={snapshot.data} filters={filters} setFilters={setFilters} principals={principals}
             orphanAssociates={orphanAssociates} selected={selected} setSelectedId={setSelectedId}
-            canEdit={canEdit} assignmentEditor={assignmentEditor} setAssignmentEditor={setAssignmentEditor}
+            canEdit={canEdit} isSuperAdmin={role.data === 'super_admin'} assignmentEditor={assignmentEditor} setAssignmentEditor={setAssignmentEditor}
             candidateQuery={candidateQuery} setCandidateQuery={setCandidateQuery} candidates={candidates.data ?? []}
             candidatesLoading={candidates.isFetching} candidatesError={candidates.isError}
             begin={begin}
@@ -260,17 +268,18 @@ export function AmbassadorNetworkPage() {
   );
 }
 
-function NetworkTab({ snapshot, filters, setFilters, principals, orphanAssociates, selected, setSelectedId, canEdit, assignmentEditor, setAssignmentEditor, candidateQuery, setCandidateQuery, candidates, candidatesLoading, candidatesError, begin }: {
+function NetworkTab({ snapshot, filters, setFilters, principals, orphanAssociates, selected, setSelectedId, canEdit, isSuperAdmin, assignmentEditor, setAssignmentEditor, candidateQuery, setCandidateQuery, candidates, candidatesLoading, candidatesError, begin }: {
   snapshot: NonNullable<ReturnType<typeof useAmbassadorSnapshot>['data']>;
   filters: Filters; setFilters: (value: Filters) => void; principals: AmbassadorAssignment[]; orphanAssociates: AmbassadorAssignment[];
-  selected: AmbassadorAssignment | null; setSelectedId: (id: string | null) => void; canEdit: boolean;
+  selected: AmbassadorAssignment | null; setSelectedId: (id: string | null) => void; canEdit: boolean; isSuperAdmin: boolean;
   assignmentEditor: AssignmentDraft | null; setAssignmentEditor: (value: AssignmentDraft | null) => void;
   candidateQuery: string; setCandidateQuery: (value: string) => void;
-  candidates: Array<{ id: string; profileName: string; username: string | null; followerCount: number; activeAssignmentCount: number; activeAssignments: Array<{ assignmentId: string; role: 'principal' | 'associate'; affinityGroupLabel: string; regionName: string; countryCode: string }> }>;
+  candidates: AmbassadorCandidate[];
   candidatesLoading: boolean; candidatesError: boolean;
   begin: (operation: () => Promise<unknown>, success: string) => Promise<boolean>;
 }) {
   const save = useSaveAmbassadorAssignment();
+  const prepareCandidate = usePrepareAmbassadorCandidate();
   const transition = useTransitionAmbassadorAssignment();
   const transfer = useTransferAmbassadorAssociate();
   const impact = useAmbassadorAssignmentImpact(selected?.id ?? null);
@@ -278,6 +287,7 @@ function NetworkTab({ snapshot, filters, setFilters, principals, orphanAssociate
   const transferMembership = useTransferAmbassadorMembership();
   const [discardOpen, setDiscardOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [preparationReason, setPreparationReason] = useState(defaultAmbassadorPreparationReason);
   const [action, setAction] = useState<{
     title: string; description: string; label: string; tone?: 'primary' | 'danger'; run: () => Promise<unknown>; success: string;
   } | null>(null);
@@ -293,7 +303,8 @@ function NetworkTab({ snapshot, filters, setFilters, principals, orphanAssociate
     else setAssignmentEditor(null);
   };
   const discardEditor = () => {
-    setAssignmentEditor(null); setCandidateQuery(''); setFormError(null); setDiscardOpen(false);
+    setAssignmentEditor(null); setCandidateQuery(''); setFormError(null);
+    setPreparationReason(defaultAmbassadorPreparationReason); setDiscardOpen(false);
   };
 
   const saveAssignment = async (event: FormEvent) => {
@@ -302,22 +313,53 @@ function NetworkTab({ snapshot, filters, setFilters, principals, orphanAssociate
       setFormError('Selecione o perfil, a vertical e o país.');
       return;
     }
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const intent = assignmentEditor.id || submitter?.value === 'draft' ? 'draft' : 'activate';
+    const needsPreparation = !assignmentEditor.profileIsProfessional;
+    if (needsPreparation && !isSuperAdmin) {
+      setFormError('Este perfil ainda é membro. Somente um superadministrador pode habilitá-lo como profissional.');
+      return;
+    }
+    if (needsPreparation && preparationReason.trim().length < 10) {
+      setFormError('Informe o motivo da habilitação profissional com pelo menos 10 caracteres.');
+      return;
+    }
     setFormError(null);
-    const succeeded = await begin(() => save.mutateAsync({
-      id: assignmentEditor.id, expectedUpdatedAt: assignmentEditor.expectedUpdatedAt,
-      profileId: assignmentEditor.profileId, role: assignmentEditor.role,
-      affinityGroupKey: assignmentEditor.affinityGroupKey, regionId: assignmentEditor.regionId,
-      principalAssignmentId: assignmentEditor.role === 'associate' ? assignmentEditor.principalAssignmentId || null : null,
-      publicVisible: assignmentEditor.publicVisible, displayOrder: Number(assignmentEditor.displayOrder) || 0,
-      headline: assignmentEditor.headline, badgeLabel: assignmentEditor.badgeLabel,
-      contractReference: assignmentEditor.contractReference,
-      startsAt: assignmentEditor.startsAt ? new Date(assignmentEditor.startsAt).toISOString() : null,
-      endsAt: assignmentEditor.endsAt ? new Date(assignmentEditor.endsAt).toISOString() : null,
-    }), assignmentEditor.id ? 'Atribuição atualizada.' : 'Atribuição criada como rascunho.');
+    let persistedId = '';
+    let persistedUpdatedAt = '';
+    const succeeded = await begin(async () => {
+      if (needsPreparation) {
+        await prepareCandidate.mutateAsync({ profileId: assignmentEditor.profileId, reason: preparationReason.trim() });
+      }
+      const persisted = await save.mutateAsync({
+        id: assignmentEditor.id, expectedUpdatedAt: assignmentEditor.expectedUpdatedAt,
+        profileId: assignmentEditor.profileId, role: assignmentEditor.role,
+        affinityGroupKey: assignmentEditor.affinityGroupKey, regionId: assignmentEditor.regionId,
+        principalAssignmentId: assignmentEditor.role === 'associate' ? assignmentEditor.principalAssignmentId || null : null,
+        publicVisible: assignmentEditor.publicVisible, displayOrder: Number(assignmentEditor.displayOrder) || 0,
+        headline: assignmentEditor.headline, badgeLabel: assignmentEditor.badgeLabel,
+        contractReference: assignmentEditor.contractReference,
+        startsAt: assignmentEditor.startsAt ? new Date(assignmentEditor.startsAt).toISOString() : null,
+        endsAt: assignmentEditor.endsAt ? new Date(assignmentEditor.endsAt).toISOString() : null,
+      });
+      persistedId = persisted.id;
+      persistedUpdatedAt = persisted.updatedAt;
+      if (!assignmentEditor.id && intent === 'activate') {
+        await transition.mutateAsync({
+          id: persisted.id, action: 'activate', publicVisible: assignmentEditor.publicVisible,
+          expectedUpdatedAt: persisted.updatedAt,
+        });
+      }
+    }, assignmentEditor.id ? 'Atribuição atualizada.' : intent === 'activate'
+      ? `Embaixador ativado${assignmentEditor.publicVisible ? ' e publicado no app' : ''}.`
+      : 'Atribuição salva como rascunho.');
+    if (!succeeded && persistedId && !assignmentEditor.id) {
+      setAssignmentEditor({ ...assignmentEditor, id: persistedId, expectedUpdatedAt: persistedUpdatedAt, profileIsProfessional: true });
+    }
     if (succeeded) discardEditor();
   };
 
-  const runTransition = async (item: AmbassadorAssignment, action: string) => {
+  const runTransition = async (item: AmbassadorAssignment, action: string, publicVisible = item.publicVisible) => {
     const currentImpact = await impact.refetch();
     const value = currentImpact.data ?? item.impact;
     const labels: Record<string, string> = { submit: 'Enviar para aprovação', activate: 'Ativar', suspend: 'Suspender', end: 'Encerrar', reactivate: 'Reativar' };
@@ -327,8 +369,25 @@ function NetworkTab({ snapshot, filters, setFilters, principals, orphanAssociate
         ? `Impacto: ${value.currentMemberships} vínculos, ${value.pendingRequests} pedidos e ${value.activeAssociates} Associados.`
         : `A atribuição ficará como ${action === 'submit' ? 'pendente' : action === 'activate' || action === 'reactivate' ? 'ativa' : action}.`,
       label: labels[action] ?? 'Confirmar', tone: ['suspend', 'end'].includes(action) ? 'danger' : 'primary',
-      run: () => transition.mutateAsync({ id: item.id, action, publicVisible: action === 'activate' || action === 'reactivate' ? item.publicVisible : false, expectedUpdatedAt: item.updatedAt }),
+      run: () => transition.mutateAsync({ id: item.id, action, publicVisible: action === 'activate' || action === 'reactivate' ? publicVisible : false, expectedUpdatedAt: item.updatedAt }),
       success: 'Estado da atribuição atualizado.',
+    });
+  };
+
+  const publishAssignment = (item: AmbassadorAssignment) => {
+    setAction({
+      title: `Publicar ${item.profileName} no aplicativo?`,
+      description: 'O embaixador já está ativo e passará a aparecer imediatamente nas áreas públicas do aplicativo.',
+      label: 'Publicar no app',
+      tone: 'primary',
+      run: () => save.mutateAsync({
+        id: item.id, expectedUpdatedAt: item.updatedAt, profileId: item.profileId, role: item.role,
+        affinityGroupKey: item.affinityGroupKey, regionId: item.regionId,
+        principalAssignmentId: item.principalAssignmentId, publicVisible: true,
+        displayOrder: item.displayOrder, headline: item.headline ?? '', badgeLabel: item.badgeLabel ?? '',
+        contractReference: item.contractReference ?? '', startsAt: item.startsAt, endsAt: item.endsAt,
+      }),
+      success: 'Embaixador publicado no aplicativo.',
     });
   };
 
@@ -352,29 +411,34 @@ function NetworkTab({ snapshot, filters, setFilters, principals, orphanAssociate
       {assignmentEditor ? (
         <form className="ambassador-editor" onSubmit={saveAssignment}>
           <div className="ambassador-panel-head"><div><span>Atribuição</span><h2>{assignmentEditor.id ? 'Editar embaixador' : 'Novo embaixador'}</h2></div><CloseButton label="Fechar editor" onClick={closeEditor} /></div>
-          {!assignmentEditor.id ? <label className="ambassador-field"><span>Perfil profissional</span><div className="ambassador-search"><Search aria-hidden="true" size={16} /><input aria-autocomplete="list" aria-controls="ambassador-candidate-list" aria-expanded={candidateQuery.trim().length >= 2} aria-haspopup="listbox" role="combobox" required value={candidateQuery} onChange={(event) => { setCandidateQuery(event.target.value); setAssignmentEditor({ ...assignmentEditor, profileId: '', profileLabel: '' }); }} placeholder="Nome ou @usuário" /></div>{candidatesLoading ? <small className="ambassador-search-state"><RefreshCw className="spin" size={13} />Buscando…</small> : candidatesError ? <small className="ambassador-search-state danger">Não foi possível buscar perfis.</small> : candidateQuery.trim().length >= 2 && !candidates.length ? <small className="ambassador-search-state">Nenhum perfil encontrado.</small> : null}{candidates.length ? <div className="ambassador-candidates" id="ambassador-candidate-list" role="listbox">{candidates.map((candidate) => <button aria-selected={assignmentEditor.profileId === candidate.id} role="option" type="button" key={candidate.id} onClick={() => { setAssignmentEditor({ ...assignmentEditor, profileId: candidate.id, profileLabel: candidate.profileName }); setCandidateQuery(candidate.profileName); }}><strong>{candidate.profileName}</strong><span>{candidate.username ? `@${candidate.username}` : 'sem usuário'} · {formatNumber(candidate.followerCount)} seguidores{candidate.activeAssignmentCount ? ` · ${candidate.activeAssignmentCount} vínculo(s)` : ''}</span>{candidate.activeAssignments.length ? <small>{candidate.activeAssignments.map((item) => `${item.countryCode} · ${item.affinityGroupLabel} · ${item.role === 'principal' ? 'Principal' : 'Associado'}`).join(' | ')}</small> : null}</button>)}</div> : null}</label> : <div className="ambassador-selected-profile"><UserRoundCheck size={18} /><strong>{assignmentEditor.profileLabel}</strong></div>}
+          {!assignmentEditor.id ? <label className="ambassador-field"><span>Usuário</span><div className="ambassador-search"><Search aria-hidden="true" size={16} /><input aria-autocomplete="list" aria-controls="ambassador-candidate-list" aria-expanded={candidateQuery.trim().length >= 2} aria-haspopup="listbox" role="combobox" required value={candidateQuery} onChange={(event) => { setCandidateQuery(event.target.value); setAssignmentEditor({ ...assignmentEditor, profileId: '', profileLabel: '', profileIsProfessional: false, profileHasBrCpf: false }); }} placeholder="Nome ou @usuário" /></div>{candidatesLoading ? <small className="ambassador-search-state"><RefreshCw className="spin" size={13} />Buscando…</small> : candidatesError ? <small className="ambassador-search-state danger">Não foi possível buscar usuários.</small> : candidateQuery.trim().length >= 2 && !candidates.length ? <small className="ambassador-search-state">Nenhum usuário encontrado. Confira a grafia do nome ou @usuário.</small> : null}{candidates.length ? <div className="ambassador-candidates" id="ambassador-candidate-list" role="listbox">{candidates.map((candidate) => <button aria-selected={assignmentEditor.profileId === candidate.id} role="option" type="button" key={candidate.id} onClick={() => { setAssignmentEditor({ ...assignmentEditor, profileId: candidate.id, profileLabel: candidate.profileName, profileIsProfessional: candidate.isProfessional, profileHasBrCpf: candidate.hasBrCpf }); setCandidateQuery(candidate.profileName); }}><strong>{candidate.profileName}</strong><span>{candidate.username ? `@${candidate.username}` : 'sem usuário'} · {candidate.isProfessional ? 'Profissional' : 'Membro'} · {formatNumber(candidate.followerCount)} seguidores{candidate.activeAssignmentCount ? ` · ${candidate.activeAssignmentCount} vínculo(s)` : ''}</span>{candidate.activeAssignments.length ? <small>{candidate.activeAssignments.map((item) => `${item.countryCode} · ${item.affinityGroupLabel} · ${item.role === 'principal' ? 'Principal' : 'Associado'}`).join(' | ')}</small> : null}</button>)}</div> : null}</label> : <div className="ambassador-selected-profile"><UserRoundCheck size={18} /><strong>{assignmentEditor.profileLabel}</strong></div>}
+          {assignmentEditor.profileId && !assignmentEditor.profileIsProfessional ? <div className={`inline-alert ${isSuperAdmin ? '' : 'danger'}`}><ShieldCheck size={18} /><span>{isSuperAdmin ? `Este usuário ainda é membro. Ao continuar, ele será habilitado como profissional${assignmentEditor.profileHasBrCpf ? '.' : ' com dispensa temporária de CPF; pagamentos continuarão bloqueados até o documento fiscal.'}` : 'Este usuário ainda é membro. Peça a um superadministrador para habilitá-lo como profissional.'}</span></div> : null}
+          {assignmentEditor.profileId && !assignmentEditor.profileIsProfessional && isSuperAdmin ? <label className="ambassador-field"><span>Motivo da habilitação profissional</span><textarea required minLength={10} maxLength={500} value={preparationReason} onChange={(event) => setPreparationReason(event.target.value)} /></label> : null}
           <div className="ambassador-form-grid">
             <label className="ambassador-field"><span>Nível</span><select value={assignmentEditor.role} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, role: event.target.value as AssignmentDraft['role'], principalAssignmentId: '' })}><option value="principal">Principal</option><option value="associate">Associado</option></select></label>
             <label className="ambassador-field"><span>Vertical</span><select required value={assignmentEditor.affinityGroupKey} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, affinityGroupKey: event.target.value, principalAssignmentId: '' })}><option value="">Selecione</option>{snapshot.affinityGroups.map((item) => <option value={item.key} key={item.key}>{item.label}{item.active ? '' : ' (inativa)'}</option>)}</select></label>
             <label className="ambassador-field"><span>País / região contratual</span><select required value={assignmentEditor.regionId} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, regionId: event.target.value, principalAssignmentId: '' })}><option value="">Selecione o país</option>{snapshot.regions.filter((item) => item.countryCode).map((item) => <option value={item.id} key={item.id}>[{item.countryCode}] {item.name}{item.stateCode ? ` · ${item.stateCode}` : ''}{item.cityName ? ` · ${item.cityName}` : ''}{item.active ? '' : ' (inativa)'}</option>)}</select></label>
             {assignmentEditor.role === 'associate' ? <label className="ambassador-field"><span>Principal</span><select value={assignmentEditor.principalAssignmentId} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, principalAssignmentId: event.target.value })}><option value="">Supervisão da plataforma</option>{compatiblePrincipals.map((item) => <option value={item.id} key={item.id}>{item.profileName}</option>)}</select></label> : null}
           </div>
-          <details className="ambassador-progressive"><summary>Exibição pública</summary><div className="ambassador-form-grid"><label className="ambassador-field"><span>Ordem</span><input type="number" value={assignmentEditor.displayOrder} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, displayOrder: event.target.value })} /></label><label className="ambassador-field"><span>Selo</span><input maxLength={40} value={assignmentEditor.badgeLabel} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, badgeLabel: event.target.value })} /></label><label className="ambassador-field wide"><span>Chamada</span><input maxLength={160} value={assignmentEditor.headline} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, headline: event.target.value })} /></label><label className="ambassador-check wide"><input type="checkbox" checked={assignmentEditor.publicVisible} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, publicVisible: event.target.checked })} /><span>Exibir quando estiver ativo</span></label></div></details>
+          <small className="ambassador-muted">Principal representa a vertical no país. Associado atua sob um principal ou sob supervisão direta da plataforma.</small>
+          <label className="ambassador-check"><input type="checkbox" checked={assignmentEditor.publicVisible} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, publicVisible: event.target.checked })} /><span>Exibir no aplicativo assim que estiver ativo</span></label>
+          <details className="ambassador-progressive"><summary>Personalização pública</summary><div className="ambassador-form-grid"><label className="ambassador-field"><span>Ordem</span><input type="number" value={assignmentEditor.displayOrder} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, displayOrder: event.target.value })} /></label><label className="ambassador-field"><span>Selo</span><input maxLength={40} value={assignmentEditor.badgeLabel} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, badgeLabel: event.target.value })} /></label><label className="ambassador-field wide"><span>Chamada</span><input maxLength={160} value={assignmentEditor.headline} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, headline: event.target.value })} /></label></div></details>
           <details className="ambassador-progressive"><summary>Avançado</summary><div className="ambassador-form-grid"><label className="ambassador-field wide"><span>Referência contratual</span><input maxLength={160} value={assignmentEditor.contractReference} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, contractReference: event.target.value })} /></label><label className="ambassador-field"><span>Início</span><input type="datetime-local" value={assignmentEditor.startsAt} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, startsAt: event.target.value })} /></label><label className="ambassador-field"><span>Fim</span><input type="datetime-local" value={assignmentEditor.endsAt} onChange={(event) => setAssignmentEditor({ ...assignmentEditor, endsAt: event.target.value })} /></label></div></details>
           {formError ? <div className="inline-alert danger" role="alert"><AlertTriangle size={18} />{formError}</div> : null}
-          <div className="ambassador-editor-actions"><button className="button secondary" type="button" onClick={closeEditor}>Cancelar</button><button className="button primary" type="submit" disabled={save.isPending || !assignmentEditor.profileId || !assignmentEditor.affinityGroupKey || !assignmentEditor.regionId}><Save size={16} />Salvar</button></div>
+          <div className="ambassador-editor-actions"><button className="button secondary" type="button" onClick={closeEditor}>Cancelar</button>{!assignmentEditor.id ? <button className="button secondary" type="submit" name="intent" value="draft" disabled={save.isPending || transition.isPending || prepareCandidate.isPending || !assignmentEditor.profileId || !assignmentEditor.affinityGroupKey || !assignmentEditor.regionId || (!assignmentEditor.profileIsProfessional && !isSuperAdmin)}><Save size={16} />Salvar rascunho</button> : null}<button className="button primary" type="submit" name="intent" value="activate" disabled={save.isPending || transition.isPending || prepareCandidate.isPending || !assignmentEditor.profileId || !assignmentEditor.affinityGroupKey || !assignmentEditor.regionId || (!assignmentEditor.profileIsProfessional && !isSuperAdmin)}><Check size={16} />{assignmentEditor.id ? 'Salvar alterações' : assignmentEditor.profileIsProfessional ? 'Criar e publicar' : 'Habilitar, criar e publicar'}</button></div>
         </form>
       ) : selected ? (
         <aside className="ambassador-detail-panel">
           <div className="ambassador-panel-head"><div><span>{selected.role === 'principal' ? 'Embaixador Principal' : 'Embaixador Associado'}</span><h2>{selected.profileName}</h2><p>{selected.affinityGroupLabel} · {selected.regionCountryCode} · {selected.regionName}</p></div><CloseButton label="Fechar detalhes" onClick={() => setSelectedId(null)} /></div>
           <div className="ambassador-impact-grid"><span><strong>{selected.impact.currentMemberships}</strong>profissionais</span><span><strong>{selected.impact.pendingRequests}</strong>pedidos</span><span><strong>{selected.impact.activeAssociates}</strong>Associados</span></div>
-          {canEdit ? <div className="ambassador-actions"><button className="button secondary compact" onClick={() => setAssignmentEditor(assignmentDraft(selected))}><Pencil size={14} />Editar</button>{selected.status === 'draft' ? <button className="button secondary compact" onClick={() => void runTransition(selected, 'submit')}>Enviar para aprovação</button> : null}{selected.status === 'pending' ? <button className="button primary compact" onClick={() => void runTransition(selected, 'activate')}><Check size={14} />Ativar</button> : null}{selected.status === 'active' ? <><button className="button secondary compact" onClick={() => void runTransition(selected, 'suspend')}><CircleOff size={14} />Suspender</button><button className="button danger compact" onClick={() => void runTransition(selected, 'end')}>Encerrar</button></> : null}{selected.status === 'suspended' ? <button className="button primary compact" onClick={() => void runTransition(selected, 'reactivate')}>Reativar</button> : null}</div> : null}
+          {selected.status === 'active' && !selected.publicVisible ? <div className="inline-alert danger"><AlertTriangle size={18} /><span>Este embaixador está ativo, mas oculto no aplicativo.</span></div> : null}
+          {canEdit ? <div className="ambassador-actions"><button className="button secondary compact" onClick={() => setAssignmentEditor(assignmentDraft(selected))}><Pencil size={14} />Editar</button>{selected.status === 'draft' ? <><button className="button primary compact" onClick={() => void runTransition(selected, 'activate', true)}><Check size={14} />Ativar e publicar</button><button className="button secondary compact" onClick={() => void runTransition(selected, 'submit')}>Enviar para revisão</button></> : null}{selected.status === 'pending' ? <button className="button primary compact" onClick={() => void runTransition(selected, 'activate', true)}><Check size={14} />Aprovar e publicar</button> : null}{selected.status === 'active' && !selected.publicVisible ? <button className="button primary compact" onClick={() => publishAssignment(selected)}><Check size={14} />Publicar no app</button> : null}{selected.status === 'active' ? <><button className="button secondary compact" onClick={() => void runTransition(selected, 'suspend')}><CircleOff size={14} />Suspender</button><button className="button danger compact" onClick={() => void runTransition(selected, 'end')}>Encerrar</button></> : null}{selected.status === 'suspended' ? <button className="button primary compact" onClick={() => void runTransition(selected, 'reactivate', true)}>Reativar e publicar</button> : null}</div> : null}
           {selected.role === 'associate' && canEdit && selected.status !== 'ended' ? <label className="ambassador-field"><span>Transferir supervisão</span><select value={selected.principalAssignmentId ?? ''} onChange={(event) => { const target = event.target.value; if (target === (selected.principalAssignmentId ?? '')) return; const principal = snapshot.assignments.find((item) => item.id === target); setAction({ title: `Transferir ${selected.profileName}?`, description: `Nova supervisão: ${principal?.profileName ?? 'Plataforma'}. O histórico será preservado.`, label: 'Transferir', run: () => transfer.mutateAsync({ id: selected.id, principalAssignmentId: target || null, expectedUpdatedAt: selected.updatedAt }), success: 'Associado transferido com histórico preservado.' }); }}><option value="">Plataforma</option>{snapshot.assignments.filter((item) => item.role === 'principal' && item.status === 'active' && item.affinityGroupKey === selected.affinityGroupKey && item.regionId === selected.regionId).map((item) => <option value={item.id} key={item.id}>{item.profileName}</option>)}</select></label> : null}
           <section className="ambassador-detail-section"><h3>Profissionais vinculados</h3>{memberships.isLoading ? <RefreshCw className="spin" size={18} /> : memberships.isError ? <div className="inline-alert danger" role="alert">Não foi possível carregar os vínculos.</div> : memberships.data?.items.length ? <div className="ambassador-member-list">{memberships.data.items.map((member) => <div key={member.id}><div><strong>{member.professionalName}</strong><span>{statusLabel[member.status] ?? member.status} · {member.affinityGroupLabel}</span></div>{canEdit && member.status === 'approved' ? <button className="button secondary compact" onClick={() => setAction({ title: `Desvincular ${member.professionalName}?`, description: 'O profissional passará para supervisão direta da plataforma.', label: 'Desvincular', tone: 'danger', run: () => transferMembership.mutateAsync({ id: member.id, assignmentId: null, reasonCode: 'staff_transfer', expectedUpdatedAt: member.updatedAt }), success: 'Profissional transferido para supervisão da plataforma.' })}><ArrowRightLeft size={13} />Desvincular</button> : null}</div>)}</div> : <p className="ambassador-muted">Nenhum profissional nesta atribuição.</p>}</section>
         </aside>
       ) : <aside className="ambassador-detail-panel ambassador-empty"><ChevronRight size={28} /><strong>Selecione uma atribuição</strong><span>Veja impacto, profissionais e ações operacionais.</span></aside>}
       <AmbassadorDialog open={discardOpen} eyebrow="Alterações não salvas" title="Descartar alterações?" description="O conteúdo preenchido será perdido." confirmLabel="Descartar" tone="danger" onCancel={() => setDiscardOpen(false)} onConfirm={discardEditor} />
-      <AmbassadorDialog open={action !== null} eyebrow="Revisar ação" title={action?.title ?? ''} description={action?.description} confirmLabel={action?.label ?? 'Confirmar'} tone={action?.tone} pending={transition.isPending || transfer.isPending || transferMembership.isPending} onCancel={() => setAction(null)} onConfirm={async () => { if (!action) return; if (await begin(action.run, action.success)) setAction(null); }} />
+      <AmbassadorDialog open={action !== null} eyebrow="Revisar ação" title={action?.title ?? ''} description={action?.description} confirmLabel={action?.label ?? 'Confirmar'} tone={action?.tone} pending={save.isPending || transition.isPending || transfer.isPending || transferMembership.isPending} onCancel={() => setAction(null)} onConfirm={async () => { if (!action) return; if (await begin(action.run, action.success)) setAction(null); }} />
     </div>
   );
 }
@@ -384,7 +448,7 @@ function AssignmentBranch({ principal, associates, selectedId, onSelect }: { pri
 }
 
 function AssignmentCard({ item, selected, onSelect }: { item: AmbassadorAssignment; selected: boolean; onSelect: (id: string) => void }) {
-  return <button type="button" className={`ambassador-card ${selected ? 'selected' : ''} ${item.status}`} onClick={() => onSelect(item.id)}><span className="ambassador-avatar">{item.avatarUrl ? <img src={item.avatarUrl} alt="" /> : item.role === 'principal' ? <Crown size={18} /> : <UsersRound size={18} />}</span><span className="ambassador-card-copy"><strong>{item.profileName}</strong><small>{item.role === 'principal' ? 'Principal' : 'Associado'} · {item.affinityGroupLabel} · {item.regionCountryCode} · {item.regionName}</small><em>{item.headline || 'Sem headline pública'}</em></span><span className={`ambassador-status ${item.status}`}>{statusLabel[item.status]}</span><ChevronRight size={16} /></button>;
+  return <button type="button" className={`ambassador-card ${selected ? 'selected' : ''} ${item.status}`} onClick={() => onSelect(item.id)}><span className="ambassador-avatar">{item.avatarUrl ? <img src={item.avatarUrl} alt="" /> : item.role === 'principal' ? <Crown size={18} /> : <UsersRound size={18} />}</span><span className="ambassador-card-copy"><strong>{item.profileName}</strong><small>{item.role === 'principal' ? 'Principal' : 'Associado'} · {item.affinityGroupLabel} · {item.regionCountryCode} · {item.regionName}</small><em>{item.headline || 'Sem chamada pública'}</em></span><span className={`ambassador-status ${item.status}`}>{item.status === 'active' && !item.publicVisible ? 'Ativo · oculto' : statusLabel[item.status]}</span><ChevronRight size={16} /></button>;
 }
 
 function RegionsTab({ regions, canEdit, editor, setEditor, begin }: { regions: CommercialRegion[]; canEdit: boolean; editor: RegionDraft | null; setEditor: (value: RegionDraft | null) => void; begin: (operation: () => Promise<unknown>, success: string) => Promise<boolean> }) {

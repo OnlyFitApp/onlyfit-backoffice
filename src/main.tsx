@@ -8,7 +8,11 @@ import './styles.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      // O backoffice é operacional e o mesmo registro pode mudar em outra aba,
+      // por outro operador ou por webhook. Sempre confronte consultas ativas
+      // com o servidor ao voltar para a janela ou reconectar.
+      refetchOnWindowFocus: 'always',
+      refetchOnReconnect: 'always',
     },
   },
 });

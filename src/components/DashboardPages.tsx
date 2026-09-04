@@ -44,6 +44,7 @@ import { AppActivityChart, DauChart, FinanceChart, SystemEventsPanel } from './D
 import { UserDetail } from './UserDetail';
 
 const PAGE_SIZE = 25;
+const POST_SAVING_VISIBLE = false;
 
 const SECTION_COPY: Record<DashboardSectionId, { title: string; subtitle: string }> = {
   'health-overview': { title: 'Visão geral', subtitle: 'O funil da rede em um só lugar, 30 dias contra os 30 anteriores' },
@@ -649,12 +650,12 @@ function OperationsPage({ data }: { data: DashboardSnapshot }) {
             icon={MessageCircle}
             detail="Conversas registradas no feed"
           />
-          <MetricCard
+          {POST_SAVING_VISIBLE ? <MetricCard
             title="Salvos"
             value={formatNumber(app.feed_saves_total)}
             icon={Bookmark}
             detail="Conteúdos guardados pelos usuários"
-          />
+          /> : null}
         </MetricGrid>
       </DashboardSection>
 

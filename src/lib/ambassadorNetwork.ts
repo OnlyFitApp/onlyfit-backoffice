@@ -1,6 +1,12 @@
 import { supabase } from './supabase';
+import {
+  ambassadorRoleLabel,
+  parseAmbassadorRole,
+  requireAmbassadorRole,
+  type AmbassadorRole,
+} from './ambassadorRoleContract';
 
-export type AmbassadorRole = 'principal' | 'associate';
+export { ambassadorRoleLabel, parseAmbassadorRole, type AmbassadorRole } from './ambassadorRoleContract';
 export type AmbassadorStatus = 'draft' | 'pending' | 'active' | 'suspended' | 'ended';
 
 export type AmbassadorImpact = {
@@ -201,17 +207,18 @@ function impactFrom(value: unknown): AmbassadorImpact {
 
 function assignmentFrom(value: unknown): AmbassadorAssignment {
   const row = record(value);
+  const role = requireAmbassadorRole(row.role);
   return {
     id: String(row.id ?? ''), profileId: String(row.profile_id ?? ''),
     profileName: String(row.profile_name ?? 'Perfil'), username: stringOrNull(row.username),
     avatarUrl: stringOrNull(row.avatar_url), followerCount: number(row.follower_count),
-    role: row.role === 'principal' ? 'principal' : 'associate',
+    role,
     affinityGroupKey: String(row.affinity_group_key ?? ''), affinityGroupLabel: String(row.affinity_group_label ?? ''),
     regionId: String(row.region_id ?? ''), regionName: String(row.region_name ?? ''),
     regionCountryCode: String(row.region_country_code ?? ''),
     principalAssignmentId: stringOrNull(row.principal_assignment_id), principalName: stringOrNull(row.principal_name),
     status: String(row.status ?? 'draft') as AmbassadorStatus, publicVisible: row.public_visible === true,
-    displayOrder: number(row.display_order), headline: stringOrNull(row.headline), badgeLabel: stringOrNull(row.badge_label),
+    displayOrder: number(row.display_order), headline: stringOrNull(row.headline), badgeLabel: ambassadorRoleLabel(role),
     contractReference: stringOrNull(row.contract_reference), startsAt: stringOrNull(row.starts_at), endsAt: stringOrNull(row.ends_at),
     createdAt: String(row.created_at ?? ''), updatedAt: String(row.updated_at ?? ''), impact: impactFrom(row.impact),
   };
@@ -242,7 +249,7 @@ function settingFrom(value: unknown): AmbassadorNetworkSetting {
 
 function membershipFrom(value: unknown): AmbassadorMembership {
   const row = record(value);
-  const ambassadorRole = row.ambassador_role ?? row.requested_ambassador_role;
+  const ambassadorRole = parseAmbassadorRole(row.ambassador_role ?? row.requested_ambassador_role);
   return {
     id: String(row.id ?? ''), professionalProfileId: String(row.professional_profile_id ?? ''),
     professionalName: String(row.professional_name ?? 'Profissional'), username: stringOrNull(row.username), avatarUrl: stringOrNull(row.avatar_url),
@@ -251,7 +258,7 @@ function membershipFrom(value: unknown): AmbassadorMembership {
     requestedAssignmentId: stringOrNull(row.requested_assignment_id), linkedAssignmentId: stringOrNull(row.linked_assignment_id),
     source: String(row.source ?? ''), status: String(row.status ?? ''), followerCountSnapshot: row.follower_count_snapshot == null ? null : number(row.follower_count_snapshot),
     ambassadorName: stringOrNull(row.ambassador_name ?? row.requested_ambassador_name),
-    ambassadorRole: ambassadorRole === 'principal' || ambassadorRole === 'associate' ? ambassadorRole : null,
+    ambassadorRole,
     decisionReasonCode: stringOrNull(row.decision_reason_code), createdAt: String(row.created_at ?? ''), updatedAt: String(row.updated_at ?? ''),
   };
 }
@@ -284,7 +291,7 @@ export async function searchAmbassadorCandidates(query: string): Promise<Ambassa
     activeAssignments: Array.isArray(row.active_assignments) ? row.active_assignments.map((entry) => {
       const assignment = record(entry); return {
         assignmentId: String(assignment.assignment_id ?? ''),
-        role: assignment.role === 'principal' ? 'principal' : 'associate',
+        role: requireAmbassadorRole(assignment.role),
         affinityGroupLabel: String(assignment.affinity_group_label ?? assignment.affinity_group_key ?? ''),
         regionName: String(assignment.region_name ?? ''), countryCode: String(assignment.country_code ?? ''),
       };
@@ -308,9 +315,9 @@ export async function saveCommercialRegion(input: RegionInput): Promise<void> {
 }
 export async function setCommercialRegionActive(input: { id: string; active: boolean; expectedUpdatedAt: string }): Promise<void> { const { error } = await supabase.rpc('control_set_commercial_region_active', { p_region_id: input.id, p_active: input.active, p_expected_updated_at: input.expectedUpdatedAt }); if (error) throw error; }
 
-export type AssignmentInput = { id?: string; profileId: string; role: AmbassadorRole; affinityGroupKey: string; regionId: string; principalAssignmentId: string | null; publicVisible: boolean; displayOrder: number; headline: string; badgeLabel: string; contractReference: string; startsAt: string | null; endsAt: string | null; expectedUpdatedAt?: string };
+export type AssignmentInput = { id?: string; profileId: string; role: AmbassadorRole; affinityGroupKey: string; regionId: string; principalAssignmentId: string | null; publicVisible: boolean; displayOrder: number; headline: string; contractReference: string; startsAt: string | null; endsAt: string | null; expectedUpdatedAt?: string };
 export type SavedAmbassadorAssignment = { id: string; status: AmbassadorStatus; publicVisible: boolean; updatedAt: string };
-export async function saveAmbassadorAssignment(input: AssignmentInput): Promise<SavedAmbassadorAssignment> { const { data, error } = await supabase.rpc('control_save_ambassador_assignment', { p_assignment_id: input.id ?? null, p_profile_id: input.profileId, p_role: input.role, p_affinity_group_key: input.affinityGroupKey, p_region_id: input.regionId, p_principal_assignment_id: input.principalAssignmentId, p_public_visible: input.publicVisible, p_display_order: input.displayOrder, p_headline: input.headline || null, p_badge_label: input.badgeLabel || null, p_contract_reference: input.contractReference || null, p_starts_at: input.startsAt, p_ends_at: input.endsAt, p_expected_updated_at: input.expectedUpdatedAt ?? null }); if (error) throw error; const row = record(data); return { id: String(row.id ?? ''), status: String(row.status ?? 'draft') as AmbassadorStatus, publicVisible: row.public_visible === true, updatedAt: String(row.updated_at ?? '') }; }
+export async function saveAmbassadorAssignment(input: AssignmentInput): Promise<SavedAmbassadorAssignment> { const { data, error } = await supabase.rpc('control_save_ambassador_assignment', { p_assignment_id: input.id ?? null, p_profile_id: input.profileId, p_role: input.role, p_affinity_group_key: input.affinityGroupKey, p_region_id: input.regionId, p_principal_assignment_id: input.role === 'associate' ? input.principalAssignmentId : null, p_public_visible: input.publicVisible, p_display_order: input.displayOrder, p_headline: input.headline || null, p_badge_label: ambassadorRoleLabel(input.role), p_contract_reference: input.contractReference || null, p_starts_at: input.startsAt, p_ends_at: input.endsAt, p_expected_updated_at: input.expectedUpdatedAt ?? null }); if (error) throw error; const row = record(data); return { id: String(row.id ?? ''), status: String(row.status ?? 'draft') as AmbassadorStatus, publicVisible: row.public_visible === true, updatedAt: String(row.updated_at ?? '') }; }
 export async function getAmbassadorAssignmentImpact(id: string): Promise<AmbassadorImpact> { const { data, error } = await supabase.rpc('control_get_ambassador_assignment_impact', { p_assignment_id: id }); if (error) throw error; return impactFrom(data); }
 export async function transitionAmbassadorAssignment(input: { id: string; action: string; publicVisible: boolean; expectedUpdatedAt: string }): Promise<void> { const { error } = await supabase.rpc('control_transition_ambassador_assignment', { p_assignment_id: input.id, p_action: input.action, p_public_visible: input.publicVisible, p_expected_updated_at: input.expectedUpdatedAt }); if (error) throw error; }
 export async function transferAmbassadorAssociate(input: { id: string; principalAssignmentId: string | null; expectedUpdatedAt: string }): Promise<void> { const { error } = await supabase.rpc('control_transfer_ambassador_associate', { p_assignment_id: input.id, p_principal_assignment_id: input.principalAssignmentId, p_expected_updated_at: input.expectedUpdatedAt }); if (error) throw error; }
@@ -376,7 +383,8 @@ export function ambassadorErrorMessage(error: unknown): string {
   if (message.includes('one_active_principal') || message.includes('duplicate key')) return 'Já existe uma atribuição ativa conflitante.';
   if (message.includes('active_network')) return 'Existem vínculos ativos que precisam ser encerrados ou transferidos primeiro.';
   if (message.includes('requires_transfer')) return 'Use a ação de transferência para mudar a estrutura de uma atribuição ativa.';
-  if (message.includes('invalid_principal')) return 'O Principal precisa estar ativo na mesma vertical e região.';
+  if (message.includes('invalid_principal')) return 'O Embaixador selecionado precisa estar ativo na mesma vertical e região.';
+  if (message.includes('invalid_ambassador_role_contract') || message.includes('invalid_ambassador_role')) return 'O papel recebido é incompatível com o contrato atual. Atualize a página antes de continuar.';
   if (message.includes('ambassador_candidate_not_found')) return 'O usuário selecionado não existe mais. Faça uma nova busca.';
   if (message.includes('invalid_ambassador_candidate_preparation')) return 'Revise o motivo e o prazo da habilitação profissional.';
   if (message.includes('storekit_financial_runtime_not_connected')) return 'O piloto financeiro está bloqueado até a integração e validação do StoreKit.';

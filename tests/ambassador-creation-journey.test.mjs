@@ -17,14 +17,16 @@ test('finds members and explains professional preparation in the same journey', 
 test('makes the normal path active and public without hiding critical state', () => {
   assert.match(page, /publicVisible: true/);
   assert.match(page, /role: 'principal'/);
-  assert.match(page, /Principal representa a vertical no país/);
+  assert.match(page, /Embaixador representa a vertical no país/);
+  assert.match(page, /Associado pode atuar com um Embaixador ou diretamente com a plataforma/);
+  assert.match(page, /Direta pela plataforma/);
   assert.match(page, /Exibir no aplicativo assim que estiver ativo/);
   assert.match(page, /Criar e publicar/);
   assert.match(page, /Habilitar, criar e publicar/);
   assert.match(page, /Ativar e publicar/);
   assert.match(page, /Aprovar e publicar/);
   assert.match(page, /Ativo · oculto/);
-  assert.match(page, /Este embaixador está ativo, mas oculto no aplicativo/);
+  assert.match(page, /Este \{ambassadorRoleLabel\(selected\.role\)\} está ativo, mas oculto no aplicativo/);
 });
 
 test('keeps draft and review paths available as explicit alternatives', () => {

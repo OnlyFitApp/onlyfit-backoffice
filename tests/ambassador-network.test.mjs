@@ -14,12 +14,19 @@ test('adds the ambassador network to the commercial backoffice', () => {
 
 test('covers identity, hierarchy and operational queues without association codes', () => {
   for (const text of [
-    'Nova atribuição', 'Embaixador Principal', 'Embaixador Associado',
+    'Nova atribuição', 'Embaixador', 'Associado',
     'Transferir supervisão', 'Promoções',
   ]) assert.match(page, new RegExp(text));
-  assert.match(page, /Principal do novo Associado/);
+  assert.match(page, /Supervisão do novo Associado/);
   assert.match(page, /Supervisão da plataforma/);
+  assert.doesNotMatch(page, /Embaixador Principal|Embaixador Associado/);
   assert.doesNotMatch(page, /Códigos de indicação|Gerar código|Permitir código/);
+});
+
+test('derives public labels from the stable role contract', () => {
+  assert.match(api, /p_badge_label: ambassadorRoleLabel\(input\.role\)/);
+  assert.match(api, /requireAmbassadorRole\(row\.role\)/);
+  assert.doesNotMatch(page, /badgeLabel|>Selo</);
 });
 
 test('allows the same profile to receive roles in multiple countries', () => {

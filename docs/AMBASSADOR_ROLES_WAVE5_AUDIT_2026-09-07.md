@@ -14,13 +14,13 @@ Data: 7 de setembro de 2026
 
 ## Resultado da revisão
 
-As cinco ondas formam um contrato coerente. O backend é a fonte de verdade do papel e deriva o selo; Flutter, desktop e backoffice interpretam os mesmos valores persistidos. Os clientes mantêm fallback para o endpoint público antigo durante a ordem de implantação, sem transformar valores de papel desconhecidos em Associado.
+As cinco ondas formam um contrato coerente. O backend é a fonte de verdade do papel e deriva o selo; Flutter, desktop e backoffice interpretam os mesmos valores persistidos. A revisão de integração acrescentou proteção permanente para versões antigas: a RPC legada mantém o card principal restrito a Embaixadores, enquanto os clientes novos consultam e paginam os dois papéis para montar “ver todos”.
 
 | Camada | Garantia verificada | Estado |
 | --- | --- | --- |
-| Supabase | Valores estritos, selo derivado, listagem paginada por papel, Associado sem Embaixador e assinatura legada preservada | Aprovado |
-| Flutter | Identidade visual central, Explorar somente Embaixadores, “ver todos” com ambos e propagação pelas jornadas sociais | Aprovado |
-| Desktop | Identidade visual central, filtros corretos e propagação por feed, stories, mensagens, perfis, desafios e comunidades | Aprovado |
+| Supabase | Valores estritos, selo derivado, listagem paginada por papel, Associado sem Embaixador e RPC legada principal-only | Aprovado |
+| Flutter | Identidade visual central, Explorar somente Embaixadores, “ver todos” completo e paginado, fallback legado e propagação social | Aprovado |
+| Desktop | Identidade visual central, “ver todos” completo e paginado, fallback legado e propagação pelas jornadas | Aprovado |
 | Backoffice | Criação/edição com os dois papéis, supervisão direta pela plataforma, rótulo derivado e falha fechada para papel inválido | Aprovado |
 
 ## Proteções contra regressão
@@ -32,6 +32,10 @@ As cinco ondas formam um contrato coerente. O backend é a fonte de verdade do p
 - A atribuição de Associado aceita `principal_assignment_id = null`, que significa supervisão direta pela plataforma.
 - Alterações estruturais em atribuições já ativas continuam usando os RPCs de transferência com controle de concorrência por `updated_at`.
 - Consultas públicas são autenticadas, paginadas e limitadas a 100 itens por chamada.
+- Os clientes percorrem as páginas até o `total`; “ver todos” não fica limitado aos primeiros 100 registros.
+- Contagens sociais e estado de seguimento são carregados em lotes de 50, respeitando o limite do RPC sem descartar perfis posteriores.
+- A RPC legada `list_public_ambassadors` preserva assinatura e permissões, mas retorna somente `principal` para proteger aplicativos já instalados.
+- A matriz cliente antigo/novo × backend antigo/novo é coberta pelos contratos de fallback e pelos testes automatizados.
 
 ## Cadastro seguro dos primeiros Associados de Musculação
 
@@ -57,17 +61,30 @@ Após cada cadastro, validar no snapshot administrativo:
 
 ## Ordem de entrega
 
-1. Integrar e aplicar a migração do Supabase.
-2. Integrar o backoffice.
-3. Integrar desktop e Flutter; os fallbacks permitem uma implantação gradual após o backend.
-4. Executar os dois cadastros pelo backoffice com uma conta administrativa autenticada.
-5. Fazer a verificação funcional nos clientes e registrar a evidência operacional.
+1. Integrar e aplicar a migração do Supabase. A RPC legada passa a proteger imediatamente as versões antigas do aplicativo.
+2. Verificar que `list_public_ambassadors` retorna apenas Embaixadores e que a nova RPC retorna cada papel separadamente.
+3. Integrar desktop e backoffice. O desktop novo usa a RPC por papel e mantém fallback para o backend anterior.
+4. Publicar o Flutter. Versões antigas continuam seguras pela RPC legada durante a adoção gradual da atualização.
+5. Confirmar os quatro quadrantes da matriz de compatibilidade descrita abaixo.
+6. Executar os dois cadastros pelo backoffice com uma conta administrativa autenticada.
+7. Fazer a verificação funcional nos clientes e registrar a evidência operacional.
+
+## Matriz de compatibilidade sem indisponibilidade
+
+| Cliente | Backend | Comportamento esperado |
+| --- | --- | --- |
+| Antigo | Antigo | Fluxo atual, antes da criação de Associados públicos |
+| Novo | Antigo | RPC por papel retorna `PGRST202`; cliente usa a RPC legada |
+| Antigo | Novo | RPC legada retorna somente Embaixadores; card principal permanece correto |
+| Novo | Novo | Card consulta `principal`; “ver todos” combina e pagina `principal` + `associate` |
+
+Se um cliente novo falhar durante a implantação, o backend protegido pode permanecer no ar. Se a migração não for aplicada, os clientes novos continuam usando o fallback legado. Se houver anomalia depois dos cadastros, ocultar ou suspender as atribuições remove os perfis das consultas públicas sem apagar o histórico.
 
 ## Evidência automatizada
 
-- Supabase: testes de contrato da migração da Onda 1.
-- Flutter: 1.136 testes aprovados e 7 ignorados; análise estática e validação de internacionalização aprovadas nas Ondas 2 e 3.
-- Desktop: 1.155 testes em 215 arquivos; typecheck, lint, build e internacionalização aprovados na Onda 4.
+- Supabase: 816 testes em 175 arquivos, testes de contrato da migração, auditoria de segurança e `db push --dry-run` remoto aprovados. A recriação integral do banco local permanece bloqueada por uma migração histórica anterior que referencia `workout_sessions` antes da criação dessa relação; a falha antecede e não executa esta migração.
+- Flutter: 1.140 testes aprovados e 7 ignorados; a suíte cobre paginação, composição dos papéis, fallback da integração e carregamento social sem truncamento.
+- Desktop: 1.160 testes em 216 arquivos; lint, TypeScript e build aprovados, com cobertura de paginação, composição dos papéis, fallback e carregamento social sem truncamento.
 - Backoffice: 30 testes aprovados; lint, TypeScript/build e auditoria de dependências aprovados na Onda 5.
 
 Nenhuma alteração desta onda foi aplicada em produção. Os cadastros reais dependem da implantação do contrato e da confirmação visual das contas corretas no backoffice.

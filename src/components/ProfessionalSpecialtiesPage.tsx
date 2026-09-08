@@ -251,7 +251,7 @@ export function ProfessionalSpecialtiesPage() {
                   checked={draft.regulated}
                   onChange={(event) => setDraft({ ...draft, regulated: event.target.checked })}
                 />
-                <span>Profissão regulada — exige registro de conselho para vender consultoria de saúde</span>
+                <span>Profissão regulada — exige registro de conselho para vender consultoria</span>
               </label>
 
               {draft.key ? (

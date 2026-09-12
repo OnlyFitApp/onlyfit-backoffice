@@ -33,7 +33,6 @@ import {
   Shuffle,
   ShoppingBag,
   SlidersHorizontal,
-  Sparkles,
   Swords,
   Tags,
   Ticket,
@@ -44,7 +43,7 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { type CSSProperties, FormEvent, lazy, Suspense, useCallback, useMemo, useState } from 'react';
+import { FormEvent, lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useAuth } from './contexts/useAuth';
 import { formatCurrencyExact, formatDateTime, formatNumber } from './lib/format';
 import { PayoutQueuePanel, TransactionsPanel, ProviderIntegrationPanel, FinancialReconciliationPanel, FinancialReportsPanel } from './components/FinancePanels';
@@ -54,8 +53,7 @@ import { useOfferingTypeBilling, useUpdateOfferingTypeBilling } from './hooks/us
 import { useOfferingCatalog } from './hooks/useOfferingCatalog';
 import { usePlatformPaymentSettings, useUpdatePlatformPaymentSettings } from './hooks/usePlatformPaymentSettings';
 import { usePlatformStaff } from './hooks/usePlatformStaff';
-import { useFeedAlgorithmSettings, useUpdateFeedAlgorithmSettings } from './hooks/useFeedAlgorithm';
-import type { FeedMode } from './lib/feedSettings';
+import { useFeedDistributionSettings, useUpdateFeedDistributionSettings } from './hooks/useFeedDistribution';
 import {
   useCreatePlatformStaff,
   useCurrentStaffRole,
@@ -730,267 +728,45 @@ function OfferingTypeBillingRow({
   );
 }
 
-function parseDecimalInput(value: string): number | null {
-  const normalized = value.trim().replace(',', '.');
-  if (normalized === '') return null;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
-}
-
-function formatDecimal(value: number, maxFractionDigits = 3): string {
-  return value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: maxFractionDigits });
-}
-
-type FeedFieldKey =
-  | 'weightAffinity'
-  | 'weightRetention'
-  | 'weightEngagement'
-  | 'weightNovelty'
-  | 'weightExploration'
-  | 'penaltyQuicklySkipped'
-  | 'penaltyAlreadyWatched'
-  | 'diversityCreatorPenalty'
-  | 'diversityTopicPenalty'
-  | 'noveltyHalfLifeHours'
-  | 'slotsInterest'
-  | 'slotsFollowed'
-  | 'slotsPopular'
-  | 'slotsExperimental';
-
-const feedSlotKeys: ReadonlyArray<FeedFieldKey> = [
-  'slotsInterest',
-  'slotsFollowed',
-  'slotsPopular',
-  'slotsExperimental',
-];
-
-type FeedFieldDescriptor = {
-  key: FeedFieldKey;
-  label: string;
-  hint: string;
-  min?: number;
-};
-
-const feedWeightFields: ReadonlyArray<FeedFieldDescriptor> = [
-  { key: 'weightAffinity', label: 'Afinidade', hint: 'Quanto o interesse do usuário pesa (padrão 0,40).' },
-  { key: 'weightRetention', label: 'Retenção', hint: 'Peso de quanto do vídeo costuma ser assistido (padrão 0,30).' },
-  { key: 'weightEngagement', label: 'Engajamento', hint: 'Peso de curtidas, comentários, saves e shares (padrão 0,15).' },
-  { key: 'weightNovelty', label: 'Novidade', hint: 'Peso da recência da publicação (padrão 0,10).' },
-  { key: 'weightExploration', label: 'Exploração', hint: 'Peso do fator aleatório que injeta descoberta (padrão 0,05).' },
-];
-
-const feedTuningFields: ReadonlyArray<FeedFieldDescriptor> = [
-  { key: 'penaltyQuicklySkipped', label: 'Penalidade — pulou rápido', hint: 'Desconto para posts que o usuário já ignorou (padrão 0,30).' },
-  { key: 'penaltyAlreadyWatched', label: 'Penalidade — já assistiu', hint: 'Desconto para posts já vistos por completo (padrão 1,00).' },
-  { key: 'diversityCreatorPenalty', label: 'Diversidade — mesmo criador', hint: 'Desconto por post repetido do mesmo criador (padrão 0,12).' },
-  { key: 'diversityTopicPenalty', label: 'Diversidade — mesmo tema', hint: 'Desconto por post repetido do mesmo grupo (padrão 0,04).' },
-  { key: 'noveltyHalfLifeHours', label: 'Meia-vida da novidade (horas)', hint: 'Em quantas horas a novidade cai pela metade (padrão 24).', min: 0.1 },
-];
-
-const feedSlotFields: ReadonlyArray<FeedFieldDescriptor> = [
-  { key: 'slotsInterest', label: 'Vagas — afinidade/interesse', hint: 'Posições por bloco reservadas a posts alinhados com o interesse do usuário (padrão 6).', min: 1 },
-  { key: 'slotsFollowed', label: 'Vagas — seguidos', hint: 'Posições por bloco reservadas a posts de quem o usuário segue (padrão 2).', min: 1 },
-  { key: 'slotsPopular', label: 'Vagas — popular', hint: 'Posições por bloco reservadas a posts com engajamento alto (padrão 1).', min: 1 },
-  { key: 'slotsExperimental', label: 'Vagas — experimental', hint: 'Posições por bloco reservadas a descoberta fora do padrão do usuário (padrão 1).', min: 1 },
-];
-
-const feedDefaults: Record<FeedFieldKey, number> = {
-  weightAffinity: 0.4,
-  weightRetention: 0.3,
-  weightEngagement: 0.15,
-  weightNovelty: 0.1,
-  weightExploration: 0.05,
-  penaltyQuicklySkipped: 0.3,
-  penaltyAlreadyWatched: 1,
-  diversityCreatorPenalty: 0.12,
-  diversityTopicPenalty: 0.04,
-  noveltyHalfLifeHours: 24,
-  slotsInterest: 6,
-  slotsFollowed: 2,
-  slotsPopular: 1,
-  slotsExperimental: 1,
-};
-
-function getFeedFieldMax(key: FeedFieldKey): number {
-  if ((feedSlotKeys as ReadonlyArray<FeedFieldKey>).includes(key)) return 12;
-  if (key === 'noveltyHalfLifeHours') return 168;
-  if (key === 'penaltyAlreadyWatched') return 2;
-  return 1;
-}
-
-function getFeedFieldStep(key: FeedFieldKey): number {
-  if ((feedSlotKeys as ReadonlyArray<FeedFieldKey>).includes(key)) return 1;
-  if (key === 'noveltyHalfLifeHours') return 0.1;
-  return 0.01;
-}
-
-function getFeedFieldUnit(key: FeedFieldKey): string {
-  if (key === 'noveltyHalfLifeHours') return 'h';
-  if ((feedSlotKeys as ReadonlyArray<FeedFieldKey>).includes(key)) return 'pos.';
-  return '';
-}
-
-function FeedField({
-  descriptor,
-  value,
-  disabled,
-  onChange,
-  onBlurFormat,
-}: {
-  descriptor: FeedFieldDescriptor;
-  value: string;
-  disabled: boolean;
-  onChange: (raw: string) => void;
-  onBlurFormat: () => void;
-}) {
-  const parsed = parseDecimalInput(value);
-  const min = descriptor.min ?? 0;
-  const max = Math.max(getFeedFieldMax(descriptor.key), parsed ?? 0);
-  const step = getFeedFieldStep(descriptor.key);
-  const unit = getFeedFieldUnit(descriptor.key);
-  const sliderValue = parsed === null ? min : Math.min(max, Math.max(min, parsed));
-  const progress = max === min ? 0 : ((sliderValue - min) / (max - min)) * 100;
-  const invalid = parsed === null || parsed < min;
-  return (
-    <label
-      className="feed-field-card"
-      title={descriptor.hint}
-      aria-invalid={invalid ? 'true' : undefined}
-      style={{ '--feed-progress': `${progress}%` } as CSSProperties}
-    >
-      <div className="feed-field-top">
-        <span>{descriptor.label}</span>
-        <strong>
-          {value || '—'}
-          {unit ? ` ${unit}` : ''}
-        </strong>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={sliderValue}
-        disabled={disabled}
-        aria-label={descriptor.label}
-        onBlur={onBlurFormat}
-        onChange={(event) => onChange(formatDecimal(Number(event.target.value), step >= 1 ? 0 : 2))}
-      />
-      <div className="feed-slider-scale" aria-hidden="true">
-        <span>{formatDecimal(min, step >= 1 ? 0 : 1)}</span>
-        <span>
-          {formatDecimal(max, step >= 1 ? 0 : 1)}
-          {unit ? ` ${unit}` : ''}
-        </span>
-      </div>
-    </label>
-  );
-}
-
-function FeedAlgorithmPage() {
+function FeedDistributionPage() {
   const { data: currentRole } = useCurrentStaffRole();
   const canEdit = currentRole === 'super_admin' || currentRole === 'admin';
-  const { data: settings, isLoading, isError, refetch, isFetching } = useFeedAlgorithmSettings(true);
-  const updateMutation = useUpdateFeedAlgorithmSettings();
-
-  const [mode, setMode] = useState<FeedMode>('algorithm');
-  const [values, setValues] = useState<Record<FeedFieldKey, string>>(() =>
-    Object.fromEntries(
-      (Object.keys(feedDefaults) as FeedFieldKey[]).map((key) => [key, formatDecimal(feedDefaults[key])]),
-    ) as Record<FeedFieldKey, string>,
-  );
-  const [hydratedFor, setHydratedFor] = useState<string | null>(null);
+  const { data: settings, isLoading, isError, refetch, isFetching } = useFeedDistributionSettings(true);
+  const updateMutation = useUpdateFeedDistributionSettings();
+  const [draft, setDraft] = useState<{ followed: string; discovery: string } | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Popula o formulário quando os dados do banco chegam (uma vez por linha).
-  const stamp = settings?.updated_at ?? (settings ? 'loaded' : null);
-  if (settings && stamp !== hydratedFor) {
-    setMode(settings.mode);
-    setValues({
-      weightAffinity: formatDecimal(settings.weight_affinity),
-      weightRetention: formatDecimal(settings.weight_retention),
-      weightEngagement: formatDecimal(settings.weight_engagement),
-      weightNovelty: formatDecimal(settings.weight_novelty),
-      weightExploration: formatDecimal(settings.weight_exploration),
-      penaltyQuicklySkipped: formatDecimal(settings.penalty_quickly_skipped),
-      penaltyAlreadyWatched: formatDecimal(settings.penalty_already_watched),
-      diversityCreatorPenalty: formatDecimal(settings.diversity_creator_penalty),
-      diversityTopicPenalty: formatDecimal(settings.diversity_topic_penalty),
-      noveltyHalfLifeHours: formatDecimal(settings.novelty_half_life_hours),
-      slotsInterest: formatDecimal(settings.slots_interest, 0),
-      slotsFollowed: formatDecimal(settings.slots_followed, 0),
-      slotsPopular: formatDecimal(settings.slots_popular, 0),
-      slotsExperimental: formatDecimal(settings.slots_experimental, 0),
-    });
-    setHydratedFor(stamp);
-  }
-
-  const parsedValues = useMemo(() => {
-    const result = {} as Record<FeedFieldKey, number | null>;
-    for (const key of Object.keys(feedDefaults) as FeedFieldKey[]) {
-      result[key] = parseDecimalInput(values[key]);
-    }
-    return result;
-  }, [values]);
-
-  const weightSum = feedWeightFields.reduce((sum, field) => sum + (parsedValues[field.key] ?? 0), 0);
-  const blockSize = feedSlotKeys.reduce((sum, key) => sum + (parsedValues[key] ?? 0), 0);
-  const hasInvalid = (Object.keys(feedDefaults) as FeedFieldKey[]).some((key) => {
-    const parsed = parsedValues[key];
-    const isSlot = (feedSlotKeys as ReadonlyArray<FeedFieldKey>).includes(key);
-    const min = key === 'noveltyHalfLifeHours' ? 0.1 : isSlot ? 1 : 0;
-    if (parsed === null || parsed < min) return true;
-    if (isSlot && !Number.isInteger(parsed)) return true;
-    return false;
-  });
-
-  const setField = (key: FeedFieldKey, raw: string) => {
-    setValues((current) => ({ ...current, [key]: raw }));
-  };
-
-  const formatField = (key: FeedFieldKey) => {
-    const parsed = parsedValues[key];
-    if (parsed !== null) setValues((current) => ({ ...current, [key]: formatDecimal(parsed) }));
-  };
-
-  const restoreDefaults = () => {
-    setValues(
-      Object.fromEntries(
-        (Object.keys(feedDefaults) as FeedFieldKey[]).map((key) => [key, formatDecimal(feedDefaults[key])]),
-      ) as Record<FeedFieldKey, string>,
-    );
-  };
+  const followed = draft?.followed ?? String(settings?.slots_followed ?? 6);
+  const discovery = draft?.discovery ?? String(settings?.slots_discovery ?? 4);
+  const followedCount = Number(followed);
+  const discoveryCount = Number(discovery);
+  const valid = Number.isInteger(followedCount) && followedCount >= 1 && followedCount <= 100
+    && Number.isInteger(discoveryCount) && discoveryCount >= 1 && discoveryCount <= 100;
+  const total = valid ? followedCount + discoveryCount : 0;
+  const followedPercent = total ? Math.round((followedCount / total) * 100) : 0;
+  const discoveryPercent = total ? 100 - followedPercent : 0;
 
   const save = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
-    if (mode === 'algorithm' && hasInvalid) {
-      setMessage({ type: 'error', text: 'Confira os valores: pesos não podem ser negativos, a meia-vida deve ser positiva e as vagas por bucket devem ser números inteiros a partir de 1.' });
+    if (!valid || !settings) {
+      setMessage({ type: 'error', text: 'Informe de 1 a 100 posições para cada origem.' });
       return;
     }
     updateMutation.mutate(
+      { slotsFollowed: followedCount, slotsDiscovery: discoveryCount, expectedUpdatedAt: settings.updated_at },
       {
-        mode,
-        weightAffinity: parsedValues.weightAffinity ?? feedDefaults.weightAffinity,
-        weightRetention: parsedValues.weightRetention ?? feedDefaults.weightRetention,
-        weightEngagement: parsedValues.weightEngagement ?? feedDefaults.weightEngagement,
-        weightNovelty: parsedValues.weightNovelty ?? feedDefaults.weightNovelty,
-        weightExploration: parsedValues.weightExploration ?? feedDefaults.weightExploration,
-        penaltyQuicklySkipped: parsedValues.penaltyQuicklySkipped ?? feedDefaults.penaltyQuicklySkipped,
-        penaltyAlreadyWatched: parsedValues.penaltyAlreadyWatched ?? feedDefaults.penaltyAlreadyWatched,
-        diversityCreatorPenalty: parsedValues.diversityCreatorPenalty ?? feedDefaults.diversityCreatorPenalty,
-        diversityTopicPenalty: parsedValues.diversityTopicPenalty ?? feedDefaults.diversityTopicPenalty,
-        noveltyHalfLifeHours: parsedValues.noveltyHalfLifeHours ?? feedDefaults.noveltyHalfLifeHours,
-        slotsInterest: parsedValues.slotsInterest ?? feedDefaults.slotsInterest,
-        slotsFollowed: parsedValues.slotsFollowed ?? feedDefaults.slotsFollowed,
-        slotsPopular: parsedValues.slotsPopular ?? feedDefaults.slotsPopular,
-        slotsExperimental: parsedValues.slotsExperimental ?? feedDefaults.slotsExperimental,
-      },
-      {
-        onSuccess: () =>
-          setMessage({ type: 'success', text: 'Configuração salva. O feed de todos os usuários já segue esta regra.' }),
-        onError: (error) =>
-          setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Não foi possível salvar.' }),
+        onSuccess: () => {
+          setDraft(null);
+          setMessage({ type: 'success', text: 'Distribuição salva. O feed usa esta configuração na próxima atualização.' });
+        },
+        onError: (error) => {
+          if (error instanceof Error && error.message.includes('feed_settings_changed')) {
+            setMessage({ type: 'error', text: 'Outra pessoa alterou o feed. Atualize a configuração e tente novamente.' });
+          } else {
+            setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Não foi possível salvar.' });
+          }
+        },
       },
     );
   };
@@ -1001,10 +777,10 @@ function FeedAlgorithmPage() {
         <div>
           <p className="section-label">Configuração</p>
           <h1>Feed</h1>
-          <span>Defina como o conteúdo aparece no feed de todos os usuários.</span>
+          <span>Defina a participação de seguidos e descoberta no feed principal.</span>
         </div>
         <div className="header-actions">
-          <button className="button secondary" type="button" onClick={() => refetch()} disabled={isFetching}>
+          <button className="button secondary" type="button" onClick={() => { setDraft(null); setMessage(null); void refetch(); }} disabled={isFetching}>
             <RefreshCw className={isFetching ? 'spin' : ''} size={16} />
             Atualizar
           </button>
@@ -1017,163 +793,69 @@ function FeedAlgorithmPage() {
         ) : isError ? (
           <div className="inline-alert danger" role="alert">
             <AlertTriangle size={18} />
-            Não foi possível carregar a configuração do feed. Verifique se a migration do feed foi aplicada.
+            Não foi possível carregar a distribuição do feed. Verifique a migração do backend.
           </div>
         ) : (
           <form className="feed-form" onSubmit={save}>
             <section className="feed-command-panel">
               <div className="feed-command-head">
                 <div>
-                  <span>Modo ativo</span>
-                  <h2>{mode === 'algorithm' ? 'Algoritmo' : 'Aleatório'}</h2>
-                </div>
-                <div className="feed-live-pill">
-                  <Rss size={14} />
-                  Tempo real
+                  <span>Ordenação</span>
+                  <h2>Mais recentes por origem</h2>
                 </div>
               </div>
-
-              <fieldset className="feed-mode" disabled={!canEdit}>
-                <legend className="sr-only">Modo do feed</legend>
-              <label className={`feed-mode-option ${mode === 'algorithm' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="feed-mode"
-                  value="algorithm"
-                  checked={mode === 'algorithm'}
-                  onChange={() => setMode('algorithm')}
-                />
-                <Sparkles size={18} />
-                <div>
-                  <strong>Algoritmo</strong>
-                  <span>Personalizado</span>
-                </div>
-              </label>
-              <label className={`feed-mode-option ${mode === 'random' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="feed-mode"
-                  value="random"
-                  checked={mode === 'random'}
-                  onChange={() => setMode('random')}
-                />
-                <Shuffle size={18} />
-                <div>
-                  <strong>Aleatório</strong>
-                  <span>Sem ranking</span>
-                </div>
-              </label>
-              </fieldset>
-
               <div className="feed-kpis">
-                <article>
-                  <span>Pesos</span>
-                  <strong>{formatDecimal(weightSum)}</strong>
-                </article>
-                <article>
-                  <span>Bloco</span>
-                  <strong>{blockSize || '—'}</strong>
-                </article>
-                <article>
-                  <span>Novidade</span>
-                  <strong>{formatDecimal(parsedValues.noveltyHalfLifeHours ?? feedDefaults.noveltyHalfLifeHours)}h</strong>
-                </article>
-                <article>
-                  <span>Status</span>
-                  <strong>{hasInvalid ? 'Revisar' : 'OK'}</strong>
-                </article>
+                <article><span>Seguidos</span><strong>{followedPercent}%</strong></article>
+                <article><span>Descoberta</span><strong>{discoveryPercent}%</strong></article>
+                <article><span>Bloco</span><strong>{total || '—'}</strong></article>
               </div>
             </section>
 
-            {mode === 'algorithm' && (
-              <>
-                <section className="feed-tuning-section">
-                  <div className="feed-section-head">
-                    <SlidersHorizontal size={18} />
-                    <div>
-                      <h2>Ranking</h2>
-                      <p>Soma {formatDecimal(weightSum)}</p>
-                    </div>
-                  </div>
-                  <div className="feed-grid">
-                    {feedWeightFields.map((field) => (
-                      <FeedField
-                        key={field.key}
-                        descriptor={field}
-                        value={values[field.key]}
-                        disabled={!canEdit}
-                        onChange={(raw) => setField(field.key, raw)}
-                        onBlurFormat={() => formatField(field.key)}
-                      />
-                    ))}
-                  </div>
-                </section>
+            <section className="feed-tuning-section">
+              <div className="feed-section-head">
+                <SlidersHorizontal size={18} />
+                <div>
+                  <h2>Distribuição</h2>
+                  <p>Seguidos têm prioridade. Se uma origem acabar, a outra preenche a lista.</p>
+                </div>
+              </div>
+              <div className="feed-grid">
+                <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
+                  <span>Posições de pessoas seguidas</span>
+                  <input type="number" min="1" max="100" step="1" value={followed} disabled={!canEdit}
+                    onChange={(event) => setDraft({ followed: event.target.value, discovery })} />
+                  <small>Inclui profissionais e pessoas comuns que o usuário segue.</small>
+                </label>
+                <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
+                  <span>Posições de descoberta</span>
+                  <input type="number" min="1" max="100" step="1" value={discovery} disabled={!canEdit}
+                    onChange={(event) => setDraft({ followed, discovery: event.target.value })} />
+                  <small>Profissionais e embaixadores públicos, principais ou associados.</small>
+                </label>
+              </div>
+            </section>
 
-                <section className="feed-tuning-section">
-                  <div className="feed-section-head">
-                    <SlidersHorizontal size={18} />
-                    <div>
-                      <h2>Ajustes</h2>
-                      <p>Repetição, histórico e diversidade</p>
-                    </div>
-                  </div>
-                  <div className="feed-grid">
-                    {feedTuningFields.map((field) => (
-                      <FeedField
-                        key={field.key}
-                        descriptor={field}
-                        value={values[field.key]}
-                        disabled={!canEdit}
-                        onChange={(raw) => setField(field.key, raw)}
-                        onBlurFormat={() => formatField(field.key)}
-                      />
-                    ))}
-                  </div>
-                </section>
-
-                <section className="feed-tuning-section">
-                  <div className="feed-section-head">
-                    <SlidersHorizontal size={18} />
-                    <div>
-                      <h2>Distribuição</h2>
-                      <p>{blockSize || '—'} posições por bloco</p>
-                    </div>
-                  </div>
-                  <div className="feed-grid">
-                    {feedSlotFields.map((field) => (
-                      <FeedField
-                        key={field.key}
-                        descriptor={field}
-                        value={values[field.key]}
-                        disabled={!canEdit}
-                        onChange={(raw) => setField(field.key, raw)}
-                        onBlurFormat={() => formatField(field.key)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              </>
-            )}
+            <section className="feed-tuning-section">
+              <div className="feed-section-head">
+                <Rss size={18} />
+                <div>
+                  <h2>Quem pode aparecer</h2>
+                  <p>O filtro de vertical escolhido no app vale para as duas origens. Bloqueios, denúncias e mídia indisponível continuam excluídos.</p>
+                </div>
+              </div>
+            </section>
 
             {canEdit && (
               <div className="feed-actions">
-                {mode === 'algorithm' && (
-                  <button className="button secondary" type="button" onClick={restoreDefaults}>
-                    <RefreshCw size={16} />
-                    Restaurar padrões
-                  </button>
-                )}
-                <button
-                  className="button primary"
-                  type="submit"
-                  disabled={updateMutation.isPending || (mode === 'algorithm' && hasInvalid)}
-                >
+                <button className="button secondary" type="button" onClick={() => setDraft({ followed: '6', discovery: '4' })}>
+                  <RefreshCw size={16} /> Restaurar proporção inicial
+                </button>
+                <button className="button primary" type="submit" disabled={updateMutation.isPending || !valid}>
                   {updateMutation.isPending ? <RefreshCw className="spin" size={16} /> : <CheckCircle2 size={16} />}
-                  Salvar configuração
+                  Salvar distribuição
                 </button>
               </div>
             )}
-
             {message && (
               <div className={`inline-alert ${message.type === 'error' ? 'danger' : ''}`} role="status">
                 {message.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
@@ -2307,7 +1989,7 @@ function AppShell() {
           />
         )}
         {activeSection === 'members' && <UsersDirectoryPage />}
-        {activeSection === 'feed' && <FeedAlgorithmPage />}
+        {activeSection === 'feed' && <FeedDistributionPage />}
         {activeSection === 'affinity-groups' && <AffinityGroupsPage />}
         {activeSection === 'protocol-catalog' && <ProtocolCatalogPage />}
         {activeSection === 'session-types' && <SessionTypesPage />}

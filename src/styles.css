@@ -2609,6 +2609,28 @@ svg text {
   border-color: rgb(var(--color-error));
 }
 
+.feed-field-card input[type='number'] {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgb(var(--color-outline-variant));
+  border-radius: 8px;
+  background: rgb(var(--color-surface-container));
+  color: rgb(var(--color-on-surface));
+  padding: 8px 12px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-field-card input[type='number']:focus-visible {
+  outline: 2px solid rgb(var(--color-primary));
+  outline-offset: 2px;
+}
+
+.feed-field-card small {
+  color: rgb(var(--color-on-surface-variant));
+  line-height: 1.4;
+}
+
 .feed-field-top {
   display: flex;
   min-width: 0;

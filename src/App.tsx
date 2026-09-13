@@ -13,7 +13,6 @@ import {
   Dumbbell,
   Gauge,
   HandCoins,
-  Handshake,
   KeyRound,
   LayoutDashboard,
   ListChecks,
@@ -91,7 +90,6 @@ import { CombatTechniquesPage } from './components/CombatTechniquesPage';
 import { ProfessionalCredentialsPage } from './components/ProfessionalCredentialsPage';
 import { ProfessionalSpecialtiesPage } from './components/ProfessionalSpecialtiesPage';
 import { LegalDocumentsPage } from './components/LegalDocumentsPage';
-import { ConsultancySettingsPage } from './components/ConsultancySettingsPage';
 import { MemberAreaOperationsPage } from './components/MemberAreaOperationsPage';
 import { DashboardPage } from './components/DashboardPages';
 import { isDashboardSection, type DashboardSectionId } from './lib/networkHealth';
@@ -142,7 +140,6 @@ const navItems = [
       { id: 'market-settings', label: 'Mercado', icon: ShoppingBag },
       { id: 'offering-types', label: 'Tipos de oferta', icon: HandCoins },
       { id: 'offerings', label: 'Ofertas', icon: ShoppingBag },
-      { id: 'consultancies', label: 'Consultorias', icon: Handshake },
       { id: 'ambassador-network', label: 'Rede de Embaixadores', icon: UsersRound },
       { id: 'ambassador-compensation', label: 'Remuneração', icon: HandCoins },
     ],
@@ -207,7 +204,6 @@ type SectionId =
   | 'market-settings'
   | 'offering-types'
   | 'offerings'
-  | 'consultancies'
   | 'ambassador-network'
   | 'ambassador-compensation'
   | 'finance'
@@ -1999,7 +1995,6 @@ function AppShell() {
         {activeSection === 'market-settings' && <MarketSettingsPage />}
         {activeSection === 'offering-types' && <OfferingTypesPage />}
         {activeSection === 'offerings' && <OfferingCatalogPage />}
-        {activeSection === 'consultancies' && <ConsultancySettingsPage />}
         {activeSection === 'ambassador-network' && <Suspense fallback={<div className="content ambassador-loading"><RefreshCw className="spin" size={24} aria-label="Carregando rede de embaixadores" /></div>}><AmbassadorNetworkPage /></Suspense>}
         {activeSection === 'ambassador-compensation' && <Suspense fallback={<div className="content ambassador-loading"><RefreshCw className="spin" size={24} aria-label="Carregando remuneração" /></div>}><AmbassadorCompensationPage /></Suspense>}
         {activeSection === 'finance' && <FinancePage />}

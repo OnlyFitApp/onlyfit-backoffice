@@ -524,7 +524,6 @@ const TABLE_LABELS: Record<string, string> = {
   student_workout_assignments: 'Treinos atribuídos',
   training_programs: 'Programas de treino',
   training_program_enrollments: 'Inscrições em programas',
-  composite_workouts: 'Treinos compostos',
   coach_relationships: 'Relação treinador–aluno',
   coach_exercises: 'Exercícios da biblioteca',
   diet_plans: 'Planos alimentares',

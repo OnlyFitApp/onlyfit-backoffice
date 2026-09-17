@@ -197,9 +197,11 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
     : thread?.externalParticipants ?? [];
   const editorRef = useRef<HTMLDivElement>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [mailboxId, setMailboxId] = useState(defaultMailbox?.id ?? '');
   const selectedMailbox = mailboxes.find((mailbox) => mailbox.id === mailboxId) ?? defaultMailbox;
-  const [senderName, setSenderName] = useState(defaultMailbox?.displayName ?? 'OnlyFit');
+  const [senderName, setSenderName] = useState(defaultMailbox?.displayName ?? '');
+  const effectiveSenderName = senderName || selectedMailbox?.displayName || 'OnlyFit';
   const [toInput, setToInput] = useState(thread ? replyAddresses.join(', ') : initialTo);
   const [ccInput, setCcInput] = useState('');
   const [bccInput, setBccInput] = useState('');
@@ -217,7 +219,7 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
   }), [bccInput, ccInput, toInput]);
   const invalid = [...recipients.to, ...recipients.cc, ...recipients.bcc].find((email) => !isValidEmail(email));
   const plainBody = html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-  const canSend = Boolean(selectedMailbox && senderName.trim() && recipients.to.length && !invalid && subject.trim() && plainBody && !sendMutation.isPending);
+  const canSend = Boolean(selectedMailbox && effectiveSenderName.trim() && recipients.to.length && !invalid && subject.trim() && plainBody && !sendMutation.isPending);
 
   const syncHtml = () => setHtml(editorRef.current?.innerHTML ?? '');
   const runCommand = (command: string, value?: string) => {
@@ -256,12 +258,12 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
     try {
       const result = await sendMutation.mutateAsync({
         from: selectedMailbox.email,
-        senderName: senderName.trim(),
+        senderName: effectiveSenderName.trim(),
         ...recipients,
         subject: subject.trim(),
         html,
         attachments: attachments.map(({ filename, contentType, contentBase64 }) => ({ filename, contentType, contentBase64 })),
-        idempotencyKey: crypto.randomUUID(),
+        idempotencyKey,
         threadId: thread?.id,
         replyToMessageId: latestMessage?.id,
       });
@@ -279,12 +281,12 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
       </div>
       <section className="email-address-panel">
         <div className="email-compose-row">
-          <label><span>De</span><select value={mailboxId} onChange={(event) => {
+          <label><span>De</span><select value={selectedMailbox?.id ?? ''} onChange={(event) => {
             setMailboxId(event.target.value);
             const mailbox = mailboxes.find((item) => item.id === event.target.value);
             if (mailbox) setSenderName(mailbox.displayName);
           }} disabled={Boolean(thread)}>{mailboxes.map((mailbox) => <option key={mailbox.id} value={mailbox.id}>{mailbox.email}</option>)}</select></label>
-          <label><span>Nome</span><input value={senderName} maxLength={80} onChange={(event) => setSenderName(event.target.value)} /></label>
+          <label><span>Nome</span><input value={effectiveSenderName} maxLength={80} onChange={(event) => setSenderName(event.target.value)} /></label>
         </div>
         <div className="email-recipient-row">
           <span>Para</span><input value={toInput} onChange={(event) => setToInput(event.target.value)} placeholder="email@exemplo.com" />

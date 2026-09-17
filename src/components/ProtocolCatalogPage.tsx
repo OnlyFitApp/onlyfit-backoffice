@@ -77,7 +77,8 @@ export function ProtocolCatalogPage() {
   }
 
   function openEdit(entry: ProtocolCatalogEntry) {
-    setDraft({ ...entry, isNew: false, defaultSteps: entry.defaultSteps.map((step) => ({ ...step })) });
+    const official = entry.id.startsWith('onlyfit_health_');
+    setDraft({ ...entry, id: official ? `${entry.id}_v2` : entry.id, isNew: official, defaultSteps: entry.defaultSteps.map((step) => ({ ...step })) });
     upsert.reset();
     setActive.reset();
   }
@@ -186,7 +187,7 @@ export function ProtocolCatalogPage() {
                       {canGovern ? (
                         <div className="pcat-row-actions">
                           <button className="button secondary compact" type="button" disabled={busy} onClick={() => openEdit(entry)}>
-                            <Pencil size={14} /> Editar
+                            <Pencil size={14} /> {entry.id.startsWith('onlyfit_health_') ? 'Nova versão' : 'Editar'}
                           </button>
                           <button
                             className={entry.active ? 'button danger compact' : 'button primary compact'}
@@ -309,13 +310,14 @@ export function ProtocolCatalogPage() {
                     <input
                       value={step.name}
                       placeholder="Etapa"
-                      maxLength={80}
+                      maxLength={160}
                       onChange={(event) => patchStep(index, { name: event.target.value })}
                     />
-                    <input
+                    <textarea
+                      rows={3}
                       value={step.instruction}
                       placeholder="Instrução"
-                      maxLength={120}
+                      maxLength={1000}
                       onChange={(event) => patchStep(index, { instruction: event.target.value })}
                     />
                     <input
@@ -325,8 +327,8 @@ export function ProtocolCatalogPage() {
                     />
                     <input
                       type="number"
-                      min={0}
-                      max={600}
+                      min={1}
+                      max={10080}
                       placeholder="min"
                       value={step.durationMinutes ?? ''}
                       onChange={(event) =>

@@ -19,6 +19,8 @@ test('responde na conversa existente e envia anexos', () => {
   assert.match(page, /threadId: thread\?\.id/);
   assert.match(page, /replyToMessageId: latestMessage\?\.id/);
   assert.match(page, /contentBase64/);
+  assert.match(page, /useState\(\(\) => crypto\.randomUUID\(\)\)/);
+  assert.match(page, /idempotencyKey,/);
   assert.match(sendApi, /threadId\?: string/);
   assert.match(sendApi, /replyToMessageId\?: string/);
   assert.match(sendApi, /attachments\?: Array<\{/);

@@ -13,6 +13,21 @@ Se o pedido incluir PR, merge ou deploy, siga o fluxo obrigatório do workspace:
 
 Migrations e Edge Functions pertencem ao `onlyfit-supabase` e são implantadas pelo GitHub Actions daquele repositório. Não execute deploy de backend a partir deste app.
 
+## Arquitetura por domínios
+
+Antes de criar ou alterar uma capacidade, consulte
+`../onlyfit-nova-arquitetura/ARQUITETURA-POR-DOMINIOS.md`,
+`DOMINIOS-E-CAPACIDADES.md` e as skills
+`skills/onlyfit-domain-ownership/SKILL.md` e
+`skills/onlyfit-evolve-capability/SKILL.md` no mesmo repositório documental
+(`OnlyFitApp/onlyfit-nova-arquitetura` no GitHub se o checkout irmão não existir).
+Identifique o domínio dono, confira a jornada e avalie reutilizar, adaptar ou
+estender o que já existe antes de criar outra estrutura. Considere escala,
+manutenção e recuperação conforme o fluxo. A arquitetura alvo tem cinco
+domínios e um schema por domínio; não mova módulos por conta própria. O
+backoffice opera dados dos cinco domínios; a tela não se torna proprietária do
+dado que administra.
+
 ## Fluxo obrigatório do Trello
 
 > Este fluxo só se aplica quando a atividade for escolhida no Trello, quando o

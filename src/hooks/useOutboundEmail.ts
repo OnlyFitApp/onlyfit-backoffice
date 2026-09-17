@@ -26,6 +26,9 @@ export function useSendOutboundEmail() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['sent-emails'] });
       void queryClient.invalidateQueries({ queryKey: ['sent-email'] });
+      void queryClient.invalidateQueries({ queryKey: ['email-mailboxes'] });
+      void queryClient.invalidateQueries({ queryKey: ['email-threads'] });
+      void queryClient.invalidateQueries({ queryKey: ['email-thread'] });
     },
   });
 }

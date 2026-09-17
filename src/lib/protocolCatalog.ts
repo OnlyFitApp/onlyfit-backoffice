@@ -99,10 +99,9 @@ function parse(value: unknown): ProtocolCatalogEntry {
 
 function stepPayload(steps: ProtocolStep[]) {
   return steps
-    .filter((step) => step.name.trim() && step.time.trim())
     .map((step) => ({
       name: step.name.trim(),
-      time: step.time.trim(),
+      ...(step.time.trim() ? { time: step.time.trim() } : {}),
       ...(step.instruction.trim() ? { instruction: step.instruction.trim() } : {}),
       ...(step.durationMinutes ? { duration_minutes: step.durationMinutes } : {}),
     }));
@@ -153,6 +152,9 @@ export function protocolCatalogErrorMessage(error: unknown): string {
   if (code.includes('catalog_description_required')) return 'A descrição é obrigatória e vai até 240 caracteres.';
   if (code.includes('catalog_icon_required')) return 'Escolha um ícone.';
   if (code.includes('invalid_protocol_flow')) return 'Fluxo inválido.';
+  if (code.includes('official_protocol_source_read_only')) return 'Publique uma nova versão com outra chave. A fonte existente preserva o histórico.';
+  if (code.includes('protocol_too_many_times')) return 'Use no máximo 24 horários distintos. Várias etapas podem compartilhar um horário.';
+  if (code.includes('invalid_official_protocol')) return 'Revise as etapas: nome, instrução, duração e horário precisam respeitar os limites do protocolo.';
   if (code.includes('default_steps_must_be_array')) return 'As etapas padrão vieram em formato inválido.';
   if (code.includes('protocol_catalog_entry_not_found')) return 'Essa entrada não existe mais no catálogo.';
   if (code.includes('staff_role_required')) return 'Seu perfil não tem permissão para manter o catálogo.';

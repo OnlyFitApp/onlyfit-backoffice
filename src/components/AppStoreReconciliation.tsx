@@ -8,6 +8,7 @@ const resultLabels: Record<string,string> = { matched: 'Conferido', missing_inte
 const errors: Record<string,string> = {
   apple_finance_disabled: 'A importação financeira Apple ainda não foi ativada no servidor.',
   apple_finance_credentials_missing: 'Configure a credencial Apple e o número de fornecedor no servidor.',
+  apple_finance_permission_required: 'A chave Apple precisa de permissão de Finanças para consultar relatórios.',
   apple_report_not_available: 'A Apple ainda não disponibilizou o relatório deste mês fiscal.',
   staff_mfa_required: 'Esta ação exige uma sessão administrativa com MFA.',
 };

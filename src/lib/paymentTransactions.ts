@@ -7,8 +7,8 @@ export type SettlementStatus =
 
 export type PaymentTransaction = {
   id: string;
-  provider: 'asaas' | 'stripe';
-  payment_method: 'card' | 'pix' | null;
+  provider: 'asaas' | 'stripe' | 'app_store' | 'free' | 'unknown';
+  payment_method: 'card' | 'pix' | 'app_store' | 'free' | null;
   provider_payment_id: string;
   asaas_payment_id: string;
   stripe_session_id: string | null;
@@ -81,8 +81,8 @@ function parseTransaction(value: unknown): PaymentTransaction {
   const row = asRecord(value);
   return {
     id: String(row.id ?? ''),
-    provider: row.provider === 'stripe' ? 'stripe' : 'asaas',
-    payment_method: row.payment_method === 'card' || row.payment_method === 'pix' ? row.payment_method : null,
+    provider: row.provider === 'stripe' || row.provider === 'asaas' || row.provider === 'app_store' || row.provider === 'free' ? row.provider : 'unknown',
+    payment_method: row.payment_method === 'card' || row.payment_method === 'pix' || row.payment_method === 'app_store' || row.payment_method === 'free' ? row.payment_method : null,
     provider_payment_id: String(row.provider_payment_id ?? row.asaas_payment_id ?? row.stripe_payment_intent_id ?? row.stripe_invoice_id ?? ''),
     asaas_payment_id: String(row.asaas_payment_id ?? ''),
     stripe_session_id: stringOrNull(row.stripe_session_id),
@@ -146,4 +146,12 @@ export function transactionStatusLabel(status: TransactionStatus): string {
     case 'chargeback': return 'Chargeback';
     default: return status;
   }
+}
+
+export function paymentProviderLabel(provider: PaymentTransaction['provider']): string {
+  return { asaas: 'Asaas', stripe: 'Stripe', app_store: 'App Store', free: 'Gratuito', unknown: 'Não identificado' }[provider];
+}
+
+export function paymentMethodLabel(method: PaymentTransaction['payment_method']): string {
+  return method ? { card: 'Cartão', pix: 'PIX', app_store: 'Compra no app', free: 'Gratuito' }[method] : '—';
 }

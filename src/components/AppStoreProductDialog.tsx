@@ -1,5 +1,6 @@
 import { AlertTriangle, RefreshCw, Save, ShoppingBag, X } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
+import { AppStorePreparation } from './AppStorePreparation';
 import { useUpsertAppStoreProduct } from '../hooks/useOfferingCatalog';
 import type {
   AppStoreProductStatus,
@@ -70,6 +71,9 @@ export function AppStoreProductDialog({ item, onCancel, onSaved }: Props) {
         </header>
 
         <section className="user-dialog-body">
+          {item.business_offering_id && <AppStorePreparation offeringId={item.business_offering_id} />}
+          <details>
+          <summary>Configuração manual existente</summary>
           <label className="user-dialog-field">
             <span>Product ID</span>
             <input
@@ -108,14 +112,15 @@ export function AppStoreProductDialog({ item, onCancel, onSaved }: Props) {
             </select>
           </label>
           {error && <div className="inline-alert danger" role="alert"><AlertTriangle size={18} />{error}</div>}
+          <button className="button secondary" type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? <RefreshCw className="spin" size={16} /> : <Save size={16} />}
+            Salvar configuração manual
+          </button>
+          </details>
         </section>
 
         <footer className="user-dialog-actions">
           <button className="button secondary" type="button" onClick={onCancel} disabled={mutation.isPending}>Cancelar</button>
-          <button className="button primary" type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? <RefreshCw className="spin" size={16} /> : <Save size={16} />}
-            Salvar
-          </button>
         </footer>
       </form>
     </>

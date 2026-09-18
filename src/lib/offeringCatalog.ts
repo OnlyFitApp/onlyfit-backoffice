@@ -1,9 +1,10 @@
 import { supabase } from './supabase';
+import type { AppStoreProductType } from './offeringMonetization';
+export type { AppStoreProductType } from './offeringMonetization';
 
 export type OfferingCatalogSource = 'business_offering';
 export type OfferingCatalogStatus = 'draft' | 'active' | 'paused' | 'archived';
 export type AppStoreProductStatus = 'pending' | 'ready' | 'retired';
-export type AppStoreProductType = 'auto_renewable_subscription' | 'non_consumable';
 
 export type OfferingCatalogItem = {
   source: OfferingCatalogSource;
@@ -206,7 +207,7 @@ export async function listOfferingCatalog(filters: OfferingCatalogFilters): Prom
         ios_fee_fixed_snapshot: numberOrNull(price.ios_fee_fixed_snapshot),
         ios_pricing_version: numberOrNull(price.ios_pricing_version),
         app_store_product_id: stringOrNull(product.product_id),
-        app_store_product_type: productType === 'auto_renewable_subscription' || productType === 'non_consumable'
+        app_store_product_type: productType === 'auto_renewable_subscription' || productType === 'non_consumable' || productType === 'non_renewing_subscription'
           ? productType
           : null,
         app_store_product_status: productStatus === 'pending' || productStatus === 'ready' || productStatus === 'retired'

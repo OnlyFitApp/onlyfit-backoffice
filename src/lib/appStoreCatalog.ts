@@ -32,6 +32,16 @@ export const catalogMessages: Record<string, string> = {
   apple_territory_configuration_conflict: 'Confira a disponibilidade na Apple. O fluxo atual atende compras em BRL no Brasil.',
   invalid_apple_description: 'Use uma descrição entre 1 e 45 caracteres.',
   invalid_apple_review_notes: 'Preencha as instruções de análise (até 4.000 caracteres).',
+  apple_app_version_required: 'O primeiro produto deste tipo exige uma nova versão do app disponível para envio. A revisão atual foi preservada.',
+  apple_app_build_required: 'Vincule uma build válida à versão do app antes de enviar este produto.',
+  apple_app_version_metadata_missing: 'Complete os metadados da versão do app antes de enviar.',
+  apple_review_submission_has_other_items: 'Já existe um envio em preparação com outros itens. Revise o conjunto no App Store Connect; nada foi enviado automaticamente.',
+  apple_review_in_progress: 'Este produto está em revisão na Apple. Aguarde a análise para alterar sua configuração; você pode atualizar o status.',
+  ambiguous_apple_iap_version: 'Há mais de uma versão editável desta compra na Apple. Confira antes de reenviar.',
+  ambiguous_apple_review_submission: 'Há mais de um envio em preparação na Apple. Confira antes de continuar.',
+  invalid_access_duration: 'Confira a duração do acesso da oferta antes de preparar na Apple.',
+  apple_product_type_conflict: 'O tipo cadastrado na Apple não corresponde à cobrança e ao prazo desta oferta.',
+  apple_pricing_incomplete: 'A Apple ainda exige dados de preço antes de aceitar o envio.',
 };
 
 export async function appStoreCatalogCommand(offeringId: string, action: CatalogAction): Promise<AppStoreCatalogState> {

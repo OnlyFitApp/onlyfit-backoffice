@@ -69,6 +69,7 @@ import {
   type OfferingTypeBilling,
 } from './lib/offeringTypes';
 import type { OfferingCatalogFilters, OfferingCatalogItem, OfferingCatalogSource, OfferingCatalogStatus } from './lib/offeringCatalog';
+import { offeringMonetization } from './lib/offeringMonetization';
 import { MfaGate } from './components/MfaGate';
 import { CredentialResetDialog } from './components/CredentialResetDialog';
 import type { CredentialResetAction } from './lib/credentialReset';
@@ -1398,7 +1399,7 @@ function OfferingCatalogPage() {
                       <th>Origem</th>
                       <th>Negócio</th>
                       <th>Preço base</th>
-                      <th>No app</th>
+                      <th>Compra no iPhone</th>
                       <th>Regra</th>
                       <th>Vendas</th>
                       <th>Comissão</th>
@@ -1419,6 +1420,7 @@ function OfferingCatalogPage() {
                         <td>{item.billing_type === 'free' ? 'Grátis' : formatCurrencyExact(item.price)}</td>
                         <td>
                           <strong>{item.ios_price == null ? '—' : formatCurrencyExact(item.ios_price)}</strong>
+                          <span title={offeringMonetization(item).reason}>{offeringMonetization(item).label}</span>
                           {item.ios_pricing_version != null ? <span>regra v{item.ios_pricing_version}</span> : null}
                         </td>
                         <td>{feeRuleText(item)}</td>
@@ -1435,8 +1437,7 @@ function OfferingCatalogPage() {
                         <td>
                           <div className="header-actions">
                             {item.business_offering_id
-                              && item.billing_type !== 'free'
-                              && ['premium_content', 'standalone_workout', 'standalone_diet', 'courses'].includes(item.offering_type ?? '') ? (
+                              && offeringMonetization(item).canPrepare ? (
                                 <button
                                   className="button secondary compact"
                                   type="button"

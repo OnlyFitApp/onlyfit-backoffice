@@ -567,7 +567,7 @@ export function userAdminErrorMessage(error: unknown): string {
   if (message.includes('forbidden')) return 'Seu papel no backoffice não permite esta ação.';
   if (message.includes('mfa_required')) return 'Refaça o login com verificação em duas etapas.';
   if (message.includes('username_taken')) return 'Este @usuário já pertence a outra conta.';
-  if (message.includes('invalid_username')) return 'O @usuário aceita apenas letras minúsculas, números e _ (mínimo 3 caracteres).';
+  if (message.includes('invalid_username')) return 'O @usuário aceita apenas letras minúsculas, números, ponto e _ (mínimo 3 caracteres).';
   if (message.includes('email_taken')) return 'Este e-mail já pertence a outra conta.';
   if (message.includes('invalid_email')) return 'Informe um e-mail válido.';
   if (message.includes('weak_password')) return 'A senha precisa de 8 caracteres com maiúscula, minúscula, número e símbolo.';
@@ -583,7 +583,7 @@ export function userAdminErrorMessage(error: unknown): string {
   if (message.includes('auth_update_failed')) return 'O cadastro foi salvo, mas o login não pôde ser atualizado.';
   if (message.includes('empty_patch')) return 'Nenhuma alteração para salvar.';
   if (message.startsWith('unsupported_field')) return `Campo não editável: ${message.split(':')[1] ?? ''}`.trim();
-  if (message.includes('profiles_username_format_check')) return 'O @usuário aceita apenas letras minúsculas, números e _.';
+  if (message.includes('profiles_username_format_check')) return 'O @usuário aceita apenas letras minúsculas, números, ponto e _.';
   if (message.includes('profiles_professional_credentials_check')) return 'Especialidade profissional exige também o conselho.';
   if (message.includes('profiles_account_kind_check')) return 'Tipo de conta inválido.';
   return 'Não foi possível concluir a operação. Verifique os dados e tente novamente.';

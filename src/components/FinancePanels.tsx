@@ -36,6 +36,7 @@ import {
 import { usePaymentTransactions } from '../hooks/usePaymentTransactions';
 import { useAsaasIntegrationStatus, useSetAsaasCredentials } from '../hooks/useAsaasIntegration';
 import { useFinancialReconciliationRuns, useRecordTreasuryMovement, useRunFinancialReconciliation } from '../hooks/useFinancialReconciliation';
+import { AppStoreReconciliation } from './AppStoreReconciliation';
 import { useFinancialReports } from '../hooks/useFinancialReports';
 
 function formatDay(value: string): string {
@@ -357,6 +358,7 @@ export function FinancialReconciliationPanel({ canEdit }: { canEdit: boolean }) 
           </div>
         ) : null}
       </div>
+      <AppStoreReconciliation canEdit={canEdit} />
       {run.isError ? <div className="inline-alert danger" role="alert"><AlertTriangle size={18} />Não foi possível executar a conciliação.</div> : null}
       {canEdit ? <form className="finance-treasury-form" onSubmit={(event) => {
         event.preventDefault();

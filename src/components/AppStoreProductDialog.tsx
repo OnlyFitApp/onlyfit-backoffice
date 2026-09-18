@@ -2,9 +2,9 @@ import { AlertTriangle, RefreshCw, Save, ShoppingBag, X } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { AppStorePreparation } from './AppStorePreparation';
 import { useUpsertAppStoreProduct } from '../hooks/useOfferingCatalog';
+import { appStoreProductTypeLabel, offeringMonetization } from '../lib/offeringMonetization';
 import type {
   AppStoreProductStatus,
-  AppStoreProductType,
   OfferingCatalogItem,
 } from '../lib/offeringCatalog';
 
@@ -15,9 +15,11 @@ type Props = {
 };
 
 export function AppStoreProductDialog({ item, onCancel, onSaved }: Props) {
-  const expectedType: AppStoreProductType = item.billing_type === 'recurring'
-    ? 'auto_renewable_subscription'
-    : 'non_consumable';
+  const monetization = offeringMonetization(item);
+  const expectedType = monetization.productType;
+  // The legacy manual RPC supports only permanent/recurring mappings.
+  // Timed purchases must use the canonical worker, which also snapshots access days.
+  const manualSupported = expectedType !== null && expectedType !== 'non_renewing_subscription';
   const [productId, setProductId] = useState(item.app_store_product_id ?? '');
   const [status, setStatus] = useState<AppStoreProductStatus>(item.app_store_product_status ?? 'pending');
   const [price, setPrice] = useState(String(item.ios_price ?? ''));
@@ -28,6 +30,7 @@ export function AppStoreProductDialog({ item, onCancel, onSaved }: Props) {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError('');
+    if (!manualSupported || !expectedType) return;
     const parsedPrice = price.trim() ? Number(price.replace(',', '.')) : null;
     if (!productId.trim()) {
       setError('Informe o Product ID criado no App Store Connect.');
@@ -71,8 +74,10 @@ export function AppStoreProductDialog({ item, onCancel, onSaved }: Props) {
         </header>
 
         <section className="user-dialog-body">
-          {item.business_offering_id && <AppStorePreparation offeringId={item.business_offering_id} />}
-          <details>
+          <p>{monetization.label}</p>
+          {monetization.reason && <p>{monetization.reason}</p>}
+          {monetization.canPrepare && item.business_offering_id && <AppStorePreparation offeringId={item.business_offering_id} />}
+          {manualSupported && <details>
           <summary>Configuração manual existente</summary>
           <label className="user-dialog-field">
             <span>Product ID</span>
@@ -86,7 +91,7 @@ export function AppStoreProductDialog({ item, onCancel, onSaved }: Props) {
           </label>
           <label className="user-dialog-field">
             <span>Tipo</span>
-            <input value={expectedType === 'auto_renewable_subscription' ? 'Assinatura renovável' : 'Compra única'} disabled />
+            <input value={expectedType ? appStoreProductTypeLabel(expectedType) : ''} disabled />
           </label>
           <label className="user-dialog-field">
             <span>Preço na Apple</span>
@@ -116,7 +121,7 @@ export function AppStoreProductDialog({ item, onCancel, onSaved }: Props) {
             {mutation.isPending ? <RefreshCw className="spin" size={16} /> : <Save size={16} />}
             Salvar configuração manual
           </button>
-          </details>
+          </details>}
         </section>
 
         <footer className="user-dialog-actions">

@@ -18,6 +18,8 @@ import { supabase } from '../lib/supabase';
 import { payoutStatusLabel, type PayoutRequest } from '../lib/payouts';
 import {
   transactionStatusLabel,
+  paymentProviderLabel,
+  paymentMethodLabel,
   type SettlementStatus,
   type TransactionStatus,
 } from '../lib/paymentTransactions';
@@ -37,6 +39,7 @@ import { usePaymentTransactions } from '../hooks/usePaymentTransactions';
 import { useAsaasIntegrationStatus, useSetAsaasCredentials } from '../hooks/useAsaasIntegration';
 import { useFinancialReconciliationRuns, useRecordTreasuryMovement, useRunFinancialReconciliation } from '../hooks/useFinancialReconciliation';
 import { AppStoreReconciliation } from './AppStoreReconciliation';
+import { AppStoreTransactionsPanel } from './AppStoreTransactionsPanel';
 import { useFinancialReports } from '../hooks/useFinancialReports';
 
 function formatDay(value: string): string {
@@ -761,6 +764,17 @@ const SETTLE_STATUS_OPTIONS: { value: SettlementStatus | ''; label: string }[] =
 const PAGE_SIZE = 50;
 
 export function TransactionsPanel() {
+  const [view, setView] = useState<'payments' | 'apple'>('payments');
+  return <>
+    <div className="finance-tabs" role="tablist" aria-label="Tipo de transação">
+      <button type="button" role="tab" aria-selected={view === 'payments'} onClick={() => setView('payments')}>Pagamentos</button>
+      <button type="button" role="tab" aria-selected={view === 'apple'} onClick={() => setView('apple')}>App Store</button>
+    </div>
+    {view === 'apple' ? <AppStoreTransactionsPanel /> : <PaymentTransactionsPanel />}
+  </>;
+}
+
+function PaymentTransactionsPanel() {
   const [status, setStatus] = useState<TransactionStatus | ''>('');
   const [settlementStatus, setSettlementStatus] = useState<SettlementStatus | ''>('');
   const [page, setPage] = useState(0);
@@ -852,8 +866,8 @@ export function TransactionsPanel() {
                       <span>{tx.billing_type === 'recurring' ? 'Assinatura' : 'Única'}</span>
                     </td>
                     <td>
-                      <strong>{tx.provider === 'stripe' ? 'Stripe' : 'Asaas'}</strong>
-                      <span>{tx.payment_method === 'pix' ? 'PIX' : tx.payment_method === 'card' ? 'Cartão' : '—'}</span>
+                      <strong>{paymentProviderLabel(tx.provider)}</strong>
+                      <span>{paymentMethodLabel(tx.payment_method)}</span>
                     </td>
                     <td>{tx.professional_name}</td>
                     <td>{tx.buyer_name}</td>

@@ -37,6 +37,10 @@ export type UpdatePlatformStaffResult = {
   staff: PlatformStaffMember;
 };
 
+export type RemovePlatformStaffResult = {
+  userId: string;
+};
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
@@ -117,4 +121,16 @@ export async function updatePlatformStaff(input: UpdatePlatformStaffInput): Prom
   const result = asRecord(data);
   if (result.error) throw new Error(String(result.error));
   return { staff: parseStaffMember(result.staff) };
+}
+
+export async function removePlatformStaff(userId: string): Promise<RemovePlatformStaffResult> {
+  const { data, error } = await supabase.functions.invoke('control-platform-staff', {
+    method: 'DELETE',
+    body: { user_id: userId },
+  });
+  if (error) return throwFunctionError(error);
+
+  const result = asRecord(data);
+  if (result.error) throw new Error(String(result.error));
+  return { userId: String(result.user_id ?? userId) };
 }

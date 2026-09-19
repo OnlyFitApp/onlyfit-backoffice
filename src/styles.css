@@ -3117,6 +3117,47 @@ svg text {
   background: rgb(var(--color-error) / 0.22);
 }
 
+/* Exclusão de conta é inequívoca pelo rótulo e pela confirmação digitada.
+   O controle não usa vermelho, reservando-o aos erros. */
+.button.account-delete-button {
+  border: 1px solid rgb(var(--color-warning) / 0.48);
+  background: rgb(var(--color-warning) / 0.14);
+  color: rgb(var(--color-warning));
+}
+
+.button.account-delete-button:not(:disabled):hover {
+  background: rgb(var(--color-warning) / 0.22);
+}
+
+.button.staff-remove-button,
+.staff-remove-control {
+  color: rgb(var(--color-warning));
+}
+
+.button.staff-remove-button {
+  border: 1px solid rgb(var(--color-warning) / 0.48);
+  background: rgb(var(--color-warning) / 0.14);
+}
+
+.button.staff-remove-button:not(:disabled):hover,
+.staff-remove-control:not(:disabled):hover {
+  background: rgb(var(--color-warning) / 0.16);
+}
+
+.status-icon.account-delete-icon {
+  background: rgb(var(--color-warning) / 0.14);
+  color: rgb(var(--color-warning));
+}
+
+.inline-alert.account-delete-notice {
+  border-color: rgb(var(--color-warning) / 0.4);
+  background: rgb(var(--color-warning) / 0.1);
+}
+
+.inline-alert.account-delete-notice svg {
+  color: rgb(var(--color-warning));
+}
+
 .role-badge.alert {
   background: rgb(var(--color-error) / 0.14);
   color: rgb(var(--color-error));

@@ -788,6 +788,7 @@ export function UserDetail({
   const profile = overview.profile;
   const name = displayName(profile);
   const initials = name.slice(0, 2).toUpperCase();
+  const isStaffAccount = Boolean(overview.staff_role);
 
   return (
     <>
@@ -845,8 +846,8 @@ export function UserDetail({
               Resetar MFA
             </button>
           )}
-          {canDelete && (
-            <button className="button danger" type="button" onClick={() => setDeleting(true)}>
+          {canDelete && !isStaffAccount && (
+            <button className="button account-delete-button" type="button" onClick={() => setDeleting(true)}>
               <Trash2 size={16} />
               Excluir conta
             </button>

@@ -56,6 +56,7 @@ import { useFeedDistributionSettings, useUpdateFeedDistributionSettings } from '
 import {
   useCreatePlatformStaff,
   useCurrentStaffRole,
+  useRemovePlatformStaff,
   useStaffList,
   useUpdatePlatformStaff,
 } from './hooks/useStaffManagement';
@@ -1545,6 +1546,7 @@ function staffErrorMessage(error: unknown): string {
   if (message.includes('invalid_email')) return 'Informe um e-mail válido.';
   if (message.includes('email_already_exists')) return 'Este e-mail já pertence a outra conta da plataforma.';
   if (message.includes('last_super_admin')) return 'O último superadministrador não pode perder esse papel.';
+  if (message.includes('cannot_remove_self')) return 'Você não pode remover o próprio acesso interno.';
   if (message.includes('staff_not_found')) return 'Este acesso interno não existe mais. Atualize a lista.';
   if (message.includes('forbidden')) return 'Somente superadministradores podem gerenciar a equipe.';
   return 'Não foi possível salvar o usuário. Verifique os dados e tente novamente.';
@@ -1557,7 +1559,9 @@ function UsersPage() {
   const { data: staff = [], isLoading, isError, refetch, isFetching } = useStaffList(canManage);
   const createMutation = useCreatePlatformStaff();
   const updateMutation = useUpdatePlatformStaff();
+  const removeMutation = useRemovePlatformStaff();
   const [resetTarget, setResetTarget] = useState<{ member: PlatformStaffMember; action: CredentialResetAction } | null>(null);
+  const [removingMember, setRemovingMember] = useState<PlatformStaffMember | null>(null);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
@@ -1634,6 +1638,21 @@ function UsersPage() {
         onError: (error) => setMessage({ type: 'error', text: staffErrorMessage(error) }),
       },
     );
+  };
+
+  const removeInternalAccess = () => {
+    if (!removingMember) return;
+    setMessage(null);
+    removeMutation.mutate(removingMember.user_id, {
+      onSuccess: () => {
+        setMessage({
+          type: 'success',
+          text: `O acesso de ${removingMember.full_name || removingMember.email || 'usuário'} ao backoffice foi removido. A conta da plataforma foi preservada.`,
+        });
+        setRemovingMember(null);
+      },
+      onError: (error) => setMessage({ type: 'error', text: staffErrorMessage(error) }),
+    });
   };
 
   return (
@@ -1804,6 +1823,28 @@ function UsersPage() {
               </section>
             )}
 
+            {removingMember && (
+              <section className="staff-edit-panel" aria-labelledby="staff-remove-title">
+                <div className="staff-create-copy">
+                  <ShieldOff size={20} />
+                  <div>
+                    <h2 id="staff-remove-title">Remover acesso ao backoffice</h2>
+                    <p>A conta continua ativa na plataforma OnlyFit; somente o acesso interno será removido.</p>
+                  </div>
+                </div>
+                <div className="staff-form-actions">
+                  <button className="button staff-remove-button" type="button" onClick={removeInternalAccess} disabled={removeMutation.isPending}>
+                    {removeMutation.isPending ? <RefreshCw className="spin" size={16} /> : <ShieldOff size={16} />}
+                    Remover acesso de {removingMember.full_name || removingMember.email || 'usuário'}
+                  </button>
+                  <button className="button secondary" type="button" onClick={() => setRemovingMember(null)} disabled={removeMutation.isPending}>
+                    <X size={16} />
+                    Cancelar
+                  </button>
+                </div>
+              </section>
+            )}
+
             <section className="staff-list-section" aria-labelledby="staff-list-title">
               <div className="section-heading">
                 <div>
@@ -1871,6 +1912,17 @@ function UsersPage() {
                             >
                               <Pencil size={16} />
                             </button>
+                            {member.user_id !== currentUser?.id && (
+                              <button
+                                className="icon-button table-action staff-remove-control"
+                                type="button"
+                                title={`Remover ${member.full_name || member.email || 'usuário'} do backoffice sem apagar a conta da plataforma`}
+                                aria-label={`Remover ${member.full_name || member.email || 'usuário'} do backoffice`}
+                                onClick={() => setRemovingMember(member)}
+                              >
+                                <ShieldOff size={16} />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}

@@ -73,7 +73,7 @@ export function UserDeleteDialog({
       <button className="scrim" type="button" aria-label="Fechar" onClick={() => !deleteMutation.isPending && onCancel()} />
       <div className="user-dialog" role="dialog" aria-modal="true" aria-labelledby="user-delete-title">
         <header className="user-dialog-head">
-          <div className="status-icon danger"><AlertTriangle size={22} /></div>
+          <div className="status-icon account-delete-icon"><Trash2 size={22} /></div>
           <div>
             <h2 id="user-delete-title">Excluir a conta de {name}?</h2>
             <p>
@@ -117,7 +117,7 @@ export function UserDeleteDialog({
           )}
 
           {hasFinance && (
-            <div className="inline-alert danger" role="note">
+            <div className="inline-alert account-delete-notice" role="note">
               <AlertTriangle size={18} />
               <span>
                 Há histórico financeiro: {formatNumber(financeRows.purchases_count ?? 0)} compra(s) de{' '}
@@ -160,7 +160,7 @@ export function UserDeleteDialog({
             Cancelar
           </button>
           <button
-            className="button danger"
+            className="button account-delete-button"
             type="button"
             onClick={submit}
             disabled={!confirmed || deleteMutation.isPending || footprintQuery.isLoading || footprintQuery.isError}

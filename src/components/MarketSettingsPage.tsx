@@ -1,8 +1,11 @@
 import {
   AlertTriangle,
+  BadgeCheck,
+  Building2,
   Check,
   Megaphone,
   Plus,
+  Pencil,
   RefreshCw,
   Save,
   Shuffle,
@@ -10,10 +13,15 @@ import {
   Sparkles,
   Tags,
   Ticket,
+  Trash2,
 } from 'lucide-react';
 import { CSSProperties, FormEvent, useState } from 'react';
 import {
   useMarketAlgorithmSettings,
+  useDeleteOfficialMarketStore,
+  useOfficialMarketStores,
+  useOfficialStoreOrganizations,
+  useSaveOfficialMarketStore,
   useAdBookings,
   useAdInventory,
   useProductCategories,
@@ -22,7 +30,8 @@ import {
   useSetAdPackage,
   useSetAdPlacement,
 } from '../hooks/useMarketSettings';
-import type { AdBooking, AdPackage, AdPlacement, MarketAlgorithmInput, ProductCategory } from '../lib/marketSettings';
+import type { AdBooking, AdPackage, AdPlacement, MarketAlgorithmInput, OfficialMarketStore, OfficialMarketStoreInput, ProductCategory } from '../lib/marketSettings';
+import { uploadOfficialStoreAsset } from '../lib/marketSettings';
 import { useCurrentStaffRole } from '../hooks/useStaffManagement';
 import { formatNumber } from '../lib/format';
 
@@ -69,6 +78,12 @@ const allFields: readonly FieldDescriptor[] = [...weightFields, ...tuningFields]
 
 const emptyCategory: ProductCategory = { slug: '', label: '', icon: 'package', sort_order: 100, is_active: true };
 
+const emptyOfficialStore: OfficialMarketStoreInput = {
+  organization_id: '', slug: '', name: '', tagline: '', category: '', logo_url: null,
+  cover_image_url: null, website_url: null, sponsor_tier: 'official', badge_label: 'Loja oficial',
+  sort_order: 100, active: true, starts_at: null, ends_at: null,
+};
+
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const placementLabel = (value: string) =>
@@ -91,16 +106,18 @@ export function MarketSettingsPage() {
   const categories = useProductCategories();
   const adInventory = useAdInventory();
   const adBookings = useAdBookings();
+  const officialStores = useOfficialMarketStores();
 
   const refreshAll = () => {
     void settings.refetch();
     void categories.refetch();
     void adInventory.refetch();
     void adBookings.refetch();
+    void officialStores.refetch();
   };
 
   const refreshing =
-    settings.isFetching || categories.isFetching || adInventory.isFetching || adBookings.isFetching;
+    settings.isFetching || categories.isFetching || adInventory.isFetching || adBookings.isFetching || officialStores.isFetching;
 
   return (
     <>
@@ -108,7 +125,7 @@ export function MarketSettingsPage() {
         <div>
           <p className="section-label">Configuração</p>
           <h1>Mercado</h1>
-          <span>Ranking do catálogo, inventário de publicidade e categorias dos produtos físicos.</span>
+          <span>Lojas oficiais, ranking do catálogo, publicidade e categorias de produtos.</span>
         </div>
         <div className="header-actions">
           <button className="button secondary" type="button" onClick={refreshAll} disabled={refreshing}>
@@ -119,6 +136,12 @@ export function MarketSettingsPage() {
 
       <section className="content market-page">
         <AlgorithmSection query={settings} canEdit={canEdit} />
+        <OfficialStoresSection
+          stores={officialStores.data ?? []}
+          loading={officialStores.isLoading}
+          error={officialStores.isError}
+          canEdit={canEdit}
+        />
         <AdvertisingSection
           inventory={adInventory.data ?? []}
           loading={adInventory.isLoading}
@@ -349,6 +372,159 @@ function RangeField({
         </span>
       </div>
     </label>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Lojas oficiais                                                     */
+/* ------------------------------------------------------------------ */
+
+function OfficialStoresSection({
+  stores,
+  loading,
+  error,
+  canEdit,
+}: {
+  stores: OfficialMarketStore[];
+  loading: boolean;
+  error: boolean;
+  canEdit: boolean;
+}) {
+  const saveStore = useSaveOfficialMarketStore();
+  const deleteStore = useDeleteOfficialMarketStore();
+  const [editing, setEditing] = useState<OfficialMarketStoreInput | null>(null);
+  const [organizationQuery, setOrganizationQuery] = useState('');
+  const organizations = useOfficialStoreOrganizations(organizationQuery);
+  const [feedback, setFeedback] = useState<Feedback>(null);
+  const [uploading, setUploading] = useState<'logo' | 'cover' | null>(null);
+
+  const startCreate = () => {
+    setEditing({ ...emptyOfficialStore });
+    setOrganizationQuery('');
+    setFeedback(null);
+  };
+
+  const startEdit = (store: OfficialMarketStore) => {
+    const { organization_name, organization_slug, organization_status, ...input } = store;
+    void organization_name;
+    void organization_slug;
+    void organization_status;
+    setEditing(input);
+    setOrganizationQuery(store.organization_name);
+    setFeedback(null);
+  };
+
+  const update = <K extends keyof OfficialMarketStoreInput>(key: K, value: OfficialMarketStoreInput[K]) =>
+    setEditing((current) => current ? { ...current, [key]: value } : current);
+
+  const upload = async (file: File | undefined, kind: 'logo' | 'cover') => {
+    if (!file || !editing) return;
+    setUploading(kind);
+    setFeedback(null);
+    try {
+      const key = editing.slug || editing.name || 'nova-loja';
+      const url = await uploadOfficialStoreAsset(file, key, kind);
+      update(kind === 'logo' ? 'logo_url' : 'cover_image_url', url);
+    } catch (uploadError) {
+      setFeedback({ tone: 'danger', text: uploadError instanceof Error ? uploadError.message : 'Não foi possível enviar a imagem.' });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!editing) return;
+    if (!editing.organization_id || editing.name.trim().length < 2 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(editing.slug)) {
+      setFeedback({ tone: 'danger', text: 'Informe organização, nome e um slug válido.' });
+      return;
+    }
+    setFeedback(null);
+    saveStore.mutate(editing, {
+      onSuccess: () => {
+        setFeedback({ tone: 'ok', text: 'Loja oficial salva.' });
+        setEditing(null);
+      },
+      onError: (saveError) => setFeedback({ tone: 'danger', text: saveError instanceof Error ? saveError.message : 'Não foi possível salvar.' }),
+    });
+  };
+
+  const remove = (store: OfficialMarketStore) => {
+    if (!window.confirm(`Apagar a loja oficial “${store.name}”?`)) return;
+    setFeedback(null);
+    deleteStore.mutate(store.id, {
+      onSuccess: () => setFeedback({ tone: 'ok', text: 'Loja oficial apagada.' }),
+      onError: (deleteError) => setFeedback({ tone: 'danger', text: deleteError instanceof Error ? deleteError.message : 'Não foi possível apagar.' }),
+    });
+  };
+
+  return (
+    <MarketPanel icon={Building2} title="Lojas oficiais" meta={`${stores.length} loja(s)`}>
+      <div className="official-store-toolbar">
+        <p>Marcas destacadas no Mercado, sempre vinculadas a uma organização.</p>
+        {canEdit && (
+          <button className="button primary" type="button" onClick={startCreate}>
+            <Plus size={16} /> Nova loja
+          </button>
+        )}
+      </div>
+
+      {error ? (
+        <div className="inline-alert danger" role="alert"><AlertTriangle size={18} /> Não foi possível carregar as lojas oficiais.</div>
+      ) : loading ? (
+        <div className="skeleton market-skeleton" />
+      ) : stores.length === 0 ? (
+        <p className="market-empty"><Building2 size={20} aria-hidden="true" /> Nenhuma loja oficial cadastrada</p>
+      ) : (
+        <div className="official-store-grid">
+          {stores.map((store) => (
+            <article className="official-store-card" key={store.id}>
+              <div className="official-store-logo">
+                {store.logo_url ? <img src={store.logo_url} alt="" /> : <span>{store.name.charAt(0)}</span>}
+              </div>
+              <div className="official-store-copy">
+                <span><BadgeCheck size={13} /> {store.badge_label}</span>
+                <strong>{store.name}</strong>
+                <small>{store.organization_name} · {store.category || 'Sem categoria'}</small>
+              </div>
+              <span className={`market-pill ${store.active ? 'ok' : 'muted'}`}>{store.active ? 'Ativa' : 'Inativa'}</span>
+              {canEdit && (
+                <div className="official-store-actions">
+                  <button className="icon-button" type="button" aria-label={`Editar ${store.name}`} onClick={() => startEdit(store)}><Pencil size={15} /></button>
+                  <button className="icon-button danger" type="button" aria-label={`Apagar ${store.name}`} disabled={deleteStore.isPending} onClick={() => remove(store)}><Trash2 size={15} /></button>
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+
+      {editing && canEdit && (
+        <form className="official-store-editor" onSubmit={submit}>
+          <header className="official-store-editor-head">
+            <div><span>{editing.id ? 'Editar loja' : 'Nova loja'}</span><h3>{editing.name || 'Loja oficial'}</h3></div>
+            <button className="button ghost" type="button" onClick={() => setEditing(null)}>Cancelar</button>
+          </header>
+          <div className="official-store-form-grid">
+            <label className="market-field wide"><span>Buscar organização</span><input value={organizationQuery} onChange={(event) => setOrganizationQuery(event.target.value)} placeholder="Nome ou slug" /></label>
+            <label className="market-field wide"><span>Organização</span><select required value={editing.organization_id} onChange={(event) => update('organization_id', event.target.value)}><option value="">Selecione</option>{organizations.data?.map((organization) => <option key={organization.id} value={organization.id}>{organization.name} · {organization.status}</option>)}</select></label>
+            <label className="market-field"><span>Nome</span><input required maxLength={96} value={editing.name} onChange={(event) => { const name = event.target.value; update('name', name); if (!editing.id) update('slug', name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')); }} /></label>
+            <label className="market-field"><span>Slug</span><input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={editing.slug} onChange={(event) => update('slug', event.target.value.toLowerCase())} /></label>
+            <label className="market-field"><span>Categoria</span><input maxLength={80} value={editing.category ?? ''} onChange={(event) => update('category', event.target.value)} /></label>
+            <label className="market-field"><span>Ordem</span><input type="number" value={editing.sort_order} onChange={(event) => update('sort_order', Number(event.target.value))} /></label>
+            <label className="market-field wide"><span>Frase curta</span><input maxLength={180} value={editing.tagline ?? ''} onChange={(event) => update('tagline', event.target.value)} /></label>
+            <label className="market-field"><span>Selo</span><input required maxLength={40} value={editing.badge_label} onChange={(event) => update('badge_label', event.target.value)} /></label>
+            <label className="market-field"><span>Nível</span><select value={editing.sponsor_tier} onChange={(event) => update('sponsor_tier', event.target.value as OfficialMarketStoreInput['sponsor_tier'])}><option value="official">Oficial</option><option value="premium">Premium</option><option value="founding">Fundadora</option></select></label>
+            <label className="market-field wide"><span>Site HTTPS</span><input type="url" value={editing.website_url ?? ''} onChange={(event) => update('website_url', event.target.value || null)} /></label>
+            <label className="market-field upload-field"><span>Logo</span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={uploading !== null} onChange={(event) => void upload(event.target.files?.[0], 'logo')} />{editing.logo_url && <img src={editing.logo_url} alt="Prévia da logo" />}</label>
+            <label className="market-field upload-field"><span>Capa opcional</span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={uploading !== null} onChange={(event) => void upload(event.target.files?.[0], 'cover')} />{editing.cover_image_url && <img src={editing.cover_image_url} alt="Prévia da capa" />}</label>
+            <SwitchField label="Loja ativa" checked={editing.active} disabled={false} onChange={(value) => update('active', value)} />
+          </div>
+          <footer className="market-form-actions"><FeedbackLine feedback={feedback} /><button className="button primary" type="submit" disabled={saveStore.isPending || uploading !== null}>{saveStore.isPending ? <RefreshCw className="spin" size={16} /> : <Save size={16} />} Salvar loja</button></footer>
+        </form>
+      )}
+      {!editing && <FeedbackLine feedback={feedback} />}
+    </MarketPanel>
   );
 }
 

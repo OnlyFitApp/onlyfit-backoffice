@@ -59,6 +59,40 @@ export type AdBooking = {
   transaction_id: string | null;
 };
 
+export type OfficialMarketStore = {
+  id: string;
+  organization_id: string;
+  organization_name: string;
+  organization_slug: string;
+  organization_status: string;
+  slug: string;
+  name: string;
+  tagline: string | null;
+  category: string | null;
+  logo_url: string | null;
+  cover_image_url: string | null;
+  website_url: string | null;
+  sponsor_tier: 'official' | 'premium' | 'founding';
+  badge_label: string;
+  sort_order: number;
+  active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+};
+
+export type OfficialStoreOrganization = {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  status: string;
+};
+
+export type OfficialMarketStoreInput = Omit<
+  OfficialMarketStore,
+  'id' | 'organization_name' | 'organization_slug' | 'organization_status'
+> & { id?: string };
+
 const numberFrom = (value: unknown) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -180,4 +214,69 @@ export async function listAdBookings(): Promise<{ items: AdBooking[]; total: num
     items: (result.items ?? []) as AdBooking[],
     total: numberFrom(result.total),
   };
+}
+
+export async function listOfficialMarketStores(): Promise<OfficialMarketStore[]> {
+  const { data, error } = await supabase.rpc('control_list_official_market_stores', {
+    p_limit: 200,
+    p_offset: 0,
+  });
+  if (error) throw error;
+  const result = (data ?? {}) as { items?: OfficialMarketStore[] };
+  return result.items ?? [];
+}
+
+export async function searchOfficialStoreOrganizations(query = ''): Promise<OfficialStoreOrganization[]> {
+  const { data, error } = await supabase.rpc('control_search_official_store_organizations', {
+    p_query: query.trim() || null,
+    p_limit: 30,
+  });
+  if (error) throw error;
+  return (data ?? []) as OfficialStoreOrganization[];
+}
+
+export async function saveOfficialMarketStore(input: OfficialMarketStoreInput): Promise<void> {
+  const { error } = await supabase.rpc('control_upsert_official_market_store', {
+    p_id: input.id ?? null,
+    p_organization_id: input.organization_id,
+    p_slug: input.slug,
+    p_name: input.name,
+    p_tagline: input.tagline,
+    p_category: input.category,
+    p_logo_url: input.logo_url,
+    p_cover_image_url: input.cover_image_url,
+    p_website_url: input.website_url,
+    p_sponsor_tier: input.sponsor_tier,
+    p_badge_label: input.badge_label,
+    p_sort_order: input.sort_order,
+    p_active: input.active,
+    p_starts_at: input.starts_at,
+    p_ends_at: input.ends_at,
+  });
+  if (error) throw error;
+}
+
+export async function deleteOfficialMarketStore(id: string): Promise<void> {
+  const { error } = await supabase.rpc('control_delete_official_market_store', { p_id: id });
+  if (error) throw error;
+}
+
+export async function uploadOfficialStoreAsset(
+  file: File,
+  storeKey: string,
+  kind: 'logo' | 'cover',
+): Promise<string> {
+  const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+  if (!allowed.has(file.type) || file.size > 5 * 1024 * 1024) {
+    throw new Error('Use uma imagem JPG, PNG, WebP ou GIF de até 5 MB.');
+  }
+  const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+  const safeKey = storeKey.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+  const path = `official-stores/${safeKey}/${kind}-${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from('business-media').upload(path, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (error) throw error;
+  return supabase.storage.from('business-media').getPublicUrl(path).data.publicUrl;
 }

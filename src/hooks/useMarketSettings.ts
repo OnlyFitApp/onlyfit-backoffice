@@ -1,10 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getMarketAlgorithmSettings,
+  deleteOfficialMarketStore,
   getAdInventory,
   listAdBookings,
   listProductCategories,
+  listOfficialMarketStores,
+  searchOfficialStoreOrganizations,
   saveProductCategory,
+  saveOfficialMarketStore,
   setMarketAlgorithmSettings,
   setAdPackage,
   setAdPlacement,
@@ -12,7 +16,36 @@ import {
   type AdPlacement,
   type MarketAlgorithmInput,
   type ProductCategory,
+  type OfficialMarketStoreInput,
 } from '../lib/marketSettings';
+
+export const useOfficialMarketStores = () => useQuery({
+  queryKey: ['official-market-stores'],
+  queryFn: listOfficialMarketStores,
+  staleTime: 30_000,
+});
+
+export const useOfficialStoreOrganizations = (query: string) => useQuery({
+  queryKey: ['official-store-organizations', query],
+  queryFn: () => searchOfficialStoreOrganizations(query),
+  staleTime: 30_000,
+});
+
+export function useSaveOfficialMarketStore() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: OfficialMarketStoreInput) => saveOfficialMarketStore(input),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ['official-market-stores'] }),
+  });
+}
+
+export function useDeleteOfficialMarketStore() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteOfficialMarketStore(id),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ['official-market-stores'] }),
+  });
+}
 
 export const useMarketAlgorithmSettings = () => useQuery({
   queryKey: ['market-algorithm-settings'],

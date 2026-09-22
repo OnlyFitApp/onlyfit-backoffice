@@ -17,10 +17,6 @@ export const LEGAL_JOURNEYS = [
 
 export type LegalDocumentJourney = (typeof LEGAL_JOURNEYS)[number]['value'];
 
-export function legalJourneyLabel(value: string | null): string {
-  return LEGAL_JOURNEYS.find((entry) => entry.value === value)?.label ?? 'Nenhuma';
-}
-
 /**
  * Os documentos legais que a plataforma reconhece. A chave é PK em
  * `legal_documents`: existe um único documento vigente por chave, global, sem

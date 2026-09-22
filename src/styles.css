@@ -1142,10 +1142,6 @@ textarea:focus-visible {
   background: rgb(var(--color-secondary));
 }
 
-.legend-saves {
-  background: rgb(var(--color-error));
-}
-
 .chart-panel > svg {
   display: block;
   width: 100%;
@@ -1175,10 +1171,6 @@ textarea:focus-visible {
 
 .chart-line-comments {
   stroke: rgb(var(--color-secondary));
-}
-
-.chart-line-saves {
-  stroke: rgb(var(--color-error));
 }
 
 .chart-dot {

@@ -110,11 +110,6 @@ export const affinityIconComponents: Record<AffinityIcon, LucideIcon> = {
   Compass,
 };
 
-/** Ícone de um grupo, com fallback para grupos gravados antes do catálogo atual. */
-export function affinityIconComponent(icon: string): LucideIcon {
-  return affinityIconComponents[icon as AffinityIcon] ?? Sparkles;
-}
-
 /** Rótulo curto para leitores de tela: o primeiro termo de busca do ícone. */
 export function affinityIconLabel(icon: AffinityIcon): string {
   const [first] = affinityIconSearchTerms[icon].split(' ');

@@ -50,7 +50,7 @@ const slug = (value: string) =>
  * Não há exclusão: a chave fica guardada em quem já segue o protocolo.
  * Desativar tira da vitrine sem apagar histórico.
  */
-export function ProtocolCatalogPage() {
+export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }) {
   const query = useProtocolCatalog();
   const role = useCurrentStaffRole();
   const canGovern = role.data === 'admin' || role.data === 'super_admin';
@@ -108,9 +108,9 @@ export function ProtocolCatalogPage() {
 
   return (
     <>
-      <header className="page-header">
+      <header className={embedded ? 'pcat-embedded-header' : 'page-header'}>
         <div>
-          <p className="section-label">Biblioteca da plataforma</p>
+          {!embedded ? <p className="section-label">Biblioteca da plataforma</p> : null}
           <h1>Catálogo de protocolos</h1>
         </div>
         <div className="pcat-row-actions">
@@ -130,7 +130,7 @@ export function ProtocolCatalogPage() {
         </div>
       </header>
 
-      <section className="content pcat-page">
+      <section className={embedded ? 'pcat-page' : 'content pcat-page'}>
         <div className="pcat-summary">
           <span><strong>{formatNumber(entries.length)}</strong> no catálogo</span>
           <span><strong>{formatNumber(activeCount)}</strong> na vitrine</span>

@@ -35,7 +35,6 @@ export function AppActivityChart({ activity }: { activity: WeeklyActivity[] }) {
     ...activity.flatMap((point) => [
       point.completed_sessions,
       point.posts_created,
-      point.saves_created,
       point.comments_created,
     ]),
   );
@@ -46,23 +45,21 @@ export function AppActivityChart({ activity }: { activity: WeeklyActivity[] }) {
     x: 24 + (index * (CHART_WIDTH - 48)) / denominator,
     sessionsY: CHART_HEIGHT - 28 - (point.completed_sessions / max) * (CHART_HEIGHT - 56),
     postsY: CHART_HEIGHT - 28 - (point.posts_created / max) * (CHART_HEIGHT - 56),
-    savesY: CHART_HEIGHT - 28 - (point.saves_created / max) * (CHART_HEIGHT - 56),
     commentsY: CHART_HEIGHT - 28 - (point.comments_created / max) * (CHART_HEIGHT - 56),
   }));
-  const pathFor = (key: 'sessionsY' | 'postsY' | 'savesY' | 'commentsY') => (
+  const pathFor = (key: 'sessionsY' | 'postsY' | 'commentsY') => (
     points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point[key]}`).join(' ')
   );
-  const total = activity.reduce(
-    (sum, point) => sum + point.completed_sessions + point.posts_created + point.saves_created + point.comments_created,
-    0,
-  );
+  const total = activity.reduce((sum, point) => (
+    sum + point.completed_sessions + point.posts_created + point.comments_created
+  ), 0);
 
   return (
     <figure className="chart-panel">
       <figcaption>
         <div>
           <strong>Atividade dos últimos 7 dias</strong>
-          <span>Treinos, posts, comentários e salvamentos por dia</span>
+          <span>Treinos, posts e comentários por dia</span>
         </div>
         <div className="chart-total">
           <BarChart3 size={16} />
@@ -79,14 +76,12 @@ export function AppActivityChart({ activity }: { activity: WeeklyActivity[] }) {
             <span><i className="legend-workouts" />Treinos</span>
             <span><i className="legend-posts" />Posts</span>
             <span><i className="legend-comments" />Comentários</span>
-            <span><i className="legend-saves" />Salvos</span>
           </div>
           <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label="Ações do app nos últimos sete dias">
             <GridLines />
             <path d={pathFor('sessionsY')} className="chart-line chart-line-workouts" />
             <path d={pathFor('postsY')} className="chart-line chart-line-posts" />
             <path d={pathFor('commentsY')} className="chart-line chart-line-comments" />
-            <path d={pathFor('savesY')} className="chart-line chart-line-saves" />
             {points.map((point) => (
               <g key={point.date}>
                 <circle cx={point.x} cy={point.sessionsY} r="4" className="chart-dot chart-dot-workouts" />
@@ -98,7 +93,7 @@ export function AppActivityChart({ activity }: { activity: WeeklyActivity[] }) {
             {points.map((point) => (
               <span key={point.date}>
                 <small>{point.label}</small>
-                <strong>{formatNumber(point.completed_sessions + point.posts_created + point.comments_created + point.saves_created)}</strong>
+                <strong>{formatNumber(point.completed_sessions + point.posts_created + point.comments_created)}</strong>
               </span>
             ))}
           </div>

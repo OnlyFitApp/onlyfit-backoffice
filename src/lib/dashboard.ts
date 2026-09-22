@@ -12,7 +12,6 @@ export type AppActivityStats = {
   posts_published_today: number;
   post_likes_total: number;
   post_comments_total: number;
-  feed_saves_total: number;
   workout_sessions_total: number;
   active_creators_total: number;
 };
@@ -36,7 +35,6 @@ export type WeeklyActivity = {
   date: string;
   completed_sessions: number;
   posts_created: number;
-  saves_created: number;
   comments_created: number;
 };
 
@@ -84,7 +82,6 @@ function parseAppActivity(value: unknown): AppActivityStats {
     posts_published_today: numberFrom(row.posts_published_today),
     post_likes_total: numberFrom(row.post_likes_total),
     post_comments_total: numberFrom(row.post_comments_total),
-    feed_saves_total: numberFrom(row.feed_saves_total),
     workout_sessions_total: numberFrom(row.workout_sessions_total),
     active_creators_total: numberFrom(row.active_creators_total),
   };
@@ -120,7 +117,6 @@ function parseWeeklyActivity(value: unknown): WeeklyActivity[] {
       date: typeof row.date === 'string' ? row.date : '',
       completed_sessions: numberFrom(row.completed_sessions),
       posts_created: numberFrom(row.posts_created),
-      saves_created: numberFrom(row.saves_created),
       comments_created: numberFrom(row.comments_created),
     };
   }).filter((row) => row.date.length > 0);

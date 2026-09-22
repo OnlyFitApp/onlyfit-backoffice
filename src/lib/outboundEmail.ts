@@ -26,10 +26,6 @@ export function isValidEmail(value: string): boolean {
   return /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(value.trim());
 }
 
-export function isOnlyFitSender(value: string): boolean {
-  return /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@onlyfitapp\.com$/i.test(value.trim());
-}
-
 export async function sendOutboundEmail(input: SendEmailInput): Promise<{
   id: string;
   resendEmailId: string;

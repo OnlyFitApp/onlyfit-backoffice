@@ -85,7 +85,7 @@ import { ReviewModerationPage } from './components/ReviewModerationPage';
 import { CompanyVerificationPage } from './components/CompanyVerificationPage';
 import { CommunityModerationPage } from './components/CommunityModerationPage';
 import { AffinityGroupsPage } from './components/AffinityGroupsPage';
-import { ProtocolCatalogPage } from './components/ProtocolCatalogPage';
+import { OnlyFitHealthLibraryPage } from './components/OnlyFitHealthLibraryPage';
 import { SessionTypesPage } from './components/SessionTypesPage';
 import { ExerciseCatalogPage } from './components/ExerciseCatalogPage';
 import { CombatTechniquesPage } from './components/CombatTechniquesPage';
@@ -151,7 +151,7 @@ const navItems = [
     label: 'Biblioteca da plataforma',
     icon: ListChecks,
     children: [
-      { id: 'protocol-catalog', label: 'Protocolos', icon: ListChecks },
+      { id: 'onlyfit-health-library', label: 'OnlyFit Health', icon: BookOpen },
       { id: 'exercise-catalog', label: 'Exercícios', icon: Dumbbell },
       { id: 'combat-techniques', label: 'Técnicas de luta', icon: Swords },
       { id: 'session-types', label: 'Tipos de sessão', icon: Dumbbell },
@@ -198,7 +198,7 @@ type SectionId =
   | 'members'
   | 'feed'
   | 'affinity-groups'
-  | 'protocol-catalog'
+  | 'onlyfit-health-library'
   | 'exercise-catalog'
   | 'combat-techniques'
   | 'session-types'
@@ -2040,7 +2040,7 @@ function AppShell() {
         {activeSection === 'members' && <UsersDirectoryPage />}
         {activeSection === 'feed' && <FeedDistributionPage />}
         {activeSection === 'affinity-groups' && <AffinityGroupsPage />}
-        {activeSection === 'protocol-catalog' && <ProtocolCatalogPage />}
+        {activeSection === 'onlyfit-health-library' && <OnlyFitHealthLibraryPage />}
         {activeSection === 'session-types' && <SessionTypesPage />}
         {activeSection === 'exercise-catalog' && <ExerciseCatalogPage />}
         {activeSection === 'combat-techniques' && <CombatTechniquesPage />}

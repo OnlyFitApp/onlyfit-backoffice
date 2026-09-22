@@ -35,7 +35,7 @@ export type CompanyVerification = {
   };
 };
 
-export type CompanyVerificationPage = { items: CompanyVerification[]; total: number };
+type CompanyVerificationPage = { items: CompanyVerification[]; total: number };
 
 export async function listCompanyVerifications(
   status: CompanyVerificationStatus,

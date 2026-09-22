@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type SendEmailInput = {
+type SendEmailInput = {
   from: string;
   senderName: string;
   to: string[];

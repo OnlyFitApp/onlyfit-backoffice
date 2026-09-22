@@ -44,7 +44,7 @@ export type CourseCommentReport = {
   lesson_title: string;
 };
 
-export type MemberAreaAuditEntry = {
+type MemberAreaAuditEntry = {
   id: number;
   action: Exclude<AuditAction, 'all'>;
   entity_type: 'offering_entitlement' | 'course_comment_report';
@@ -57,7 +57,7 @@ export type MemberAreaAuditEntry = {
   subject_name: string | null;
 };
 
-export type CursorPage<T> = {
+type CursorPage<T> = {
   items: T[];
   has_more: boolean;
   next_cursor: PageCursor | null;

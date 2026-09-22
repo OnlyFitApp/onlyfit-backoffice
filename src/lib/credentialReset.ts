@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 export type CredentialResetAction = 'password' | 'mfa';
 
-export type CredentialResetResult = {
+type CredentialResetResult = {
   emailSent: boolean;
 };
 

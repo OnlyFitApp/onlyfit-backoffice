@@ -157,7 +157,7 @@ export type NetworkHealthUser = {
   onboarding_completed: boolean;
 };
 
-export type NetworkHealthUserPage = {
+type NetworkHealthUserPage = {
   segment: NetworkUserSegment;
   total: number;
   limit: number;

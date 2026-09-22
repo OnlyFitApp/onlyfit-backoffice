@@ -9,7 +9,7 @@ export type PayoutStatus =
   | 'failed'
   | 'reversed';
 
-export type PayoutQueueDay = {
+type PayoutQueueDay = {
   settlement_date: string;
   pending_count: number;
   pending_amount: number;

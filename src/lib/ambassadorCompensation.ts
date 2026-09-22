@@ -91,7 +91,7 @@ export type CompensationSnapshot = {
   costOffset: number;
 };
 
-export type CompensationSimulation = {
+type CompensationSimulation = {
   matrixId: string;
   offeringTypeSlug: string;
   grossAmount: number;
@@ -111,7 +111,7 @@ export type CompensationSimulation = {
   simulationOnly: boolean;
 };
 
-export type AmbassadorFinanceReadiness = {
+type AmbassadorFinanceReadiness = {
   runtime: {
     financialAllocationEnabled: boolean;
     allocationShadowEnabled: boolean;
@@ -244,7 +244,7 @@ export async function retireCompensationMatrix(input: { matrixId: string; reason
   if (error) throw error;
 }
 
-export type ChannelCostPolicyInput = {
+type ChannelCostPolicyInput = {
   id?: string; provider: string; paymentMethod: string; offeringTypeSlug: string | null;
   commissionPercentage: number; processingPercentage: number; fixedAmount: number;
   roundingMode: 'half_up' | 'down' | 'up'; roundingIncrement: number;

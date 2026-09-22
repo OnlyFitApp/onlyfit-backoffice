@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type InviteSettings = {
+type InviteSettings = {
   invite_only_enabled: boolean;
   updated_at: string | null;
   invited_count: number;
@@ -9,7 +9,7 @@ export type InviteSettings = {
   pending_welcome_count: number;
 };
 
-export type InvitedEmail = {
+type InvitedEmail = {
   id: string;
   email: string;
   note: string | null;
@@ -37,13 +37,13 @@ export type WaitlistEntry = {
   email_confirmed: boolean;
 };
 
-export type AddInvitedEmailsResult = {
+type AddInvitedEmailsResult = {
   added: string[];
   skipped: string[];
   invalid: string[];
 };
 
-export type ReleaseResult = {
+type ReleaseResult = {
   released: boolean;
   emailSent: boolean;
   error: string | null;
@@ -214,7 +214,7 @@ async function readFunctionError(error: unknown): Promise<string | null> {
   return error instanceof Error ? error.message : null;
 }
 
-export function releaseErrorMessage(code: string): string {
+function releaseErrorMessage(code: string): string {
   switch (code) {
     case 'forbidden':
       return 'Seu papel interno não permite liberar acessos. Fale com um administrador.';
@@ -231,7 +231,7 @@ export function releaseErrorMessage(code: string): string {
   }
 }
 
-export type SendInviteEmailsResult = {
+type SendInviteEmailsResult = {
   sent: string[];
   skipped: string[];
   failed: string[];

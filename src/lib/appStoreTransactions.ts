@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 export type AppleEnvironment = 'Production' | 'Sandbox';
 export type AppleAccessStatus = 'active' | 'expired' | 'revoked';
-export type AppleTransaction = {
+type AppleTransaction = {
   id: string; transaction_id: string; original_transaction_id: string; product_id: string;
   offering_id: string; offering_name: string | null; organization_id: string | null; organization_name: string | null;
   buyer_profile_id: string; buyer_name: string; professional_profile_id: string | null; professional_name: string;
@@ -12,7 +12,7 @@ export type AppleTransaction = {
   provider_fee: number | null; platform_commission: number | null; professional_net: number | null;
   settlement_status: string | null;
 };
-export type AppleTransactionsPage = { total: number; limit: number; offset: number; items: AppleTransaction[] };
+type AppleTransactionsPage = { total: number; limit: number; offset: number; items: AppleTransaction[] };
 
 export async function listAppStoreTransactions(filters: {
   environment: AppleEnvironment; search: string; status: AppleAccessStatus | ''; page: number;

@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type FinancialReportSummary = {
+type FinancialReportSummary = {
   transactions_total: number;
   successful_transactions: number;
   failed_transactions: number;
@@ -29,9 +29,9 @@ export type FinancialReportSummary = {
   paid_payout_count: number;
 };
 
-export type FinancialReportRow = Record<string, string | number | null>;
+type FinancialReportRow = Record<string, string | number | null>;
 
-export type FinancialReportsSnapshot = {
+type FinancialReportsSnapshot = {
   generatedAt: string;
   summary: FinancialReportSummary;
   settlementByStatus: FinancialReportRow[];

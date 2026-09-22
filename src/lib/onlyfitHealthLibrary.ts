@@ -22,9 +22,9 @@ export type ProgramCatalogItem = {
   weeks: Array<Record<string, unknown>>; sessions: Array<Record<string, unknown>>;
 };
 
-export type WorkoutInput = Omit<WorkoutCatalogItem, 'id' | 'version' | 'updatedAt'> & { sourceId?: string };
-export type DietInput = Omit<DietCatalogItem, 'id' | 'version' | 'updatedAt'> & { sourceId?: string };
-export type ProgramInput = Omit<ProgramCatalogItem, 'id' | 'version' | 'enrollmentCount'> & { sourceId?: string };
+type WorkoutInput = Omit<WorkoutCatalogItem, 'id' | 'version' | 'updatedAt'> & { sourceId?: string };
+type DietInput = Omit<DietCatalogItem, 'id' | 'version' | 'updatedAt'> & { sourceId?: string };
+type ProgramInput = Omit<ProgramCatalogItem, 'id' | 'version' | 'enrollmentCount'> & { sourceId?: string };
 
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};

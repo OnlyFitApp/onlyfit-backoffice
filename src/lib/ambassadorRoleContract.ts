@@ -4,7 +4,7 @@ export type AmbassadorRole = (typeof ambassadorRoles)[number];
 
 // These persisted values are an API contract shared by Supabase, Flutter,
 // desktop and backoffice. Additive changes require all clients to be updated.
-export const ambassadorRoleLabels: Readonly<Record<AmbassadorRole, string>> = {
+const ambassadorRoleLabels: Readonly<Record<AmbassadorRole, string>> = {
   principal: 'Embaixador',
   associate: 'Associado',
 };

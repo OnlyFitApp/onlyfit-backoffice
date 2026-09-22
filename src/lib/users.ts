@@ -31,7 +31,7 @@ export type UserSearchFilters = {
   offset?: number;
 };
 
-export type UserSearchPage = {
+type UserSearchPage = {
   total: number;
   limit: number;
   offset: number;
@@ -124,7 +124,7 @@ export type UserOverview = {
   generated_at: string;
 };
 
-export type FootprintItem = {
+type FootprintItem = {
   schema: string;
   table: string;
   column: string;
@@ -133,7 +133,7 @@ export type FootprintItem = {
   effect: 'delete' | 'unlink' | 'blocking';
 };
 
-export type UserFootprint = {
+type UserFootprint = {
   user_id: string;
   total_rows: number;
   blocking_references: number;
@@ -141,7 +141,7 @@ export type UserFootprint = {
   generated_at: string;
 };
 
-export type UpdateUserAccountInput = {
+type UpdateUserAccountInput = {
   userId: string;
   profile?: Record<string, unknown>;
   email?: string | null;
@@ -150,12 +150,12 @@ export type UpdateUserAccountInput = {
   reason?: string | null;
 };
 
-export type DeleteUserAccountInput = {
+type DeleteUserAccountInput = {
   userId: string;
   reason?: string | null;
 };
 
-export type DeleteUserAccountResult = {
+type DeleteUserAccountResult = {
   purge: {
     purged: Record<string, number>;
     footprint: UserFootprint;
@@ -392,7 +392,7 @@ export async function fetchUserFootprint(userId: string): Promise<UserFootprint>
   return parseFootprint(data);
 }
 
-export type UpdateUserAccountResult = {
+type UpdateUserAccountResult = {
   profile: UserProfileRecord | null;
   changedFields: string[];
 };
@@ -519,7 +519,6 @@ const TABLE_LABELS: Record<string, string> = {
   workout_sessions: 'Sessões de treino',
   workout_logs: 'Registros de treino',
   workout_protocols: 'Protocolos de treino',
-  workout_templates: 'Modelos de treino',
   workout_cycles: 'Mesociclos',
   student_workout_assignments: 'Treinos atribuídos',
   training_programs: 'Programas de treino',
@@ -532,8 +531,6 @@ const TABLE_LABELS: Record<string, string> = {
   health_documents: 'Documentos de saúde',
   health_events: 'Eventos de saúde',
   health_metrics_daily: 'Métricas de saúde',
-  health_biometric_samples: 'Amostras biométricas',
-  wearable_connections: 'Conexões de wearable',
   wearable_samples_agg: 'Dados de wearable',
   user_achievements: 'Conquistas',
   user_badges: 'Selos',
@@ -548,8 +545,6 @@ const TABLE_LABELS: Record<string, string> = {
   referrals: 'Indicações',
   referral_codes: 'Códigos de indicação',
   entitlements: 'Direitos de acesso',
-  live_rooms: 'Salas ao vivo',
-  lives: 'Lives',
   places: 'Locais',
   place_posts: 'Posts em locais',
   progress: 'Progresso',

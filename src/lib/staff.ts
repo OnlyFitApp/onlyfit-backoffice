@@ -12,20 +12,20 @@ export type PlatformStaffMember = {
   username: string | null;
 };
 
-export type CreatePlatformStaffInput = {
+type CreatePlatformStaffInput = {
   email: string;
   fullName: string;
   password: string;
   role: StaffRole;
 };
 
-export type CreatePlatformStaffResult = {
+type CreatePlatformStaffResult = {
   accountStatus: 'existing' | 'created';
   staffStatus: 'created' | 'already_staff';
   staff: PlatformStaffMember;
 };
 
-export type UpdatePlatformStaffInput = {
+type UpdatePlatformStaffInput = {
   userId: string;
   email: string;
   fullName: string;
@@ -33,11 +33,11 @@ export type UpdatePlatformStaffInput = {
   role: StaffRole;
 };
 
-export type UpdatePlatformStaffResult = {
+type UpdatePlatformStaffResult = {
   staff: PlatformStaffMember;
 };
 
-export type RemovePlatformStaffResult = {
+type RemovePlatformStaffResult = {
   userId: string;
 };
 

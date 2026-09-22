@@ -8,7 +8,7 @@ import {
   useRef,
 } from 'react';
 
-export type AmbassadorTabItem<T extends string> = {
+type AmbassadorTabItem<T extends string> = {
   id: T;
   label: string;
   icon: ReactNode;

@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 export type ReviewReportStatus = 'pending' | 'kept' | 'hidden';
-export type ReviewModerationAction = 'keep' | 'hide';
+type ReviewModerationAction = 'keep' | 'hide';
 
 export type ReviewReport = {
   id: string;
@@ -22,7 +22,7 @@ export type ReviewReport = {
   };
 };
 
-export type ReviewReportPage = { items: ReviewReport[]; total: number };
+type ReviewReportPage = { items: ReviewReport[]; total: number };
 
 export async function listReviewReports(status: ReviewReportStatus, limit: number, offset: number) {
   const { data, error } = await supabase.rpc('control_list_review_reports', {

@@ -25,9 +25,9 @@ export type BetaFeedbackItem = {
   avatar_url: string | null;
 };
 
-export type BetaFeedbackCounts = Record<BetaFeedbackStatus, number>;
+type BetaFeedbackCounts = Record<BetaFeedbackStatus, number>;
 
-export type BetaFeedbackPage = {
+type BetaFeedbackPage = {
   items: BetaFeedbackItem[];
   total: number;
   counts: BetaFeedbackCounts;

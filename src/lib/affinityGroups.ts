@@ -1,7 +1,5 @@
 import { affinityAccents, affinityIcons, type AffinityAccent, type AffinityIcon } from './affinityCatalog';
 import { supabase } from './supabase';
-
-export { affinityAccents, affinityIcons };
 export type { AffinityAccent, AffinityIcon };
 
 export type AffinityImpact = {
@@ -38,7 +36,7 @@ export type AffinityGroup = AffinityImpact & {
 
 export type AffinityGroupInput = Pick<AffinityGroup, 'label' | 'icon' | 'accent' | 'aliases'>;
 
-export type AffinityAuditEntry = {
+type AffinityAuditEntry = {
   id: string;
   group_key: string | null;
   action: 'create' | 'update' | 'reorder' | 'activate' | 'deactivate';

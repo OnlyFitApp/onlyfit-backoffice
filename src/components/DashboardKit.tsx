@@ -3,9 +3,9 @@ import { AlertTriangle, Info } from 'lucide-react';
 import { trendLabel, trendOf, type TrendDirection } from '../lib/networkHealth';
 import { extractAcronym } from '../lib/metricDefinitions';
 
-export type MetricIcon = ComponentType<{ size?: number | string }>;
+type MetricIcon = ComponentType<{ size?: number | string }>;
 
-export type MetricComparison = {
+type MetricComparison = {
   label: string;
   current: number | null | undefined;
   previous: number | null | undefined;
@@ -13,7 +13,7 @@ export type MetricComparison = {
   invert?: boolean;
 };
 
-export function TrendMark({ current, previous, invert = false }: Omit<MetricComparison, 'label'>) {
+function TrendMark({ current, previous, invert = false }: Omit<MetricComparison, 'label'>) {
   const direction = trendOf(current, previous);
   const visual: TrendDirection = invert
     ? (direction === 'up' ? 'down' : direction === 'down' ? 'up' : 'flat')

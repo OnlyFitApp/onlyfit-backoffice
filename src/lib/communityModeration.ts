@@ -20,7 +20,7 @@ export type ModeratedCommunity = {
   created_at: string;
 };
 
-export type CommunityModerationPage = {
+type CommunityModerationPage = {
   items: ModeratedCommunity[];
   total: number;
 };

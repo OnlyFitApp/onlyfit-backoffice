@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type MarketMode = 'algorithm' | 'random';
+type MarketMode = 'algorithm' | 'random';
 
 export type MarketAlgorithmSettings = {
   mode: MarketMode;
@@ -80,7 +80,7 @@ export type OfficialMarketStore = {
   ends_at: string | null;
 };
 
-export type OfficialStoreOrganization = {
+type OfficialStoreOrganization = {
   id: string;
   name: string;
   slug: string;

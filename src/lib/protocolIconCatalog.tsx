@@ -46,7 +46,7 @@ import {
  * ícones que existem nos dois pacotes — chave que só existe no web deixaria o
  * app sem ícone, sem erro nenhum.
  */
-export const protocolIcons: Readonly<Record<string, LucideIcon>> = {
+const protocolIcons: Readonly<Record<string, LucideIcon>> = {
   sparkles: Sparkles,
   droplets: Droplets,
   'glass-water': GlassWater,
@@ -89,7 +89,7 @@ export function protocolIcon(key: string): LucideIcon {
  * o portal resolve por ela, então só entram ícones que existem também no
  * `lucide-react` do desktop.
  */
-export const sessionIcons: Readonly<Record<string, LucideIcon>> = {
+const sessionIcons: Readonly<Record<string, LucideIcon>> = {
   footprints: Footprints,
   'move-up-right': MoveUpRight,
   gauge: Gauge,

@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { listDiets, listPrograms, listWorkouts, saveDiet, saveProgram, saveWorkout, setLibraryItemActive, type DietCatalogItem, type LibraryKind, type LibraryPage, type ProgramCatalogItem, type WorkoutCatalogItem } from '../lib/onlyfitHealthLibrary';
 
-export const libraryKey = ['onlyfit-health-library'] as const;
-export type OnlyFitHealthCatalogItem = WorkoutCatalogItem | DietCatalogItem | ProgramCatalogItem;
+const libraryKey = ['onlyfit-health-library'] as const;
+type OnlyFitHealthCatalogItem = WorkoutCatalogItem | DietCatalogItem | ProgramCatalogItem;
 
 export function useOnlyFitHealthCatalog(kind: LibraryKind, search: string, filter: string, limit=25, offset=0) {
   return useQuery<LibraryPage<OnlyFitHealthCatalogItem>>({

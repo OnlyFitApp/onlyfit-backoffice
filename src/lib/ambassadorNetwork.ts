@@ -6,7 +6,7 @@ import {
   type AmbassadorRole,
 } from './ambassadorRoleContract';
 
-export { ambassadorRoleLabel, parseAmbassadorRole, type AmbassadorRole } from './ambassadorRoleContract';
+export { ambassadorRoleLabel, type AmbassadorRole } from './ambassadorRoleContract';
 export type AmbassadorStatus = 'draft' | 'pending' | 'active' | 'suspended' | 'ended';
 
 export type AmbassadorImpact = {
@@ -76,14 +76,14 @@ export type AmbassadorNetworkSetting = {
   updatedAt: string;
 };
 
-export type AffinityOption = { key: string; label: string; active: boolean; sortOrder: number };
-export type AmbassadorProgramState = {
+type AffinityOption = { key: string; label: string; active: boolean; sortOrder: number };
+type AmbassadorProgramState = {
   networkEnabled: boolean;
   onboardingEnabled: boolean;
   financialAllocationEnabled: boolean;
 };
 
-export type AmbassadorSnapshot = {
+type AmbassadorSnapshot = {
   program: AmbassadorProgramState;
   affinityGroups: AffinityOption[];
   regions: CommercialRegion[];
@@ -154,12 +154,12 @@ export type AmbassadorPromotion = {
   updatedAt: string | null;
 };
 
-export type AmbassadorRequests = {
+type AmbassadorRequests = {
   memberships: AmbassadorMembership[];
   promotions: AmbassadorPromotion[];
 };
 
-export type AmbassadorAuditEntry = {
+type AmbassadorAuditEntry = {
   id: string;
   actorProfileId: string | null;
   actorName: string;
@@ -171,18 +171,18 @@ export type AmbassadorAuditEntry = {
   occurredAt: string;
 };
 
-export type LegacyMigrationCandidate = {
+type LegacyMigrationCandidate = {
   id: string; source: 'editorial_highlight' | 'professional_affinity'; profileId: string;
   profileName: string; username: string | null; suggestedAffinityGroupKeys: string[];
   status: 'pending_review' | 'needs_regularization';
 };
-export type RolloutCheck = { checkKey: string; status: string; evidenceReference: string | null; checkedAt: string | null };
-export type AmbassadorRollout = {
+type RolloutCheck = { checkKey: string; status: string; evidenceReference: string | null; checkedAt: string | null };
+type AmbassadorRollout = {
   id: string; name: string; affinityGroupKey: string; affinityGroupLabel: string;
   regionId: string; regionName: string; offeringTypeSlug: string; environment: 'sandbox' | 'production';
   stage: string; updatedAt: string; checks: RolloutCheck[];
 };
-export type AmbassadorOperationsDashboard = {
+type AmbassadorOperationsDashboard = {
   migration: { editorialActive: number; pendingReview: number; needsRegularization: number; migrated: number; candidates: LegacyMigrationCandidate[] };
   rollouts: AmbassadorRollout[];
   runtime: Record<string, boolean>;
@@ -308,15 +308,15 @@ export async function prepareAmbassadorCandidate(input: { profileId: string; rea
   if (error) throw error;
 }
 
-export type RegionInput = Omit<CommercialRegion, 'id' | 'active' | 'assignmentCount' | 'currentMembershipCount' | 'createdAt' | 'updatedAt'> & { id?: string; expectedUpdatedAt?: string };
+type RegionInput = Omit<CommercialRegion, 'id' | 'active' | 'assignmentCount' | 'currentMembershipCount' | 'createdAt' | 'updatedAt'> & { id?: string; expectedUpdatedAt?: string };
 export async function saveCommercialRegion(input: RegionInput): Promise<void> {
   const { error } = await supabase.rpc('control_save_commercial_region', { p_region_id: input.id ?? null, p_name: input.name, p_slug: input.slug, p_scope_type: input.scopeType, p_country_code: input.countryCode, p_state_code: input.stateCode, p_city_name: input.cityName, p_parent_id: input.parentId, p_specificity: input.specificity, p_priority: input.priority, p_expected_updated_at: input.expectedUpdatedAt ?? null });
   if (error) throw error;
 }
 export async function setCommercialRegionActive(input: { id: string; active: boolean; expectedUpdatedAt: string }): Promise<void> { const { error } = await supabase.rpc('control_set_commercial_region_active', { p_region_id: input.id, p_active: input.active, p_expected_updated_at: input.expectedUpdatedAt }); if (error) throw error; }
 
-export type AssignmentInput = { id?: string; profileId: string; role: AmbassadorRole; affinityGroupKey: string; regionId: string; principalAssignmentId: string | null; publicVisible: boolean; displayOrder: number; headline: string; contractReference: string; startsAt: string | null; endsAt: string | null; expectedUpdatedAt?: string };
-export type SavedAmbassadorAssignment = { id: string; status: AmbassadorStatus; publicVisible: boolean; updatedAt: string };
+type AssignmentInput = { id?: string; profileId: string; role: AmbassadorRole; affinityGroupKey: string; regionId: string; principalAssignmentId: string | null; publicVisible: boolean; displayOrder: number; headline: string; contractReference: string; startsAt: string | null; endsAt: string | null; expectedUpdatedAt?: string };
+type SavedAmbassadorAssignment = { id: string; status: AmbassadorStatus; publicVisible: boolean; updatedAt: string };
 export async function saveAmbassadorAssignment(input: AssignmentInput): Promise<SavedAmbassadorAssignment> { const { data, error } = await supabase.rpc('control_save_ambassador_assignment', { p_assignment_id: input.id ?? null, p_profile_id: input.profileId, p_role: input.role, p_affinity_group_key: input.affinityGroupKey, p_region_id: input.regionId, p_principal_assignment_id: input.role === 'associate' ? input.principalAssignmentId : null, p_public_visible: input.publicVisible, p_display_order: input.displayOrder, p_headline: input.headline || null, p_badge_label: ambassadorRoleLabel(input.role), p_contract_reference: input.contractReference || null, p_starts_at: input.startsAt, p_ends_at: input.endsAt, p_expected_updated_at: input.expectedUpdatedAt ?? null }); if (error) throw error; const row = record(data); return { id: String(row.id ?? ''), status: String(row.status ?? 'draft') as AmbassadorStatus, publicVisible: row.public_visible === true, updatedAt: String(row.updated_at ?? '') }; }
 export async function getAmbassadorAssignmentImpact(id: string): Promise<AmbassadorImpact> { const { data, error } = await supabase.rpc('control_get_ambassador_assignment_impact', { p_assignment_id: id }); if (error) throw error; return impactFrom(data); }
 export async function transitionAmbassadorAssignment(input: { id: string; action: string; publicVisible: boolean; expectedUpdatedAt: string }): Promise<void> { const { error } = await supabase.rpc('control_transition_ambassador_assignment', { p_assignment_id: input.id, p_action: input.action, p_public_visible: input.publicVisible, p_expected_updated_at: input.expectedUpdatedAt }); if (error) throw error; }

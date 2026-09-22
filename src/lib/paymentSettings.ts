@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type PlatformPaymentSettings = {
+type PlatformPaymentSettings = {
   payout_processing_hours: number;
   payout_minimum_amount: number;
   card_settlement_days: number;

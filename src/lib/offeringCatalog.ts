@@ -49,7 +49,7 @@ export type OfferingCatalogItem = {
   updated_at: string;
 };
 
-export type OfferingCatalogPage = {
+type OfferingCatalogPage = {
   total: number;
   limit: number;
   offset: number;

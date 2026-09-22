@@ -7,13 +7,13 @@ import { supabase } from './supabase';
  * profissional a derruba, e o dispatcher marca o alerta quando o prazo vence.
  * O backoffice define os prazos e vê quem passou deles.
  */
-export type FirstContactSettings = {
+type FirstContactSettings = {
   reminder_hours: number;
   alert_hours: number;
   updated_at: string | null;
 };
 
-export type ContractWithoutFirstContact = {
+type ContractWithoutFirstContact = {
   id: string;
   started_at: string;
   hours_waiting: number;

@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type FeedDistributionSettings = {
+type FeedDistributionSettings = {
   slots_followed: number;
   slots_discovery: number;
   updated_at: string;

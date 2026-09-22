@@ -3,7 +3,7 @@
  * Cada entrada fornece o significado completo para tooltips.
  */
 
-export const METRIC_DEFINITIONS: Record<string, string> = {
+const METRIC_DEFINITIONS: Record<string, string> = {
   'WMEU': 'Weekly Meaningful Engaged Users — usuários que tiveram engajamento significativo na semana (interações de relacionamento, treinos ou conteúdo)',
   'DAU': 'Daily Active Users — usuários únicos que usaram o app hoje',
   'WAU': 'Weekly Active Users — usuários únicos que usaram o app nos últimos 7 dias',

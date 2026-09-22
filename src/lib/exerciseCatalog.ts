@@ -41,7 +41,7 @@ export type ExerciseCatalogFilters = {
   offset: number;
 };
 
-export type ExerciseCatalogPage = {
+type ExerciseCatalogPage = {
   items: ExerciseCatalogEntry[];
   total: number;
 };

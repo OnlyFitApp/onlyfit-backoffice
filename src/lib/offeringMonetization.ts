@@ -6,7 +6,7 @@ type Offer = {
   price: number;
   settings: Record<string, unknown>;
 };
-export type Monetization = { label: string; productType: AppStoreProductType | null; canPrepare: boolean; reason: string };
+type Monetization = { label: string; productType: AppStoreProductType | null; canPrepare: boolean; reason: string };
 
 export function appStoreProductTypeLabel(type: AppStoreProductType): string {
   return {

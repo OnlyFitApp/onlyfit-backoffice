@@ -138,7 +138,7 @@ export function legalDocumentName(key: string): string {
   return legalDocumentCatalogEntry(key)?.name ?? key;
 }
 
-export type LegalDocumentVersion = {
+type LegalDocumentVersion = {
   key: string;
   version: string;
   kind: LegalDocumentKind;
@@ -158,7 +158,7 @@ export type LegalDocumentVersion = {
   pendingCount: number;
 };
 
-export type PublishLegalDocumentInput = {
+type PublishLegalDocumentInput = {
   key: string;
   version: string;
   kind: LegalDocumentKind;

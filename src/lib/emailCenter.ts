@@ -20,7 +20,7 @@ export type EmailMailbox = {
   unreadCount: number;
 };
 
-export type EmailThreadListItem = {
+type EmailThreadListItem = {
   id: string;
   mailboxId: string;
   mailboxEmail: string;
@@ -78,7 +78,7 @@ export type EmailThread = {
   messages: EmailMessage[];
 };
 
-export type EmailThreadPage = { items: EmailThreadListItem[]; total: number };
+type EmailThreadPage = { items: EmailThreadListItem[]; total: number };
 
 export type EmailThreadFilters = {
   mailboxId: string | null;

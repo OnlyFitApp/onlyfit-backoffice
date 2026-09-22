@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type ReconciliationRun = {
+type ReconciliationRun = {
   id: string;
   provider: string;
   period_start: string;

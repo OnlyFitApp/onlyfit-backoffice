@@ -5,7 +5,7 @@ export type TransactionStatus =
 export type SettlementStatus =
   | 'pending' | 'confirmed' | 'settled' | 'refunded' | 'chargeback';
 
-export type PaymentTransaction = {
+type PaymentTransaction = {
   id: string;
   provider: 'asaas' | 'stripe' | 'app_store' | 'free' | 'unknown';
   payment_method: 'card' | 'pix' | 'app_store' | 'free' | null;
@@ -39,7 +39,7 @@ export type PaymentTransaction = {
   created_at: string;
 };
 
-export type TransactionsPage = {
+type TransactionsPage = {
   total: number;
   limit: number;
   offset: number;

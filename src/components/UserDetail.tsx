@@ -53,16 +53,11 @@ type FormState = {
   professional_registration: string;
   professional_types: string;
   lockdown_reason: string;
-  level: string;
-  xp: string;
-  streak: string;
-  pulse_coins: string;
   is_creator: boolean;
   is_professional: boolean;
   professional_shell_enabled: boolean;
   is_identity_verified: boolean;
   onboarding_completed: boolean;
-  profile_completion_pending: boolean;
   app_lockdown: boolean;
   email: string;
   cpf: string;
@@ -76,11 +71,9 @@ const TEXT_FIELDS = [
   'professional_council', 'professional_registration', 'lockdown_reason',
 ] as const satisfies ReadonlyArray<keyof UserProfileRecord & keyof FormState>;
 
-const NUMBER_FIELDS = ['level', 'xp', 'streak', 'pulse_coins'] as const;
-
 const BOOLEAN_FIELDS = [
   'is_creator', 'is_professional', 'professional_shell_enabled',
-  'is_identity_verified', 'onboarding_completed', 'profile_completion_pending', 'app_lockdown',
+  'is_identity_verified', 'onboarding_completed', 'app_lockdown',
 ] as const;
 
 const accountKindOptions = [
@@ -133,7 +126,6 @@ const booleanLabels: Record<(typeof BOOLEAN_FIELDS)[number], string> = {
   professional_shell_enabled: 'Modo profissional ativo no app',
   is_identity_verified: 'Identidade verificada',
   onboarding_completed: 'Onboarding concluído',
-  profile_completion_pending: 'Cadastro pendente de conclusão',
   app_lockdown: 'Conta bloqueada no app',
 };
 
@@ -297,9 +289,6 @@ function toForm(profile: UserProfileRecord): FormState {
   for (const field of TEXT_FIELDS) {
     form[field] = (profile[field] as string | null) ?? '';
   }
-  for (const field of NUMBER_FIELDS) {
-    form[field] = String(profile[field] ?? 0);
-  }
   for (const field of BOOLEAN_FIELDS) {
     form[field] = Boolean(profile[field]);
   }
@@ -416,16 +405,6 @@ function ProfileForm({
     const patch: Record<string, unknown> = {};
     for (const field of TEXT_FIELDS) {
       if (form[field] !== baseline[field]) patch[field] = form[field].trim();
-    }
-    for (const field of NUMBER_FIELDS) {
-      if (form[field] !== baseline[field]) {
-        const parsed = Number(form[field]);
-        if (!Number.isFinite(parsed) || parsed < 0) {
-          setMessage({ type: 'error', text: 'Os números de gamificação precisam ser inteiros positivos.' });
-          return;
-        }
-        patch[field] = Math.round(parsed);
-      }
     }
     for (const field of BOOLEAN_FIELDS) {
       if (form[field] !== baseline[field]) patch[field] = form[field];
@@ -593,23 +572,6 @@ function ProfileForm({
           ))}
         </div>
         {form.app_lockdown && textField('lockdown_reason', 'Motivo do bloqueio')}
-      </fieldset>
-
-      <fieldset className="user-form-group">
-        <legend>Gamificação</legend>
-        <div className="user-field-grid">
-          {NUMBER_FIELDS.map((field) => (
-            <label className="user-field" key={field}>
-              <span>{field === 'pulse_coins' ? 'Moedas' : field === 'level' ? 'Nível' : field === 'xp' ? 'XP' : 'Ofensiva'}</span>
-              <input
-                inputMode="numeric"
-                value={form[field]}
-                disabled={!canEdit}
-                onChange={(event) => setField(field, event.target.value.replace(/[^\d]/g, ''))}
-              />
-            </label>
-          ))}
-        </div>
       </fieldset>
 
       {message && (

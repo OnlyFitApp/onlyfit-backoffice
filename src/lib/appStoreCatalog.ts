@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type AppStoreCatalogState = {
   enabled: boolean;
@@ -45,7 +45,7 @@ export const catalogMessages: Record<string, string> = {
 };
 
 export async function appStoreCatalogCommand(offeringId: string, action: CatalogAction): Promise<AppStoreCatalogState> {
-  const { data, error } = await supabase.functions.invoke('app-store-catalog', {
+  const { data, error } = await api.comercio.functions.invoke('app-store-catalog', {
     body: { offering_id: offeringId, action },
   });
   if (error) {
@@ -65,10 +65,10 @@ export async function saveCatalogMetadata(offeringId: string, description: strin
   if (file) {
     if (!['image/png', 'image/jpeg'].includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error('Use PNG ou JPG de até 5 MB.');
     path = `${offeringId}/${crypto.randomUUID()}.${file.type === 'image/png' ? 'png' : 'jpg'}`;
-    const upload = await supabase.storage.from('app-store-review').upload(path, file, { upsert: false, contentType: file.type });
+    const upload = await api.comercio.storage.from('app-store-review').upload(path, file, { upsert: false, contentType: file.type });
     if (upload.error) throw new Error('Não foi possível enviar a captura. Verifique sua sessão e tente novamente.');
   }
-  const { error } = await supabase.rpc('save_app_store_catalog_metadata', {
+  const { error } = await api.comercio.rpc('save_app_store_catalog_metadata', {
     p_offering_id: offeringId, p_description: description, p_review_notes: notes, p_screenshot_path: path,
   });
   if (error) throw new Error('Não foi possível salvar. Verifique sua sessão MFA e aguarde operações em andamento.');

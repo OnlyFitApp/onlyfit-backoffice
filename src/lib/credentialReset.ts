@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type CredentialResetAction = 'password' | 'mfa';
 
@@ -50,7 +50,7 @@ export async function resetUserCredentials(
   action: CredentialResetAction,
   reason?: string,
 ): Promise<CredentialResetResult> {
-  const { data, error } = await supabase.functions.invoke('control-reset-user-credentials', {
+  const { data, error } = await api.staff.functions.invoke('control-reset-user-credentials', {
     body: { user_id: userId, action, reason: reason || undefined },
   });
 

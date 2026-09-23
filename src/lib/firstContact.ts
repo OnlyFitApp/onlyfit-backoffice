@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 /**
  * G11 — contratos de consultoria sem primeiro contato.
@@ -71,7 +71,7 @@ function parseContract(value: unknown): ContractWithoutFirstContact {
 }
 
 export async function getFirstContactSettings(): Promise<FirstContactSettings> {
-  const { data, error } = await supabase.rpc('control_get_service_settings');
+  const { data, error } = await api.staff.rpc('control_get_service_settings');
   if (error) throw error;
   return parseSettings(data);
 }
@@ -80,7 +80,7 @@ export async function setFirstContactDeadlines(
   reminderHours: number,
   alertHours: number,
 ): Promise<FirstContactSettings> {
-  const { data, error } = await supabase.rpc('control_set_first_contact_deadlines', {
+  const { data, error } = await api.staff.rpc('control_set_first_contact_deadlines', {
     p_reminder_hours: reminderHours,
     p_alert_hours: alertHours,
   });
@@ -92,7 +92,7 @@ export async function listContractsWithoutFirstContact(
   limit: number,
   offset: number,
 ): Promise<{ items: ContractWithoutFirstContact[]; total: number; hasMore: boolean }> {
-  const { data, error } = await supabase.rpc('control_list_contracts_without_first_contact', {
+  const { data, error } = await api.staff.rpc('control_list_contracts_without_first_contact', {
     p_limit: limit,
     p_offset: offset,
   });

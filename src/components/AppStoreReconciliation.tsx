@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { api } from '../api';
 
 type Batch = { id: string; period_start: string; period_end: string; processed_rows: number; divergent_rows: number };
 type Line = { id: string; product_id: string; result: string; currency: string; gross_amount: number | null; proceeds_amount: number | null };
@@ -19,15 +19,15 @@ export function AppStoreReconciliation({ canEdit }: { canEdit: boolean }) {
   const [batch,setBatch] = useState<string | null>(null);
   const [linePage,setLinePage] = useState(0);
   const batches = useQuery({ queryKey: ['apple-reconciliation',page], queryFn: async () => {
-    const {data,error} = await supabase.rpc('control_app_store_reconciliation',{p_limit:20,p_offset:page*20});
+    const {data,error} = await api.staff.rpc('control_app_store_reconciliation',{p_limit:20,p_offset:page*20});
     if(error)throw new Error('Não foi possível consultar os relatórios Apple.'); return data as Batch[];
   } });
   const lines = useQuery({ queryKey: ['apple-reconciliation-lines',batch,linePage], enabled: !!batch, queryFn: async () => {
-    const {data,error} = await supabase.rpc('control_app_store_reconciliation',{p_batch_id:batch,p_limit:20,p_offset:linePage*20});
+    const {data,error} = await api.staff.rpc('control_app_store_reconciliation',{p_batch_id:batch,p_limit:20,p_offset:linePage*20});
     if(error)throw new Error('Não foi possível consultar os itens.'); return data as Line[];
   } });
   const run = useMutation({mutationFn: async () => {
-    const {data,error} = await supabase.functions.invoke('app-store-financial-reconcile',{body:{month}});
+    const {data,error} = await api.comercio.functions.invoke('app-store-financial-reconcile',{body:{month}});
     if(error){const body=error.context instanceof Response?await error.context.json().catch(()=>null):null;
       throw new Error(errors[body?.error] ?? 'Não foi possível importar o relatório Apple.');}
     if(!data?.ok)throw new Error('Importação não confirmada.'); return data;

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 
 const source = readFileSync(new URL('../src/lib/appStoreCatalog.ts', import.meta.url), 'utf8')
-  .replace("import { supabase } from './supabase';", 'const supabase = { functions: { invoke: (...args) => globalThis.__catalogInvoke(...args) } };');
+  .replace("import { api } from '../api';", 'const supabase = { functions: { invoke: (...args) => globalThis.__catalogInvoke(...args) } }; const api = new Proxy({}, { get: () => supabase });');
 const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
 const { appStoreCatalogCommand } = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
 

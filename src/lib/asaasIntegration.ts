@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type AsaasEnvironment = 'sandbox' | 'production';
 
@@ -64,7 +64,7 @@ function parseStatus(value: unknown): AsaasEnvironmentStatus {
 }
 
 export async function getAsaasIntegrationStatus(): Promise<AsaasEnvironmentStatus[]> {
-  const { data, error } = await supabase.rpc('control_get_asaas_integration_status');
+  const { data, error } = await api.staff.rpc('control_get_asaas_integration_status');
   if (error) throw error;
   const environments = asRecord(data).environments;
   return Array.isArray(environments) ? environments.map(parseStatus) : [];
@@ -78,7 +78,7 @@ export async function setAsaasCredentials(input: {
   stripeSecretKey?: string | null;
   stripeWebhookSecret?: string | null;
 }): Promise<AsaasEnvironmentStatus> {
-  const { data, error } = await supabase.rpc('control_set_payment_provider_credentials', {
+  const { data, error } = await api.staff.rpc('control_set_payment_provider_credentials', {
     p_environment: input.environment,
     p_asaas_api_key: input.apiKey ?? null,
     p_asaas_webhook_token: input.webhookToken ?? null,

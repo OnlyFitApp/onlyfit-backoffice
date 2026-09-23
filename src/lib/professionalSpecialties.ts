@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 /**
  * G20 — a taxonomia de especialidades profissionais.
@@ -47,7 +47,7 @@ function parse(value: unknown): ProfessionalSpecialty {
 }
 
 export async function listProfessionalSpecialties(): Promise<ProfessionalSpecialty[]> {
-  const { data, error } = await supabase.rpc('control_list_professional_specialties');
+  const { data, error } = await api.staff.rpc('control_list_professional_specialties');
   if (error) throw error;
   return Array.isArray(data) ? data.map(parse) : [];
 }
@@ -57,7 +57,7 @@ export async function createProfessionalSpecialty(input: {
   council: string;
   regulated: boolean;
 }): Promise<ProfessionalSpecialty> {
-  const { data, error } = await supabase.rpc('control_create_professional_specialty', {
+  const { data, error } = await api.staff.rpc('control_create_professional_specialty', {
     p_label: input.label,
     p_council: input.council,
     p_regulated: input.regulated,
@@ -72,7 +72,7 @@ export async function updateProfessionalSpecialty(input: {
   council: string;
   regulated: boolean;
 }): Promise<ProfessionalSpecialty> {
-  const { data, error } = await supabase.rpc('control_update_professional_specialty', {
+  const { data, error } = await api.staff.rpc('control_update_professional_specialty', {
     p_key: input.key,
     p_label: input.label,
     p_council: input.council,
@@ -86,7 +86,7 @@ export async function setProfessionalSpecialtyActive(input: {
   key: string;
   active: boolean;
 }): Promise<ProfessionalSpecialty> {
-  const { data, error } = await supabase.rpc('control_set_professional_specialty_active', {
+  const { data, error } = await api.staff.rpc('control_set_professional_specialty_active', {
     p_key: input.key,
     p_active: input.active,
   });
@@ -95,7 +95,7 @@ export async function setProfessionalSpecialtyActive(input: {
 }
 
 export async function reorderProfessionalSpecialties(keys: string[]): Promise<ProfessionalSpecialty[]> {
-  const { data, error } = await supabase.rpc('control_reorder_professional_specialties', {
+  const { data, error } = await api.staff.rpc('control_reorder_professional_specialties', {
     p_keys: keys,
   });
   if (error) throw error;

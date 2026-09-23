@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type BetaFeedbackStatus = 'new' | 'in_review' | 'resolved' | 'discarded';
 
@@ -34,7 +34,7 @@ type BetaFeedbackPage = {
 };
 
 export async function listBetaFeedback(status: BetaFeedbackStatus | null, limit: number, offset: number) {
-  const { data, error } = await supabase.rpc('control_list_beta_feedback', {
+  const { data, error } = await api.staff.rpc('control_list_beta_feedback', {
     p_status: status,
     p_limit: limit,
     p_offset: offset,
@@ -48,7 +48,7 @@ export async function updateBetaFeedback(input: {
   status: BetaFeedbackStatus;
   internalNotes: string;
 }) {
-  const { data, error } = await supabase.rpc('control_update_beta_feedback', {
+  const { data, error } = await api.staff.rpc('control_update_beta_feedback', {
     p_id: input.id,
     p_status: input.status,
     p_internal_notes: input.internalNotes,
@@ -58,7 +58,7 @@ export async function updateBetaFeedback(input: {
 }
 
 export async function createFeedbackScreenshotUrl(path: string) {
-  const { data, error } = await supabase.storage
+  const { data, error } = await api.staff.storage
     .from('beta-feedback-screenshots')
     .createSignedUrl(path, 300);
   if (error) throw error;

@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type CompensationScenario =
   | 'direct_to_principal'
@@ -189,7 +189,7 @@ function parseCostPolicy(value: unknown): ChannelCostPolicy {
 }
 
 export async function getCompensationSnapshot(filters: { offeringType?: string; status?: string; offset?: number; costOffset?: number } = {}): Promise<CompensationSnapshot> {
-  const { data, error } = await supabase.rpc('control_get_ambassador_compensation_snapshot', {
+  const { data, error } = await api.staff.rpc('control_get_ambassador_compensation_snapshot', {
     p_offering_type_slug: filters.offeringType || null, p_status: filters.status || null,
     p_limit: 50, p_offset: filters.offset ?? 0, p_cost_limit: 50, p_cost_offset: filters.costOffset ?? 0,
   });
@@ -214,7 +214,7 @@ export async function getCompensationSnapshot(filters: { offeringType?: string; 
 }
 
 export async function createCompensationMatrix(input: { offeringTypeSlug: string; affinityGroupKey: string | null; regionId: string | null; currency: string; effectiveFrom: string | null; effectiveTo: string | null }): Promise<void> {
-  const { error } = await supabase.rpc('control_create_ambassador_compensation_matrix', {
+  const { error } = await api.staff.rpc('control_create_ambassador_compensation_matrix', {
     p_offering_type_slug: input.offeringTypeSlug, p_affinity_group_key: input.affinityGroupKey,
     p_region_id: input.regionId, p_currency: input.currency, p_effective_from: input.effectiveFrom,
     p_effective_to: input.effectiveTo,
@@ -222,25 +222,25 @@ export async function createCompensationMatrix(input: { offeringTypeSlug: string
   if (error) throw error;
 }
 export async function saveCompensationScenario(input: { matrixId: string; scenario: CompensationScenario; shares: CompensationShares; changeReason: string; expectedUpdatedAt: string }): Promise<void> {
-  const { error } = await supabase.rpc('control_save_ambassador_compensation_scenario', {
+  const { error } = await api.staff.rpc('control_save_ambassador_compensation_scenario', {
     p_matrix_id: input.matrixId, p_scenario: input.scenario, p_shares: input.shares,
     p_change_reason: input.changeReason, p_expected_updated_at: input.expectedUpdatedAt,
   });
   if (error) throw error;
 }
 export async function publishCompensationMatrix(input: { matrixId: string; effectiveFrom: string; effectiveTo: string | null; reason: string; expectedUpdatedAt: string }): Promise<void> {
-  const { error } = await supabase.rpc('control_publish_ambassador_compensation_matrix', {
+  const { error } = await api.staff.rpc('control_publish_ambassador_compensation_matrix', {
     p_matrix_id: input.matrixId, p_effective_from: input.effectiveFrom, p_effective_to: input.effectiveTo,
     p_publication_reason: input.reason, p_expected_updated_at: input.expectedUpdatedAt,
   });
   if (error) throw error;
 }
 export async function activateCompensationMatrix(matrixId: string): Promise<void> {
-  const { error } = await supabase.rpc('control_activate_ambassador_compensation_matrix', { p_matrix_id: matrixId });
+  const { error } = await api.staff.rpc('control_activate_ambassador_compensation_matrix', { p_matrix_id: matrixId });
   if (error) throw error;
 }
 export async function retireCompensationMatrix(input: { matrixId: string; reason: string }): Promise<void> {
-  const { error } = await supabase.rpc('control_retire_ambassador_compensation_matrix', { p_matrix_id: input.matrixId, p_reason: input.reason });
+  const { error } = await api.staff.rpc('control_retire_ambassador_compensation_matrix', { p_matrix_id: input.matrixId, p_reason: input.reason });
   if (error) throw error;
 }
 
@@ -251,7 +251,7 @@ type ChannelCostPolicyInput = {
   changeReason: string; expectedUpdatedAt?: string;
 };
 export async function saveChannelCostPolicy(input: ChannelCostPolicyInput): Promise<void> {
-  const { error } = await supabase.rpc('control_save_payment_channel_cost_policy', {
+  const { error } = await api.staff.rpc('control_save_payment_channel_cost_policy', {
     p_policy_id: input.id ?? null, p_provider: input.provider, p_payment_method: input.paymentMethod,
     p_offering_type_slug: input.offeringTypeSlug, p_commission_percentage: input.commissionPercentage,
     p_processing_percentage: input.processingPercentage, p_fixed_amount: input.fixedAmount,
@@ -261,22 +261,22 @@ export async function saveChannelCostPolicy(input: ChannelCostPolicyInput): Prom
   if (error) throw error;
 }
 export async function publishChannelCostPolicy(input: { id: string; effectiveFrom: string; effectiveTo: string | null; reason: string; expectedUpdatedAt: string }): Promise<void> {
-  const { error } = await supabase.rpc('control_publish_payment_channel_cost_policy', {
+  const { error } = await api.staff.rpc('control_publish_payment_channel_cost_policy', {
     p_policy_id: input.id, p_effective_from: input.effectiveFrom, p_effective_to: input.effectiveTo,
     p_publication_reason: input.reason, p_expected_updated_at: input.expectedUpdatedAt,
   });
   if (error) throw error;
 }
 export async function activateChannelCostPolicy(id: string): Promise<void> {
-  const { error } = await supabase.rpc('control_activate_payment_channel_cost_policy', { p_policy_id: id });
+  const { error } = await api.staff.rpc('control_activate_payment_channel_cost_policy', { p_policy_id: id });
   if (error) throw error;
 }
 export async function retireChannelCostPolicy(input: { id: string; reason: string }): Promise<void> {
-  const { error } = await supabase.rpc('control_retire_payment_channel_cost_policy', { p_policy_id: input.id, p_reason: input.reason });
+  const { error } = await api.staff.rpc('control_retire_payment_channel_cost_policy', { p_policy_id: input.id, p_reason: input.reason });
   if (error) throw error;
 }
 export async function simulateCompensation(input: { matrixId: string; grossAmount: number; costPolicyIds: string[]; useLegacyIosSettings: boolean }): Promise<CompensationSimulation> {
-  const { data, error } = await supabase.rpc('control_simulate_ambassador_compensation', {
+  const { data, error } = await api.staff.rpc('control_simulate_ambassador_compensation', {
     p_matrix_id: input.matrixId, p_gross_amount: input.grossAmount,
     p_cost_policy_ids: input.costPolicyIds.length ? input.costPolicyIds : null,
     p_use_legacy_ios_settings: input.useLegacyIosSettings,
@@ -307,7 +307,7 @@ function booleanMap(value: unknown): Record<string, boolean> {
 }
 
 export async function getAmbassadorFinanceReadiness(): Promise<AmbassadorFinanceReadiness> {
-  const { data, error } = await supabase.rpc('control_get_ambassador_finance_readiness');
+  const { data, error } = await api.staff.rpc('control_get_ambassador_finance_readiness');
   if (error) throw error;
   const row = record(data); const runtime = record(row.runtime);
   return {

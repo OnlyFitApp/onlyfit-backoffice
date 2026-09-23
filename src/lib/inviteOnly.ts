@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 type InviteSettings = {
   invite_only_enabled: boolean;
@@ -113,13 +113,13 @@ function parseWaitlistEntry(value: unknown): WaitlistEntry {
 }
 
 export async function getInviteSettings(): Promise<InviteSettings> {
-  const { data, error } = await supabase.rpc('control_get_invite_settings');
+  const { data, error } = await api.staff.rpc('control_get_invite_settings');
   if (error) throw error;
   return parseSettings(data);
 }
 
 export async function setInviteOnlyEnabled(enabled: boolean): Promise<InviteSettings> {
-  const { data, error } = await supabase.rpc('control_set_invite_only_enabled', { p_enabled: enabled });
+  const { data, error } = await api.staff.rpc('control_set_invite_only_enabled', { p_enabled: enabled });
   if (error) throw error;
   return parseSettings(data);
 }
@@ -129,7 +129,7 @@ export async function listInvitedEmails(
   limit: number,
   offset: number,
 ): Promise<{ items: InvitedEmail[]; total: number }> {
-  const { data, error } = await supabase.rpc('control_list_invited_emails', {
+  const { data, error } = await api.staff.rpc('control_list_invited_emails', {
     p_search: search || null,
     p_limit: limit,
     p_offset: offset,
@@ -141,7 +141,7 @@ export async function listInvitedEmails(
 }
 
 export async function addInvitedEmails(emails: string[], note: string): Promise<AddInvitedEmailsResult> {
-  const { data, error } = await supabase.rpc('control_add_invited_emails', {
+  const { data, error } = await api.staff.rpc('control_add_invited_emails', {
     p_emails: emails,
     p_note: note || null,
   });
@@ -155,7 +155,7 @@ export async function addInvitedEmails(emails: string[], note: string): Promise<
 }
 
 export async function removeInvitedEmail(email: string): Promise<void> {
-  const { error } = await supabase.rpc('control_remove_invited_email', { p_email: email });
+  const { error } = await api.staff.rpc('control_remove_invited_email', { p_email: email });
   if (error) throw error;
 }
 
@@ -165,7 +165,7 @@ export async function listWaitlist(
   limit: number,
   offset: number,
 ): Promise<{ items: WaitlistEntry[]; total: number; waitingCount: number; releasedCount: number }> {
-  const { data, error } = await supabase.rpc('control_list_access_waitlist', {
+  const { data, error } = await api.staff.rpc('control_list_access_waitlist', {
     p_status: status,
     p_search: search || null,
     p_limit: limit,
@@ -187,7 +187,7 @@ export async function listWaitlist(
  * tela mostra o reenvio como pendência, em vez de fingir que nada aconteceu.
  */
 export async function releaseWaitlistAccess(userId: string): Promise<ReleaseResult> {
-  const { data, error } = await supabase.functions.invoke('invite-release-access', {
+  const { data, error } = await api.identidade.functions.invoke('invite-release-access', {
     body: { user_id: userId },
   });
 
@@ -243,7 +243,7 @@ type SendInviteEmailsResult = {
  * `skipped` sem erro.
  */
 export async function sendInviteEmails(emails: string[]): Promise<SendInviteEmailsResult> {
-  const { data, error } = await supabase.functions.invoke('invite-send-email', {
+  const { data, error } = await api.identidade.functions.invoke('invite-send-email', {
     body: { emails },
   });
 

@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 type SendEmailInput = {
   from: string;
@@ -32,7 +32,7 @@ export async function sendOutboundEmail(input: SendEmailInput): Promise<{
   messageId: string | null;
   threadId: string | null;
 }> {
-  const { data, error } = await supabase.functions.invoke('control-send-email', { body: input });
+  const { data, error } = await api.staff.functions.invoke('control-send-email', { body: input });
   if (error) throw error;
   const response = data as {
     id?: unknown;

@@ -5,7 +5,7 @@ import ts from 'typescript';
 
 async function load(file) {
   const source = readFileSync(new URL(file, import.meta.url), 'utf8')
-    .replace("import { supabase } from './supabase';", 'const supabase = { rpc: (...args) => globalThis.__appleTransactionsRpc(...args) };');
+    .replace("import { api } from '../api';", 'const supabase = { rpc: (...args) => globalThis.__appleTransactionsRpc(...args) }; const api = new Proxy({}, { get: () => supabase });');
   const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
   return import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
 }

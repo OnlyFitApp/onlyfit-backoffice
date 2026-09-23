@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 type PlatformPaymentSettings = {
   payout_processing_hours: number;
@@ -44,7 +44,7 @@ function parseSettings(value: unknown): PlatformPaymentSettings {
 }
 
 export async function getPlatformPaymentSettings(): Promise<PlatformPaymentSettings> {
-  const { data, error } = await supabase.rpc('control_get_platform_payment_settings');
+  const { data, error } = await api.staff.rpc('control_get_platform_payment_settings');
   if (error) throw error;
   return parseSettings(data);
 }
@@ -60,7 +60,7 @@ export async function updatePlatformPaymentSettings(input: {
   iosIapRoundingIncrement: number;
   iosIapPricingEnabled: boolean;
 }): Promise<PlatformPaymentSettings> {
-  const { data, error } = await supabase.rpc('control_update_platform_payment_settings', {
+  const { data, error } = await api.staff.rpc('control_update_platform_payment_settings', {
     p_payout_processing_hours: input.payoutProcessingHours,
     p_payout_minimum_amount: input.payoutMinimumAmount,
     p_card_settlement_days: input.cardSettlementDays,

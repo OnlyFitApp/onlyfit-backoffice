@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type ReviewReportStatus = 'pending' | 'kept' | 'hidden';
 type ReviewModerationAction = 'keep' | 'hide';
@@ -25,7 +25,7 @@ export type ReviewReport = {
 type ReviewReportPage = { items: ReviewReport[]; total: number };
 
 export async function listReviewReports(status: ReviewReportStatus, limit: number, offset: number) {
-  const { data, error } = await supabase.rpc('control_list_review_reports', {
+  const { data, error } = await api.staff.rpc('control_list_review_reports', {
     p_status: status,
     p_limit: limit,
     p_offset: offset,
@@ -35,7 +35,7 @@ export async function listReviewReports(status: ReviewReportStatus, limit: numbe
 }
 
 export async function resolveReviewReport(input: { reportId: string; action: ReviewModerationAction }) {
-  const { data, error } = await supabase.rpc('control_resolve_review_report', {
+  const { data, error } = await api.staff.rpc('control_resolve_review_report', {
     p_report_id: input.reportId,
     p_action: input.action,
   });

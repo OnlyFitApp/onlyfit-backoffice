@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type TransactionStatus =
   | 'created' | 'pending' | 'confirmed' | 'settled' | 'failed' | 'refunded' | 'chargeback';
@@ -117,7 +117,7 @@ function parseTransaction(value: unknown): PaymentTransaction {
 }
 
 export async function listPaymentTransactions(filters: TransactionFilters): Promise<TransactionsPage> {
-  const { data, error } = await supabase.rpc('control_list_payment_transactions', {
+  const { data, error } = await api.staff.rpc('control_list_payment_transactions', {
     p_from: filters.from ?? null,
     p_to: filters.to ?? null,
     p_status: filters.status ?? null,

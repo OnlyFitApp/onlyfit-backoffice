@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type NetworkHealthKpis = {
   mau: number;
@@ -233,7 +233,7 @@ function parseKpis(value: unknown): NetworkHealthKpis {
 }
 
 export async function fetchNetworkHealthSnapshot(): Promise<NetworkHealthSnapshot> {
-  const { data, error } = await supabase.rpc('control_network_health_snapshot');
+  const { data, error } = await api.staff.rpc('control_network_health_snapshot');
   if (error) throw error;
   const snapshot = asRecord(data);
   const generatedAt = typeof snapshot.generated_at === 'string' ? snapshot.generated_at : null;
@@ -313,7 +313,7 @@ export async function fetchNetworkHealthUsers(
   limit: number,
   offset: number,
 ): Promise<NetworkHealthUserPage> {
-  const { data, error } = await supabase.rpc('control_network_health_users', {
+  const { data, error } = await api.staff.rpc('control_network_health_users', {
     p_segment: segment,
     p_limit: limit,
     p_offset: offset,

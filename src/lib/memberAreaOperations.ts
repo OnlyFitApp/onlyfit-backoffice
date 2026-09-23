@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type AccessStatus = 'all' | 'active' | 'revoked' | 'suspended' | 'expired';
 export type ReportStatus = 'open' | 'resolved' | 'dismissed';
@@ -81,7 +81,7 @@ export async function listMemberAreaAccesses(input: {
   cursor: PageCursor | null;
   limit?: number;
 }) {
-  const { data, error } = await supabase.rpc('control_list_member_area_accesses_v1', {
+  const { data, error } = await api.staff.rpc('control_list_member_area_accesses_v1', {
     p_status: input.status,
     p_query: input.query.trim() || null,
     p_before_at: input.cursor?.at ?? null,
@@ -97,7 +97,7 @@ export async function suspendMemberAreaAccess(input: {
   reason: string;
   idempotencyKey: string;
 }) {
-  const { data, error } = await supabase.rpc('control_suspend_member_area_access_v1', {
+  const { data, error } = await api.staff.rpc('control_suspend_member_area_access_v1', {
     p_entitlement_id: input.entitlementId,
     p_reason: input.reason.trim(),
     p_idempotency_key: input.idempotencyKey,
@@ -111,7 +111,7 @@ export async function listCourseCommentReports(input: {
   cursor: PageCursor | null;
   limit?: number;
 }) {
-  const { data, error } = await supabase.rpc('control_list_course_comment_reports_v1', {
+  const { data, error } = await api.staff.rpc('control_list_course_comment_reports_v1', {
     p_status: input.status,
     p_before_at: input.cursor?.at ?? null,
     p_before_id: input.cursor?.id ?? null,
@@ -126,7 +126,7 @@ export async function moderateCourseCommentReport(input: {
   action: 'hide' | 'dismiss';
   reason: string;
 }) {
-  const { data, error } = await supabase.rpc('control_moderate_course_comment_report_v1', {
+  const { data, error } = await api.staff.rpc('control_moderate_course_comment_report_v1', {
     p_report_id: input.reportId,
     p_action: input.action,
     p_reason: input.reason.trim(),
@@ -140,7 +140,7 @@ export async function listMemberAreaAudit(input: {
   cursor: PageCursor | null;
   limit?: number;
 }) {
-  const { data, error } = await supabase.rpc('control_list_member_area_audit_v1', {
+  const { data, error } = await api.staff.rpc('control_list_member_area_audit_v1', {
     p_action: input.action,
     p_before_at: input.cursor?.at ?? null,
     p_before_id: input.cursor ? Number(input.cursor.id) : null,

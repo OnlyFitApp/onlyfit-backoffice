@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 type FinancialReportSummary = {
   transactions_total: number;
@@ -115,7 +115,7 @@ export async function fetchFinancialReportsSnapshot(filters: {
   from?: string | null;
   to?: string | null;
 }): Promise<FinancialReportsSnapshot> {
-  const { data, error } = await supabase.rpc('control_financial_reports_snapshot', {
+  const { data, error } = await api.staff.rpc('control_financial_reports_snapshot', {
     p_from: filters.from || null,
     p_to: filters.to || null,
   });

@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type LibraryKind = 'workouts' | 'programs' | 'diets';
 export type LibraryPage<T> = { items: T[]; total: number };
@@ -72,7 +72,7 @@ const parseProgram = (value: unknown): ProgramCatalogItem => {
 };
 
 export async function listWorkouts(filters: { search?: string; modality?: string; active?: boolean; limit?: number; offset?: number } = {}) {
-  const { data, error } = await supabase.rpc('control_list_onlyfit_health_workouts', {
+  const { data, error } = await api.staff.rpc('control_list_onlyfit_health_workouts', {
     p_search: filters.search || null, p_modality: filters.modality || null, p_active: filters.active ?? null,
     p_limit: filters.limit ?? 50, p_offset: filters.offset ?? 0,
   });
@@ -80,14 +80,14 @@ export async function listWorkouts(filters: { search?: string; modality?: string
   return page(data, parseWorkout);
 }
 export async function listDiets(filters: { search?: string; active?: boolean; limit?: number; offset?: number } = {}) {
-  const { data, error } = await supabase.rpc('control_list_onlyfit_health_diets', {
+  const { data, error } = await api.staff.rpc('control_list_onlyfit_health_diets', {
     p_search: filters.search || null, p_active: filters.active ?? null, p_limit: filters.limit ?? 50, p_offset: filters.offset ?? 0,
   });
   if (error) throw error;
   return page(data, parseDiet);
 }
 export async function listPrograms(filters: { search?: string; sport?: string; active?: boolean; limit?: number; offset?: number } = {}) {
-  const { data, error } = await supabase.rpc('control_list_onlyfit_health_programs', {
+  const { data, error } = await api.staff.rpc('control_list_onlyfit_health_programs', {
     p_search: filters.search || null, p_sport: filters.sport || null, p_active: filters.active ?? null,
     p_limit: filters.limit ?? 50, p_offset: filters.offset ?? 0,
   });
@@ -116,13 +116,13 @@ function programPayload(input: ProgramInput) {
     active: input.active, weeks: input.weeks, sessions: input.sessions };
 }
 
-export async function saveWorkout(input: WorkoutInput) { const { data,error }=await supabase.rpc('control_upsert_onlyfit_health_workout',{p_payload:workoutPayload(input)}); if(error) throw error; return data; }
-export async function saveDiet(input: DietInput) { const { data,error }=await supabase.rpc('control_upsert_onlyfit_health_diet',{p_payload:dietPayload(input)}); if(error) throw error; return data; }
-export async function saveProgram(input: ProgramInput) { const { data,error }=await supabase.rpc('control_upsert_onlyfit_health_program',{p_payload:programPayload(input)}); if(error) throw error; return data; }
+export async function saveWorkout(input: WorkoutInput) { const { data,error }=await api.staff.rpc('control_upsert_onlyfit_health_workout',{p_payload:workoutPayload(input)}); if(error) throw error; return data; }
+export async function saveDiet(input: DietInput) { const { data,error }=await api.staff.rpc('control_upsert_onlyfit_health_diet',{p_payload:dietPayload(input)}); if(error) throw error; return data; }
+export async function saveProgram(input: ProgramInput) { const { data,error }=await api.staff.rpc('control_upsert_onlyfit_health_program',{p_payload:programPayload(input)}); if(error) throw error; return data; }
 export async function setLibraryItemActive(kind: LibraryKind,id:string,active:boolean) {
   const rpc = kind === 'workouts' ? 'control_set_onlyfit_health_workout_active' : kind === 'diets' ? 'control_set_onlyfit_health_diet_active' : 'control_set_onlyfit_health_program_active';
   const params = kind === 'workouts' ? {p_workout_id:id,p_active:active} : kind === 'diets' ? {p_template_id:id,p_active:active} : {p_program_id:id,p_active:active};
-  const { error } = await supabase.rpc(rpc, params); if (error) throw error;
+  const { error } = await api.staff.rpc(rpc, params); if (error) throw error;
 }
 
 export function libraryErrorMessage(error: unknown) {

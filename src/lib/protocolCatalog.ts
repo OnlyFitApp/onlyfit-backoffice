@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 /**
  * O catálogo de protocolos da plataforma (F4 da jornada de templates).
@@ -108,13 +108,13 @@ function stepPayload(steps: ProtocolStep[]) {
 }
 
 export async function listProtocolCatalog(): Promise<ProtocolCatalogEntry[]> {
-  const { data, error } = await supabase.rpc('control_list_protocol_catalog');
+  const { data, error } = await api.staff.rpc('control_list_protocol_catalog');
   if (error) throw error;
   return Array.isArray(data) ? data.map(parse) : [];
 }
 
 export async function upsertProtocolCatalogEntry(input: ProtocolCatalogInput): Promise<string> {
-  const { data, error } = await supabase.rpc('control_upsert_protocol_catalog_entry', {
+  const { data, error } = await api.staff.rpc('control_upsert_protocol_catalog_entry', {
     p_id: input.id.trim(),
     p_name: input.name.trim(),
     p_category: input.category.trim(),
@@ -136,7 +136,7 @@ export async function setProtocolCatalogEntryActive(input: {
   id: string;
   active: boolean;
 }): Promise<void> {
-  const { error } = await supabase.rpc('control_set_protocol_catalog_active', {
+  const { error } = await api.staff.rpc('control_set_protocol_catalog_active', {
     p_id: input.id,
     p_active: input.active,
   });

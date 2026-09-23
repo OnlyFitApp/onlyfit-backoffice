@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type BillingType = 'one_time' | 'recurring';
 export type BillingInterval = 'month' | '2month' | 'quarter' | 'semester' | 'year';
@@ -72,7 +72,7 @@ function parseOfferingType(value: unknown): OfferingTypeBilling {
 }
 
 export async function listOfferingTypeBilling(): Promise<OfferingTypeBilling[]> {
-  const { data, error } = await supabase.rpc('control_list_offering_type_billing');
+  const { data, error } = await api.staff.rpc('control_list_offering_type_billing');
   if (error) throw error;
   return Array.isArray(data) ? data.map(parseOfferingType) : [];
 }
@@ -85,7 +85,7 @@ export async function updateOfferingTypeBilling(input: {
   platformFeePercent: number;
   platformFeeFixed: number;
 }): Promise<OfferingTypeBilling> {
-  const { data, error } = await supabase.rpc('control_update_offering_type_billing', {
+  const { data, error } = await api.staff.rpc('control_update_offering_type_billing', {
     p_slug: input.slug,
     p_billing_type: input.billingType,
     p_billing_interval: input.billingInterval,

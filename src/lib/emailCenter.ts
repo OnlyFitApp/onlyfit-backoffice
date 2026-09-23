@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type EmailBox = 'all' | 'inbox' | 'sent';
 export type EmailDirection = 'inbound' | 'outbound';
@@ -171,13 +171,13 @@ function parseMessage(value: unknown): EmailMessage {
 }
 
 export async function listEmailMailboxes(): Promise<EmailMailbox[]> {
-  const { data, error } = await supabase.rpc('control_list_email_mailboxes');
+  const { data, error } = await api.staff.rpc('control_list_email_mailboxes');
   if (error) throw error;
   return Array.isArray(data) ? data.map(parseMailbox) : [];
 }
 
 export async function listEmailThreads(filters: EmailThreadFilters): Promise<EmailThreadPage> {
-  const { data, error } = await supabase.rpc('control_list_email_threads', {
+  const { data, error } = await api.staff.rpc('control_list_email_threads', {
     p_mailbox_id: filters.mailboxId,
     p_box: filters.box,
     p_query: filters.query.trim() || null,
@@ -193,7 +193,7 @@ export async function listEmailThreads(filters: EmailThreadFilters): Promise<Ema
 }
 
 export async function getEmailThread(id: string): Promise<EmailThread> {
-  const { data, error } = await supabase.rpc('control_get_email_thread', { p_thread_id: id });
+  const { data, error } = await api.staff.rpc('control_get_email_thread', { p_thread_id: id });
   if (error) throw error;
   const row = record(data);
   return {
@@ -209,17 +209,17 @@ export async function getEmailThread(id: string): Promise<EmailThread> {
 }
 
 export async function markEmailThreadRead(id: string): Promise<void> {
-  const { error } = await supabase.rpc('control_mark_email_thread_read', { p_thread_id: id });
+  const { error } = await api.staff.rpc('control_mark_email_thread_read', { p_thread_id: id });
   if (error) throw error;
 }
 
 export async function syncEmailCenter(): Promise<void> {
-  const { error } = await supabase.functions.invoke('control-sync-email-center', { body: {} });
+  const { error } = await api.staff.functions.invoke('control-sync-email-center', { body: {} });
   if (error) throw error;
 }
 
 export async function openEmailAttachment(id: string): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('control-email-attachment', {
+  const { data, error } = await api.staff.functions.invoke('control-email-attachment', {
     body: { attachmentId: id },
   });
   if (error) throw error;

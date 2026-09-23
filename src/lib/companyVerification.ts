@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 /**
  * Fila de verificação de empresas.
@@ -42,7 +42,7 @@ export async function listCompanyVerifications(
   limit: number,
   offset: number,
 ) {
-  const { data, error } = await supabase.rpc('control_list_company_verifications', {
+  const { data, error } = await api.staff.rpc('control_list_company_verifications', {
     p_status: status,
     p_limit: limit,
     p_offset: offset,
@@ -56,7 +56,7 @@ export async function reviewCompanyVerification(input: {
   action: 'approve' | 'reject';
   notes?: string;
 }) {
-  const { data, error } = await supabase.rpc('control_review_company_verification', {
+  const { data, error } = await api.staff.rpc('control_review_company_verification', {
     p_organization_id: input.organizationId,
     p_action: input.action,
     p_notes: input.notes ?? null,

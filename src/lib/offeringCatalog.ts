@@ -1,5 +1,5 @@
-import { supabase } from './supabase';
 import type { AppStoreProductType } from './offeringMonetization';
+import { api } from '../api';
 export type { AppStoreProductType } from './offeringMonetization';
 
 export type OfferingCatalogSource = 'business_offering';
@@ -163,7 +163,7 @@ function parseCatalogItem(value: unknown): OfferingCatalogItem {
 }
 
 export async function listOfferingCatalog(filters: OfferingCatalogFilters): Promise<OfferingCatalogPage> {
-  const { data, error } = await supabase.rpc('control_list_financial_offering_catalog', {
+  const { data, error } = await api.staff.rpc('control_list_financial_offering_catalog', {
     p_source: filters.source ?? null,
     p_offering_type: filters.offeringType ?? null,
     p_status: filters.status ?? null,
@@ -181,8 +181,8 @@ export async function listOfferingCatalog(filters: OfferingCatalogFilters): Prom
   let appStoreProducts: Record<string, unknown> = {};
   if (offeringIds.length > 0) {
     const [pricesResult, productsResult] = await Promise.all([
-      supabase.rpc('control_get_business_offering_channel_prices', { p_offering_ids: offeringIds }),
-      supabase.rpc('control_get_app_store_products', { p_offering_ids: offeringIds }),
+      api.staff.rpc('control_get_business_offering_channel_prices', { p_offering_ids: offeringIds }),
+      api.staff.rpc('control_get_app_store_products', { p_offering_ids: offeringIds }),
     ]);
     const { data: priceData, error: priceError } = pricesResult;
     if (priceError) throw priceError;
@@ -230,7 +230,7 @@ export type AppStoreProductInput = {
 };
 
 export async function upsertAppStoreProduct(input: AppStoreProductInput): Promise<void> {
-  const { error } = await supabase.rpc('control_upsert_app_store_product', {
+  const { error } = await api.staff.rpc('control_upsert_app_store_product', {
     p_offering_id: input.offeringId,
     p_product_id: input.productId,
     p_product_type: input.productType,

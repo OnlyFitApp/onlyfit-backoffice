@@ -80,12 +80,7 @@ export type UserProfileRecord = {
   professional_shell_enabled: boolean;
   is_identity_verified: boolean;
   onboarding_completed: boolean;
-  profile_completion_pending: boolean;
   app_lockdown: boolean;
-  level: number;
-  xp: number;
-  streak: number;
-  pulse_coins: number;
   created_at: string | null;
 };
 
@@ -269,12 +264,7 @@ function parseProfile(value: unknown): UserProfileRecord {
     professional_shell_enabled: boolFrom(row.professional_shell_enabled),
     is_identity_verified: boolFrom(row.is_identity_verified),
     onboarding_completed: boolFrom(row.onboarding_completed),
-    profile_completion_pending: boolFrom(row.profile_completion_pending),
     app_lockdown: boolFrom(row.app_lockdown),
-    level: numberFrom(row.level),
-    xp: numberFrom(row.xp),
-    streak: numberFrom(row.streak),
-    pulse_coins: numberFrom(row.pulse_coins),
     created_at: stringOrNull(row.created_at),
   };
 }
@@ -532,9 +522,7 @@ const TABLE_LABELS: Record<string, string> = {
   health_events: 'Eventos de saúde',
   health_metrics_daily: 'Métricas de saúde',
   wearable_samples_agg: 'Dados de wearable',
-  user_achievements: 'Conquistas',
   user_badges: 'Selos',
-  user_checkins: 'Check-ins',
   user_preferences: 'Preferências',
   user_addresses: 'Endereços',
   user_blocks: 'Bloqueios entre usuários',

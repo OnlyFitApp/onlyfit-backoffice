@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 type MarketMode = 'algorithm' | 'random';
 
@@ -99,7 +99,7 @@ const numberFrom = (value: unknown) => {
 };
 
 export async function getMarketAlgorithmSettings(): Promise<MarketAlgorithmSettings> {
-  const { data, error } = await supabase.rpc('control_get_market_algorithm_settings');
+  const { data, error } = await api.staff.rpc('control_get_market_algorithm_settings');
   if (error) throw error;
   const row = (data ?? {}) as Record<string, unknown>;
   return {
@@ -118,7 +118,7 @@ export async function getMarketAlgorithmSettings(): Promise<MarketAlgorithmSetti
 }
 
 export async function setMarketAlgorithmSettings(input: MarketAlgorithmInput) {
-  const { data, error } = await supabase.rpc('control_set_market_algorithm_settings', {
+  const { data, error } = await api.staff.rpc('control_set_market_algorithm_settings', {
     p_mode: input.mode,
     p_weight_affinity: input.weight_affinity,
     p_weight_sales: input.weight_sales,
@@ -135,7 +135,7 @@ export async function setMarketAlgorithmSettings(input: MarketAlgorithmInput) {
 }
 
 export async function listProductCategories(): Promise<ProductCategory[]> {
-  const { data, error } = await supabase.rpc('control_list_product_categories', {
+  const { data, error } = await api.staff.rpc('control_list_product_categories', {
     p_include_inactive: true,
   });
   if (error) throw error;
@@ -149,7 +149,7 @@ export async function listProductCategories(): Promise<ProductCategory[]> {
 }
 
 export async function saveProductCategory(category: ProductCategory): Promise<void> {
-  const { error } = await supabase.rpc('control_save_product_category', {
+  const { error } = await api.staff.rpc('control_save_product_category', {
     p_slug: category.slug,
     p_label: category.label,
     p_icon: category.icon,
@@ -160,7 +160,7 @@ export async function saveProductCategory(category: ProductCategory): Promise<vo
 }
 
 export async function getAdInventory(): Promise<AdPlacement[]> {
-  const { data, error } = await supabase.rpc('control_get_ad_inventory');
+  const { data, error } = await api.staff.rpc('control_get_ad_inventory');
   if (error) throw error;
   return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
     slug: String(row.slug),
@@ -181,7 +181,7 @@ export async function getAdInventory(): Promise<AdPlacement[]> {
 }
 
 export async function setAdPlacement(input: Pick<AdPlacement, 'slug' | 'max_slots' | 'is_active'>) {
-  const { data, error } = await supabase.rpc('control_set_ad_placement', {
+  const { data, error } = await api.staff.rpc('control_set_ad_placement', {
     p_slug: input.slug,
     p_max_slots: input.max_slots,
     p_is_active: input.is_active,
@@ -192,7 +192,7 @@ export async function setAdPlacement(input: Pick<AdPlacement, 'slug' | 'max_slot
 
 export async function setAdPackage(input: Pick<AdPackage, 'placement' | 'duration_days' | 'price' | 'is_active'>) {
   if (input.price == null || !Number.isFinite(input.price) || input.price <= 0) throw new Error('invalid_ad_package_price');
-  const { data, error } = await supabase.rpc('control_set_ad_package', {
+  const { data, error } = await api.staff.rpc('control_set_ad_package', {
     p_placement: input.placement,
     p_duration_days: input.duration_days,
     p_price: input.price,
@@ -203,7 +203,7 @@ export async function setAdPackage(input: Pick<AdPackage, 'placement' | 'duratio
 }
 
 export async function listAdBookings(): Promise<{ items: AdBooking[]; total: number }> {
-  const { data, error } = await supabase.rpc('control_list_ad_bookings', {
+  const { data, error } = await api.staff.rpc('control_list_ad_bookings', {
     p_status: null,
     p_limit: 100,
     p_offset: 0,
@@ -217,7 +217,7 @@ export async function listAdBookings(): Promise<{ items: AdBooking[]; total: num
 }
 
 export async function listOfficialMarketStores(): Promise<OfficialMarketStore[]> {
-  const { data, error } = await supabase.rpc('control_list_official_market_stores', {
+  const { data, error } = await api.staff.rpc('control_list_official_market_stores', {
     p_limit: 200,
     p_offset: 0,
   });
@@ -227,7 +227,7 @@ export async function listOfficialMarketStores(): Promise<OfficialMarketStore[]>
 }
 
 export async function searchOfficialStoreOrganizations(query = ''): Promise<OfficialStoreOrganization[]> {
-  const { data, error } = await supabase.rpc('control_search_official_store_organizations', {
+  const { data, error } = await api.staff.rpc('control_search_official_store_organizations', {
     p_query: query.trim() || null,
     p_limit: 30,
   });
@@ -236,7 +236,7 @@ export async function searchOfficialStoreOrganizations(query = ''): Promise<Offi
 }
 
 export async function saveOfficialMarketStore(input: OfficialMarketStoreInput): Promise<void> {
-  const { error } = await supabase.rpc('control_upsert_official_market_store', {
+  const { error } = await api.staff.rpc('control_upsert_official_market_store', {
     p_id: input.id ?? null,
     p_organization_id: input.organization_id,
     p_slug: input.slug,
@@ -257,7 +257,7 @@ export async function saveOfficialMarketStore(input: OfficialMarketStoreInput): 
 }
 
 export async function deleteOfficialMarketStore(id: string): Promise<void> {
-  const { error } = await supabase.rpc('control_delete_official_market_store', { p_id: id });
+  const { error } = await api.staff.rpc('control_delete_official_market_store', { p_id: id });
   if (error) throw error;
 }
 
@@ -273,10 +273,10 @@ export async function uploadOfficialStoreAsset(
   const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
   const safeKey = storeKey.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
   const path = `official-stores/${safeKey}/${kind}-${crypto.randomUUID()}.${extension}`;
-  const { error } = await supabase.storage.from('business-media').upload(path, file, {
+  const { error } = await api.organizacoes.storage.from('business-media').upload(path, file, {
     contentType: file.type,
     upsert: false,
   });
   if (error) throw error;
-  return supabase.storage.from('business-media').getPublicUrl(path).data.publicUrl;
+  return api.organizacoes.storage.from('business-media').getPublicUrl(path).data.publicUrl;
 }

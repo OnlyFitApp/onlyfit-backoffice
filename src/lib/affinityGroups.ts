@@ -1,5 +1,5 @@
 import { affinityAccents, affinityIcons, type AffinityAccent, type AffinityIcon } from './affinityCatalog';
-import { supabase } from './supabase';
+import { api } from '../api';
 export type { AffinityAccent, AffinityIcon };
 
 export type AffinityImpact = {
@@ -100,19 +100,19 @@ function groupFrom(value: unknown): AffinityGroup {
 }
 
 export async function listAffinityGroups(): Promise<AffinityGroup[]> {
-  const { data, error } = await supabase.rpc('control_list_affinity_groups');
+  const { data, error } = await api.staff.rpc('control_list_affinity_groups');
   if (error) throw error;
   return Array.isArray(data) ? data.map(groupFrom) : [];
 }
 
 export async function getAffinityGroupImpact(key: string): Promise<AffinityImpact> {
-  const { data, error } = await supabase.rpc('control_get_affinity_group_impact', { p_key: key });
+  const { data, error } = await api.staff.rpc('control_get_affinity_group_impact', { p_key: key });
   if (error) throw error;
   return impactFrom(data);
 }
 
 export async function createAffinityGroup(input: AffinityGroupInput): Promise<AffinityGroup> {
-  const { data, error } = await supabase.rpc('control_create_affinity_group', {
+  const { data, error } = await api.staff.rpc('control_create_affinity_group', {
     p_label: input.label,
     p_icon: input.icon,
     p_accent: input.accent,
@@ -123,7 +123,7 @@ export async function createAffinityGroup(input: AffinityGroupInput): Promise<Af
 }
 
 export async function updateAffinityGroup(input: AffinityGroupInput & { key: string }): Promise<AffinityGroup> {
-  const { data, error } = await supabase.rpc('control_update_affinity_group', {
+  const { data, error } = await api.staff.rpc('control_update_affinity_group', {
     p_key: input.key,
     p_label: input.label,
     p_icon: input.icon,
@@ -135,12 +135,12 @@ export async function updateAffinityGroup(input: AffinityGroupInput & { key: str
 }
 
 export async function reorderAffinityGroups(keys: string[]): Promise<void> {
-  const { error } = await supabase.rpc('control_reorder_affinity_groups', { p_keys: keys });
+  const { error } = await api.staff.rpc('control_reorder_affinity_groups', { p_keys: keys });
   if (error) throw error;
 }
 
 export async function activateAffinityGroup(key: string): Promise<AffinityGroup> {
-  const { data, error } = await supabase.rpc('control_activate_affinity_group', { p_key: key });
+  const { data, error } = await api.staff.rpc('control_activate_affinity_group', { p_key: key });
   if (error) throw error;
   return groupFrom(data);
 }
@@ -150,7 +150,7 @@ export async function deactivateAffinityGroup(input: {
   confirmation: string;
   expectedToken: string;
 }): Promise<{ group: AffinityGroup; impact: AffinityImpact; alreadyInactive: boolean }> {
-  const { data, error } = await supabase.rpc('control_deactivate_affinity_group', {
+  const { data, error } = await api.staff.rpc('control_deactivate_affinity_group', {
     p_key: input.key,
     p_confirmation: input.confirmation,
     p_expected_token: input.expectedToken,
@@ -165,7 +165,7 @@ export async function deactivateAffinityGroup(input: {
 }
 
 export async function listAffinityGroupAudit(): Promise<AffinityAuditEntry[]> {
-  const { data, error } = await supabase.rpc('control_list_affinity_group_audit', { p_limit: 50 });
+  const { data, error } = await api.staff.rpc('control_list_affinity_group_audit', { p_limit: 50 });
   if (error) throw error;
   return Array.isArray(data) ? data.map((value) => {
     const row = recordFrom(value);

@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type UserListItem = {
   id: string;
@@ -321,7 +321,7 @@ async function throwFunctionError(error: unknown): Promise<never> {
 }
 
 export async function searchUsers(filters: UserSearchFilters): Promise<UserSearchPage> {
-  const { data, error } = await supabase.rpc('control_directory_search_users', {
+  const { data, error } = await api.staff.rpc('control_directory_search_users', {
     p_query: filters.query?.trim() || null,
     p_created_from: filters.createdFrom || null,
     p_created_to: filters.createdTo || null,
@@ -340,7 +340,7 @@ export async function searchUsers(filters: UserSearchFilters): Promise<UserSearc
 }
 
 export async function fetchUserOverview(userId: string): Promise<UserOverview> {
-  const { data, error } = await supabase.rpc('control_directory_user_overview', { p_user_id: userId });
+  const { data, error } = await api.staff.rpc('control_directory_user_overview', { p_user_id: userId });
   if (error) throw error;
 
   const row = asRecord(data);
@@ -377,7 +377,7 @@ export async function fetchUserOverview(userId: string): Promise<UserOverview> {
 }
 
 export async function fetchUserFootprint(userId: string): Promise<UserFootprint> {
-  const { data, error } = await supabase.rpc('control_directory_user_footprint', { p_user_id: userId });
+  const { data, error } = await api.staff.rpc('control_directory_user_footprint', { p_user_id: userId });
   if (error) throw error;
   return parseFootprint(data);
 }
@@ -388,7 +388,7 @@ type UpdateUserAccountResult = {
 };
 
 export async function updateUserAccount(input: UpdateUserAccountInput): Promise<UpdateUserAccountResult> {
-  const { data, error } = await supabase.functions.invoke('control-user-account', {
+  const { data, error } = await api.staff.functions.invoke('control-user-account', {
     method: 'PATCH',
     body: {
       user_id: input.userId,
@@ -411,7 +411,7 @@ export async function updateUserAccount(input: UpdateUserAccountInput): Promise<
 }
 
 export async function deleteUserAccount(input: DeleteUserAccountInput): Promise<DeleteUserAccountResult> {
-  const { data, error } = await supabase.functions.invoke('control-user-account', {
+  const { data, error } = await api.staff.functions.invoke('control-user-account', {
     method: 'DELETE',
     body: {
       user_id: input.userId,

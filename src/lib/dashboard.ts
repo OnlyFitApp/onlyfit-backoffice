@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type OverviewStats = {
   profiles_total: number;
@@ -140,13 +140,13 @@ function parseNotes(value: unknown): string[] {
 }
 
 export async function isPlatformStaff(): Promise<boolean> {
-  const { data, error } = await supabase.rpc('platform_is_staff');
+  const { data, error } = await api.staff.rpc('platform_is_staff');
   if (error) throw error;
   return Boolean(data);
 }
 
 export async function fetchDashboardSnapshot(): Promise<DashboardSnapshot> {
-  const { data, error } = await supabase.rpc('control_dashboard_snapshot');
+  const { data, error } = await api.staff.rpc('control_dashboard_snapshot');
   if (error) throw error;
 
   const snapshot = asRecord(data);

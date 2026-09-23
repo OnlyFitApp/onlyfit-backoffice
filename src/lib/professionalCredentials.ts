@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type CredentialStatus = 'pending' | 'approved' | 'rejected';
 
@@ -26,7 +26,7 @@ function nullable(value: unknown): string | null {
 }
 
 export async function listProfessionalCredentialReviews(status: CredentialStatus): Promise<{ total: number; items: ProfessionalCredentialReview[] }> {
-  const { data, error } = await supabase.rpc('control_list_professional_credential_reviews', {
+  const { data, error } = await api.staff.rpc('control_list_professional_credential_reviews', {
     p_status: status,
     p_limit: 100,
     p_offset: 0,
@@ -57,7 +57,7 @@ export async function listProfessionalCredentialReviews(status: CredentialStatus
 }
 
 export async function reviewProfessionalCredential(input: { id: string; action: 'approve' | 'reject'; reason?: string }): Promise<void> {
-  const { error } = await supabase.rpc('control_review_professional_credential', {
+  const { error } = await api.staff.rpc('control_review_professional_credential', {
     p_review_id: input.id,
     p_action: input.action,
     p_rejection_reason: input.reason ?? null,

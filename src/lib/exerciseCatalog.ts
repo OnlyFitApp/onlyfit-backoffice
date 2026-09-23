@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type ExerciseCatalogEntry = {
   id: string;
@@ -88,7 +88,7 @@ function parseEntry(value: unknown): ExerciseCatalogEntry {
 }
 
 export async function listExerciseCatalog(filters: ExerciseCatalogFilters): Promise<ExerciseCatalogPage> {
-  const { data, error } = await supabase.rpc('control_list_exercise_catalog', {
+  const { data, error } = await api.staff.rpc('control_list_exercise_catalog', {
     p_search: filters.search.trim() || null,
     p_active: filters.active,
     p_sport: filters.sport,
@@ -104,7 +104,7 @@ export async function listExerciseCatalog(filters: ExerciseCatalogFilters): Prom
 }
 
 export async function upsertExerciseCatalogEntry(input: ExerciseCatalogInput): Promise<string> {
-  const { data, error } = await supabase.rpc('control_upsert_exercise_catalog_entry', {
+  const { data, error } = await api.staff.rpc('control_upsert_exercise_catalog_entry', {
     p_entry: {
       id: input.id || null,
       name_ptbr: input.namePtbr.trim(),
@@ -132,7 +132,7 @@ export async function upsertExerciseCatalogEntry(input: ExerciseCatalogInput): P
 }
 
 export async function setExerciseCatalogActive(input: { id: string; active: boolean }): Promise<void> {
-  const { error } = await supabase.rpc('control_set_exercise_catalog_active', {
+  const { error } = await api.staff.rpc('control_set_exercise_catalog_active', {
     p_id: input.id,
     p_active: input.active,
   });

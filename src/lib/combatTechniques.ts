@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type CombatTechnique = {
   id: string;
@@ -51,7 +51,7 @@ function parseTechnique(value: unknown): CombatTechnique {
 }
 
 export async function listCombatTechniques(filters: CombatTechniqueFilters) {
-  const { data, error } = await supabase.rpc('control_list_combat_techniques', {
+  const { data, error } = await api.staff.rpc('control_list_combat_techniques', {
     p_search: filters.search.trim() || null,
     p_active: filters.active,
     p_discipline: filters.discipline,
@@ -69,7 +69,7 @@ export async function listCombatTechniques(filters: CombatTechniqueFilters) {
 }
 
 export async function upsertCombatTechnique(input: CombatTechniqueInput): Promise<string> {
-  const { data, error } = await supabase.rpc('control_upsert_combat_technique', {
+  const { data, error } = await api.staff.rpc('control_upsert_combat_technique', {
     p_entry: {
       id: input.id || null,
       name_ptbr: input.namePtbr.trim(),
@@ -89,7 +89,7 @@ export async function upsertCombatTechnique(input: CombatTechniqueInput): Promis
 }
 
 export async function setCombatTechniqueActive(input: { id: string; active: boolean }): Promise<void> {
-  const { error } = await supabase.rpc('control_set_combat_technique_active', {
+  const { error } = await api.staff.rpc('control_set_combat_technique_active', {
     p_id: input.id,
     p_active: input.active,
   });

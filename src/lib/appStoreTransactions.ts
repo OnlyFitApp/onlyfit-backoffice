@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type AppleEnvironment = 'Production' | 'Sandbox';
 export type AppleAccessStatus = 'active' | 'expired' | 'revoked';
@@ -17,7 +17,7 @@ type AppleTransactionsPage = { total: number; limit: number; offset: number; ite
 export async function listAppStoreTransactions(filters: {
   environment: AppleEnvironment; search: string; status: AppleAccessStatus | ''; page: number;
 }): Promise<AppleTransactionsPage> {
-  const { data, error } = await supabase.rpc('control_list_app_store_transactions', {
+  const { data, error } = await api.staff.rpc('control_list_app_store_transactions', {
     p_environment: filters.environment, p_search: filters.search.trim() || null,
     p_status: filters.status || null, p_limit: 25, p_offset: filters.page * 25,
   });

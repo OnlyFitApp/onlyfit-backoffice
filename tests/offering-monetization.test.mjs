@@ -50,9 +50,10 @@ test('review labels distinguish submitted from approved and avoid exposing unkno
 
 test('catalog hydration preserves non-renewing products returned by the server', async () => {
   const text = readFileSync(new URL('../src/lib/offeringCatalog.ts', import.meta.url), 'utf8')
-    .replace("import { supabase } from './supabase';", `const supabase = { rpc: async name => ({ data: name === 'control_list_financial_offering_catalog'
+    .replace("import { api } from '../api';", `const supabase = { rpc: async name => ({ data: name === 'control_list_financial_offering_catalog'
       ? {items:[{business_offering_id:'offer',settings:{},offering_type:'courses'}]}
-      : name === 'control_get_app_store_products' ? {offer:{product_type:'non_renewing_subscription'}} : {} }) };`);
+      : name === 'control_get_app_store_products' ? {offer:{product_type:'non_renewing_subscription'}} : {} }) };
+    const api = new Proxy({}, { get: () => supabase });`);
   const mod = ts.transpileModule(text, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
   const { listOfferingCatalog } = await import(`data:text/javascript;base64,${Buffer.from(mod).toString('base64')}`);
   assert.equal((await listOfferingCatalog({})).items[0].app_store_product_type, 'non_renewing_subscription');

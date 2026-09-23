@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 /**
  * O vocabulário de sessão de treino (F5.b da jornada de templates).
@@ -52,13 +52,13 @@ function parse(value: unknown): SessionType {
 }
 
 export async function listSessionTypes(): Promise<SessionType[]> {
-  const { data, error } = await supabase.rpc('control_list_session_types');
+  const { data, error } = await api.staff.rpc('control_list_session_types');
   if (error) throw error;
   return Array.isArray(data) ? data.map(parse) : [];
 }
 
 export async function upsertSessionType(input: SessionTypeInput): Promise<string> {
-  const { data, error } = await supabase.rpc('control_upsert_session_type', {
+  const { data, error } = await api.staff.rpc('control_upsert_session_type', {
     p_key: input.key.trim().toLowerCase(),
     p_label: input.label.trim(),
     p_icon_key: input.iconKey.trim(),
@@ -71,7 +71,7 @@ export async function upsertSessionType(input: SessionTypeInput): Promise<string
 }
 
 export async function setSessionTypeActive(input: { key: string; active: boolean }): Promise<void> {
-  const { error } = await supabase.rpc('control_set_session_type_active', {
+  const { error } = await api.staff.rpc('control_set_session_type_active', {
     p_key: input.key,
     p_active: input.active,
   });

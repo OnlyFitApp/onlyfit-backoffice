@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { api } from '../api';
 
 export type CommunityLifecycle =
   "draft" | "published" | "read_only" | "suspended" | "archived";
@@ -31,7 +31,7 @@ export async function listCommunitiesForModeration(input: {
   limit: number;
   offset: number;
 }) {
-  const { data, error } = await supabase.rpc("control_list_communities_v2", {
+  const { data, error } = await api.staff.rpc("control_list_communities_v2", {
     p_status: input.status,
     p_query: input.query || null,
     p_limit: input.limit,
@@ -46,7 +46,7 @@ export async function moderateCommunity(input: {
   action: CommunityModerationAction;
   reason?: string;
 }) {
-  const { error } = await supabase.rpc("control_moderate_community_v2", {
+  const { error } = await api.staff.rpc("control_moderate_community_v2", {
     p_community_id: input.communityId,
     p_action: input.action,
     p_reason: input.reason || null,

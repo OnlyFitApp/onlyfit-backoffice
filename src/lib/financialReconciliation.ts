@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 type ReconciliationRun = {
   id: string;
@@ -20,7 +20,7 @@ function numberFrom(value: unknown): number {
 }
 
 export async function listFinancialReconciliationRuns(): Promise<ReconciliationRun[]> {
-  const { data, error } = await supabase.rpc('control_list_financial_reconciliation', { p_run_id: null });
+  const { data, error } = await api.staff.rpc('control_list_financial_reconciliation', { p_run_id: null });
   if (error) throw error;
   const runs = asRecord(data).runs;
   if (!Array.isArray(runs)) return [];
@@ -40,7 +40,7 @@ export async function listFinancialReconciliationRuns(): Promise<ReconciliationR
 }
 
 export async function runFinancialReconciliation(input: { from: string; to: string }) {
-  const { data, error } = await supabase.functions.invoke('financial-reconcile', { body: input });
+  const { data, error } = await api.comercio.functions.invoke('financial-reconcile', { body: input });
   if (error) throw error;
   return asRecord(data);
 }
@@ -50,7 +50,7 @@ export async function recordTreasuryMovement(input: {
   amount: number;
   reference: string;
 }) {
-  const { error } = await supabase.rpc('control_record_treasury_movement', {
+  const { error } = await api.staff.rpc('control_record_treasury_movement', {
     p_direction: input.direction,
     p_amount: input.amount,
     p_reference: input.reference,

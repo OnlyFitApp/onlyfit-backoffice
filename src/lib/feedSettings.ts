@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 type FeedDistributionSettings = {
   slots_followed: number;
@@ -32,13 +32,13 @@ function parseSettings(value: unknown): FeedDistributionSettings {
 }
 
 export async function getFeedDistributionSettings(): Promise<FeedDistributionSettings> {
-  const { data, error } = await supabase.rpc('control_get_feed_algorithm_settings');
+  const { data, error } = await api.staff.rpc('control_get_feed_algorithm_settings');
   if (error) throw error;
   return parseSettings(data);
 }
 
 export async function updateFeedDistributionSettings(input: FeedDistributionInput): Promise<FeedDistributionSettings> {
-  const { data, error } = await supabase.rpc('control_update_feed_distribution_v1', {
+  const { data, error } = await api.staff.rpc('control_update_feed_distribution_v1', {
     p_slots_followed: input.slotsFollowed,
     p_slots_discovery: input.slotsDiscovery,
     p_expected_updated_at: input.expectedUpdatedAt,

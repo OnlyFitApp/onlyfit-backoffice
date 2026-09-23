@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type StaffRole = 'super_admin' | 'admin' | 'moderator' | 'support';
 
@@ -74,19 +74,19 @@ async function throwFunctionError(error: unknown): Promise<never> {
 }
 
 export async function fetchCurrentStaffRole(): Promise<StaffRole | null> {
-  const { data, error } = await supabase.rpc('platform_current_staff_role');
+  const { data, error } = await api.staff.rpc('platform_current_staff_role');
   if (error) throw error;
   return typeof data === 'string' ? data as StaffRole : null;
 }
 
 export async function fetchPlatformStaff(): Promise<PlatformStaffMember[]> {
-  const { data, error } = await supabase.rpc('control_list_platform_staff');
+  const { data, error } = await api.staff.rpc('control_list_platform_staff');
   if (error) throw error;
   return Array.isArray(data) ? data.map(parseStaffMember) : [];
 }
 
 export async function createPlatformStaff(input: CreatePlatformStaffInput): Promise<CreatePlatformStaffResult> {
-  const { data, error } = await supabase.functions.invoke('control-platform-staff', {
+  const { data, error } = await api.staff.functions.invoke('control-platform-staff', {
     body: {
       email: input.email.trim().toLowerCase(),
       full_name: input.fullName.trim(),
@@ -106,7 +106,7 @@ export async function createPlatformStaff(input: CreatePlatformStaffInput): Prom
 }
 
 export async function updatePlatformStaff(input: UpdatePlatformStaffInput): Promise<UpdatePlatformStaffResult> {
-  const { data, error } = await supabase.functions.invoke('control-platform-staff', {
+  const { data, error } = await api.staff.functions.invoke('control-platform-staff', {
     method: 'PATCH',
     body: {
       user_id: input.userId,
@@ -124,7 +124,7 @@ export async function updatePlatformStaff(input: UpdatePlatformStaffInput): Prom
 }
 
 export async function removePlatformStaff(userId: string): Promise<RemovePlatformStaffResult> {
-  const { data, error } = await supabase.functions.invoke('control-platform-staff', {
+  const { data, error } = await api.staff.functions.invoke('control-platform-staff', {
     method: 'DELETE',
     body: { user_id: userId },
   });

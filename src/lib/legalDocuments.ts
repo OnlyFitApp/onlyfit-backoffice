@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type LegalDocumentKind = 'acceptance' | 'notice' | 'declaration';
 
@@ -176,7 +176,7 @@ const text = (value: unknown) => value?.toString() ?? '';
 const number = (value: unknown) => Number.isFinite(Number(value)) ? Number(value) : 0;
 
 export async function listLegalDocuments(): Promise<LegalDocumentVersion[]> {
-  const { data, error } = await supabase.rpc('control_list_legal_documents');
+  const { data, error } = await api.staff.rpc('control_list_legal_documents');
   if (error) throw error;
   const rows = Array.isArray(data) ? data : [];
   return rows.map((raw) => {
@@ -200,12 +200,12 @@ export async function publishLegalDocument(input: PublishLegalDocumentInput): Pr
   const version = input.version.trim();
   const safeName = input.file.name.toLowerCase().replace(/[^a-z0-9.-]+/g, '-');
   const path = `${version}/${key}-${Date.now()}-${safeName}`;
-  const upload = await supabase.storage.from('legal-documents').upload(path, input.file, {
+  const upload = await api.identidade.storage.from('legal-documents').upload(path, input.file, {
     contentType: 'application/pdf', upsert: false,
   });
   if (upload.error) throw upload.error;
-  const { data: publicUrl } = supabase.storage.from('legal-documents').getPublicUrl(path);
-  const { error } = await supabase.rpc('control_publish_legal_document', {
+  const { data: publicUrl } = api.identidade.storage.from('legal-documents').getPublicUrl(path);
+  const { error } = await api.staff.rpc('control_publish_legal_document', {
     p_key: key,
     p_version: version,
     p_kind: input.kind,
@@ -226,7 +226,7 @@ export async function setLegalDocumentJourney(
   key: string,
   journey: LegalDocumentJourney | null,
 ): Promise<void> {
-  const { error } = await supabase.rpc('control_set_legal_document_journey', {
+  const { error } = await api.staff.rpc('control_set_legal_document_journey', {
     p_key: key,
     p_journey: journey,
   });
@@ -234,7 +234,7 @@ export async function setLegalDocumentJourney(
 }
 
 export async function setLegalDocumentActive(key: string, active: boolean): Promise<void> {
-  const { error } = await supabase.rpc('control_set_legal_document_active', {
+  const { error } = await api.staff.rpc('control_set_legal_document_active', {
     p_key: key,
     p_active: active,
   });

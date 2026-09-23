@@ -14,7 +14,6 @@ import {
   X,
 } from 'lucide-react';
 import { formatCurrencyExact, formatDateTime, formatNumber } from '../lib/format';
-import { supabase } from '../lib/supabase';
 import { payoutStatusLabel, type PayoutRequest } from '../lib/payouts';
 import {
   transactionStatusLabel,
@@ -41,6 +40,7 @@ import { useFinancialReconciliationRuns, useRecordTreasuryMovement, useRunFinanc
 import { AppStoreReconciliation } from './AppStoreReconciliation';
 import { AppStoreTransactionsPanel } from './AppStoreTransactionsPanel';
 import { useFinancialReports } from '../hooks/useFinancialReports';
+import { api } from '../api';
 
 function formatDay(value: string): string {
   if (!value) return '—';
@@ -442,7 +442,7 @@ export function PayoutQueuePanel({ canEdit }: { canEdit: boolean }) {
     }
     const extension = paymentProof.name.split('.').pop()?.replace(/[^A-Za-z0-9]/g, '').slice(0, 8) || 'bin';
     const proofPath = `payout/${request.id}/${crypto.randomUUID()}.${extension}`;
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await api.comercio.storage
       .from('payout-proofs')
       .upload(proofPath, paymentProof, { contentType: paymentProof.type, upsert: false });
     if (uploadError) throw uploadError;

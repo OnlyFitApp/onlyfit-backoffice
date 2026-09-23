@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from '../api';
 
 export type PayoutStatus =
   | 'pending_approval'
@@ -105,21 +105,21 @@ function parseRequest(value: unknown): PayoutRequest {
 }
 
 export async function listPayoutQueueDays(): Promise<PayoutQueueDay[]> {
-  const { data, error } = await supabase.rpc('control_list_payout_queue', { p_settlement_date: null });
+  const { data, error } = await api.staff.rpc('control_list_payout_queue', { p_settlement_date: null });
   if (error) throw error;
   const days = asRecord(data).days;
   return Array.isArray(days) ? days.map(parseDay) : [];
 }
 
 export async function listPayoutQueueDay(settlementDate: string): Promise<PayoutRequest[]> {
-  const { data, error } = await supabase.rpc('control_list_payout_queue', { p_settlement_date: settlementDate });
+  const { data, error } = await api.staff.rpc('control_list_payout_queue', { p_settlement_date: settlementDate });
   if (error) throw error;
   const requests = asRecord(data).requests;
   return Array.isArray(requests) ? requests.map(parseRequest) : [];
 }
 
 export async function approvePayout(payoutId: string): Promise<void> {
-  const { error } = await supabase.rpc('control_approve_payout', { p_payout_id: payoutId });
+  const { error } = await api.staff.rpc('control_approve_payout', { p_payout_id: payoutId });
   if (error) throw error;
 }
 
@@ -128,7 +128,7 @@ export async function recordManualPayout(input: {
   paymentReference: string;
   paymentProofPath: string;
 }): Promise<void> {
-  const { error } = await supabase.rpc('control_record_manual_payout', {
+  const { error } = await api.staff.rpc('control_record_manual_payout', {
     p_payout_id: input.payoutId,
     p_payment_reference: input.paymentReference,
     p_payment_proof_path: input.paymentProofPath,
@@ -137,17 +137,17 @@ export async function recordManualPayout(input: {
 }
 
 export async function finalizeManualPayout(payoutId: string): Promise<void> {
-  const { error } = await supabase.rpc('control_finalize_manual_payout', { p_payout_id: payoutId });
+  const { error } = await api.staff.rpc('control_finalize_manual_payout', { p_payout_id: payoutId });
   if (error) throw error;
 }
 
 export async function createPayoutBatch(payoutIds: string[]): Promise<void> {
-  const { error } = await supabase.rpc('control_create_payout_batch', { p_payout_ids: payoutIds, p_notes: null });
+  const { error } = await api.staff.rpc('control_create_payout_batch', { p_payout_ids: payoutIds, p_notes: null });
   if (error) throw error;
 }
 
 export async function rejectPayout(payoutId: string, reason: string): Promise<void> {
-  const { error } = await supabase.rpc('control_reject_payout', {
+  const { error } = await api.staff.rpc('control_reject_payout', {
     p_payout_id: payoutId,
     p_reason: reason,
   });
@@ -155,7 +155,7 @@ export async function rejectPayout(payoutId: string, reason: string): Promise<vo
 }
 
 export async function failManualPayout(payoutId: string, reason: string): Promise<void> {
-  const { error } = await supabase.rpc('control_fail_manual_payout', {
+  const { error } = await api.staff.rpc('control_fail_manual_payout', {
     p_payout_id: payoutId,
     p_reason: reason,
   });
@@ -163,7 +163,7 @@ export async function failManualPayout(payoutId: string, reason: string): Promis
 }
 
 export async function reversePaidPayout(payoutId: string, reason: string): Promise<void> {
-  const { error } = await supabase.rpc('control_reverse_paid_payout', {
+  const { error } = await api.staff.rpc('control_reverse_paid_payout', {
     p_payout_id: payoutId,
     p_reason: reason,
   });

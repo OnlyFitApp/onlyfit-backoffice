@@ -9,10 +9,11 @@ test('catalog sends every step to backend validation and preserves an unspecifie
   const exports = {};
   const source = readFileSync(new URL('../src/lib/protocolCatalog.ts', import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, {compilerOptions: {module: ts.ModuleKind.CommonJS}}).outputText;
-  runInNewContext(compiled, {exports, require: () => ({supabase: {rpc: async (_name, payload) => {
+  const supabase = {rpc: async (_name, payload) => {
     sent = payload;
     return {data: {id: payload.p_id}, error: null};
-  }}})});
+  }};
+  runInNewContext(compiled, {exports, require: () => ({supabase, api: new Proxy({}, {get: () => supabase})})});
   await exports.upsertProtocolCatalogEntry({id:'onlyfit_health_example',name:'Example',category:'Recovery',
     description:'Source instructions',iconKey:'sun',flow:'generic',structureLocked:true,clinicalNotice:true,
     featured:false,sortOrder:0,active:true,defaultSteps:[

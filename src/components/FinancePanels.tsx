@@ -22,7 +22,7 @@ import {
   type SettlementStatus,
   type TransactionStatus,
 } from '../lib/paymentTransactions';
-import type { AsaasEnvironment, AsaasEnvironmentStatus } from '../lib/asaasIntegration';
+import type { PaymentEnvironment, PaymentEnvironmentStatus } from '../lib/paymentProviders';
 import {
   usePayoutQueueDay,
   usePayoutQueueDays,
@@ -35,7 +35,7 @@ import {
   useReversePaidPayout,
 } from '../hooks/usePayoutQueue';
 import { usePaymentTransactions } from '../hooks/usePaymentTransactions';
-import { useAsaasIntegrationStatus, useSetAsaasCredentials } from '../hooks/useAsaasIntegration';
+import { usePaymentProviderStatus, useSetPaymentProviderCredentials } from '../hooks/usePaymentProviders';
 import { useFinancialReconciliationRuns, useRecordTreasuryMovement, useRunFinancialReconciliation } from '../hooks/useFinancialReconciliation';
 import { AppStoreReconciliation } from './AppStoreReconciliation';
 import { AppStoreTransactionsPanel } from './AppStoreTransactionsPanel';
@@ -895,13 +895,13 @@ function PaymentTransactionsPanel() {
 // -----------------------------------------------------------------------------
 // Integração do provedor de pagamentos.
 // -----------------------------------------------------------------------------
-function ProviderCredentialEditor({ environment }: { environment: AsaasEnvironment }) {
+function ProviderCredentialEditor({ environment }: { environment: PaymentEnvironment }) {
   const [apiKey, setApiKey] = useState('');
   const [webhookToken, setWebhookToken] = useState('');
   const [stripePublishableKey, setStripePublishableKey] = useState('');
   const [stripeSecretKey, setStripeSecretKey] = useState('');
   const [stripeWebhookSecret, setStripeWebhookSecret] = useState('');
-  const mutation = useSetAsaasCredentials();
+  const mutation = useSetPaymentProviderCredentials();
 
   async function save() {
     if (
@@ -913,11 +913,13 @@ function ProviderCredentialEditor({ environment }: { environment: AsaasEnvironme
     ) return;
     await mutation.mutateAsync({
       environment,
-      apiKey: apiKey.trim() || null,
-      webhookToken: webhookToken.trim() || null,
-      stripePublishableKey: stripePublishableKey.trim() || null,
-      stripeSecretKey: stripeSecretKey.trim() || null,
-      stripeWebhookSecret: stripeWebhookSecret.trim() || null,
+      credentials: {
+        ...(apiKey.trim() ? { asaas_api_key: apiKey.trim() } : {}),
+        ...(webhookToken.trim() ? { asaas_webhook_token: webhookToken.trim() } : {}),
+        ...(stripePublishableKey.trim() ? { stripe_publishable_key: stripePublishableKey.trim() } : {}),
+        ...(stripeSecretKey.trim() ? { stripe_secret_key: stripeSecretKey.trim() } : {}),
+        ...(stripeWebhookSecret.trim() ? { stripe_webhook_secret: stripeWebhookSecret.trim() } : {}),
+      },
     });
     setApiKey('');
     setWebhookToken('');
@@ -1013,7 +1015,7 @@ function ProviderEnvironmentCard({
   env,
   canEdit,
 }: {
-  env: AsaasEnvironmentStatus;
+  env: PaymentEnvironmentStatus;
   canEdit: boolean;
 }) {
   const asaasReady = env.asaas_api_key_configured && env.asaas_webhook_token_configured;
@@ -1038,7 +1040,7 @@ function ProviderEnvironmentCard({
       </div>
       <div className="provider-card-foot">
         <span>{env.updated_at ? formatDateTime(new Date(env.updated_at)) : 'Nunca atualizado'}</span>
-        <span>{env.pending_transactions} pendente(s) · {env.expired_pix_transactions} PIX expirado(s) · {env.failed_transactions} falha(s)</span>
+        <span>Segredos protegidos no OnlyFit Core.</span>
       </div>
       {canEdit ? <ProviderCredentialEditor environment={env.environment} /> : null}
     </article>
@@ -1046,10 +1048,11 @@ function ProviderEnvironmentCard({
 }
 
 export function ProviderIntegrationPanel({ canEdit }: { canEdit: boolean }) {
-  const query = useAsaasIntegrationStatus(true);
-  const environments = [...(query.data ?? [])].sort((a, b) => (
+  const query = usePaymentProviderStatus(true);
+  const environments = [...(query.data?.environments ?? [])].sort((a, b) => (
     a.environment === 'production' ? -1 : b.environment === 'production' ? 1 : 0
   ));
+  const canEditProviders = canEdit && query.data?.can_edit === true;
 
   return (
     <section className="finance-section" aria-labelledby="provider-integration-title">
@@ -1074,7 +1077,7 @@ export function ProviderIntegrationPanel({ canEdit }: { canEdit: boolean }) {
       ) : environments.length ? (
         <div className="provider-grid">
           {environments.map((env) => (
-            <ProviderEnvironmentCard key={env.environment} env={env} canEdit={canEdit} />
+          <ProviderEnvironmentCard key={env.environment} env={env} canEdit={canEditProviders} />
           ))}
         </div>
       ) : (

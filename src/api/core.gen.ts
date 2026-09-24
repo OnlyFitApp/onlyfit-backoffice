@@ -8,6 +8,17 @@ export type Transport = (fn: string, args: Record<string, unknown>) => Promise<u
 export type ApiErrorCode =
   | 'auth.access_pending'
   | 'auth.required'
+  | 'commerce.acceptance_required'
+  | 'commerce.acceptances_required'
+  | 'commerce.cannot_buy_self'
+  | 'commerce.contract_already_active'
+  | 'commerce.delivery_not_available'
+  | 'commerce.idempotency_conflict'
+  | 'commerce.idempotency_required'
+  | 'commerce.invalid_channel'
+  | 'commerce.offer_not_found'
+  | 'commerce.offer_unavailable'
+  | 'commerce.purchase_not_found'
   | 'identity.access_required'
   | 'identity.code_exhausted'
   | 'identity.document_in_use'
@@ -103,10 +114,13 @@ export type ApiErrorCode =
   | 'staff.invalid_billing'
   | 'staff.invalid_catalog_key'
   | 'staff.invalid_offer_type'
+  | 'staff.invalid_payment_provider'
+  | 'staff.invalid_payment_secret'
   | 'staff.mfa_required'
   | 'staff.offer_type_in_use'
   | 'staff.offer_type_not_configured'
   | 'staff.offer_type_not_found'
+  | 'staff.payment_secret_required'
   | 'staff.unsupported_delivery'
   | 'training.activity_not_found'
   | 'training.already_started'
@@ -470,6 +484,27 @@ export interface CatalogsResponse {
   version: string;
   changed: boolean;
   catalogs: Catalogs | null;
+}
+
+export interface CheckoutAcceptance {
+  key: string;
+  version: string;
+}
+
+export interface CheckoutPurchase {
+  id: string;
+  offer_id: string;
+  status: "pending" | "confirmed" | "failed" | "cancelled" | "refunded";
+  channel: "free" | "stripe_card";
+  amount: number;
+  currency: string;
+  offer_name: string;
+  billing_type: "one_time" | "recurring" | "free";
+  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null | null;
+  provider_reference: string | null;
+  contract_id: string | null;
+  confirmed_at: string | null;
+  created_at: string;
 }
 
 export interface CommercialProfile {
@@ -962,6 +997,33 @@ export interface PaymentChannel {
   provider: string;
 }
 
+export interface PaymentProviderCredentials {
+  stripe_publishable_key?: string;
+  stripe_secret_key?: string;
+  stripe_webhook_secret?: string;
+  asaas_api_key?: string;
+  asaas_webhook_token?: string;
+}
+
+export interface PaymentProviderEnvironment {
+  environment: "sandbox" | "production";
+  stripe_publishable_key_configured: boolean;
+  stripe_publishable_key_last4: string | null;
+  stripe_secret_key_configured: boolean;
+  stripe_secret_key_last4: string | null;
+  stripe_webhook_secret_configured: boolean;
+  stripe_webhook_secret_last4: string | null;
+  asaas_api_key_configured: boolean;
+  asaas_api_key_last4: string | null;
+  asaas_webhook_token_configured: boolean;
+  updated_at: string | null;
+}
+
+export interface PaymentProviderSettings {
+  can_edit: boolean;
+  environments: PaymentProviderEnvironment[];
+}
+
 export interface Preferences {
   /** Documento de preferências (locale, theme, timezone, push_marketing...) */
   settings: Record<string, unknown>;
@@ -1397,6 +1459,12 @@ export function createApi(call: Transport) {
       /** Grava a telemetria em lote (até 200 eventos). Reenviar não duplica; evento com mais de 7 dias é recusado. (command; contract/app/events_save.v1.json) */
       eventsSave: (input: { events: Record<string, unknown>[] }) => call('app_events_save_v1', { p_events: input.events }) as Promise<EventsSaved>,
     },
+    commerce: {
+      /** Consulta o estado confirmado pelo servidor de um checkout do titular. (query; contract/commerce/checkout.v1.json) */
+      checkout: (input: { purchaseId: string }) => call('commerce_checkout_v1', { p_purchase_id: input.purchaseId }) as Promise<CheckoutPurchase>,
+      /** Inicia um checkout com preço, partes, escopo e documentos resolvidos pelo servidor; R$ 0 confirma atomicamente. (command; contract/commerce/checkout_start.v1.json) */
+      checkoutStart: (input: { offerId: string; channel: "free" | "stripe_card"; idempotencyKey: string; acceptances: CheckoutAcceptance[] }) => call('commerce_checkout_start_v1', { p_offer_id: input.offerId, p_channel: input.channel, p_idempotency_key: input.idempotencyKey, p_acceptances: input.acceptances }) as Promise<CheckoutPurchase>,
+    },
     identity: {
       /** applyCode: usa o código de indicação de outra pessoa para sair da fila. Devolve o veredito de acesso. (command; contract/identity/access_act.v1.json) */
       accessAct: (input: { action: "applyCode"; code?: string }) => call('identity_access_act_v1', { p_action: input.action, p_code: input.code }) as Promise<Access>,
@@ -1456,6 +1524,10 @@ export function createApi(call: Transport) {
       offerTypeSave: (input: { item: StaffOfferTypeSaveInput }) => call('staff_offer_type_save_v1', { p_item: input.item }) as Promise<StaffOfferType>,
       /** Lista todos os tipos de oferta, inclusive inativos, com configuração comercial, versão e impacto de desativação. (query; contract/staff/offer_types.v1.json) */
       offerTypes: () => call('staff_offer_types_v1', {}) as Promise<StaffOfferTypes>,
+      /** Atualiza somente os segredos enviados para um ambiente de pagamentos. (command; contract/staff/payment_provider_save.v1.json) */
+      paymentProviderSave: (input: { environment: "sandbox" | "production"; credentials: PaymentProviderCredentials }) => call('staff_payment_provider_save_v1', { p_environment: input.environment, p_credentials: input.credentials }) as Promise<PaymentProviderEnvironment>,
+      /** Lista o estado das credenciais de pagamento sem revelar segredos. (query; contract/staff/payment_providers.v1.json) */
+      paymentProviders: () => call('staff_payment_providers_v1', {}) as Promise<PaymentProviderSettings>,
     },
     training: {
       /** Histórico unificado: importadas, manuais e execuções no app ou no Watch, um item por esforço, do mais recente ao mais antigo. (query; contract/training/activities.v1.json) */

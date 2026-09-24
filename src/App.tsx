@@ -93,6 +93,7 @@ import { ProfessionalCredentialsPage } from './components/ProfessionalCredential
 import { ProfessionalSpecialtiesPage } from './components/ProfessionalSpecialtiesPage';
 import { LegalDocumentsPage } from './components/LegalDocumentsPage';
 import { MemberAreaOperationsPage } from './components/MemberAreaOperationsPage';
+import { TrainingQuotaSettingsPage } from './components/TrainingQuotaSettingsPage';
 import { DashboardPage } from './components/DashboardPages';
 import { isDashboardSection, type DashboardSectionId } from './lib/networkHealth';
 
@@ -152,6 +153,7 @@ const navItems = [
     icon: ListChecks,
     children: [
       { id: 'onlyfit-health-library', label: 'OnlyFit Health', icon: BookOpen },
+      { id: 'training-quotas', label: 'Cotas de treinos', icon: Dumbbell },
       { id: 'exercise-catalog', label: 'Exercícios', icon: Dumbbell },
       { id: 'combat-techniques', label: 'Técnicas de luta', icon: Swords },
       { id: 'session-types', label: 'Tipos de sessão', icon: Dumbbell },
@@ -199,6 +201,7 @@ type SectionId =
   | 'feed'
   | 'affinity-groups'
   | 'onlyfit-health-library'
+  | 'training-quotas'
   | 'exercise-catalog'
   | 'combat-techniques'
   | 'session-types'
@@ -2041,6 +2044,7 @@ function AppShell() {
         {activeSection === 'feed' && <FeedDistributionPage />}
         {activeSection === 'affinity-groups' && <AffinityGroupsPage />}
         {activeSection === 'onlyfit-health-library' && <OnlyFitHealthLibraryPage />}
+        {activeSection === 'training-quotas' && <TrainingQuotaSettingsPage />}
         {activeSection === 'session-types' && <SessionTypesPage />}
         {activeSection === 'exercise-catalog' && <ExerciseCatalogPage />}
         {activeSection === 'combat-techniques' && <CombatTechniquesPage />}

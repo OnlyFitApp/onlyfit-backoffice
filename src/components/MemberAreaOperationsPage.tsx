@@ -32,8 +32,6 @@ import type {
   PageCursor,
   ReportStatus,
 } from '../lib/memberAreaOperations';
-import type { StaffRole } from '../lib/staff';
-
 type OperationsTab = 'accesses' | 'reports' | 'audit';
 
 const accessFilters: Array<{ value: AccessStatus; label: string }> = [

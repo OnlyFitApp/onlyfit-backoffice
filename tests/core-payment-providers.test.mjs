@@ -7,8 +7,10 @@ const hook = readFileSync(new URL('../src/hooks/usePaymentProviders.ts', import.
 const panel = readFileSync(new URL('../src/components/FinancePanels.tsx', import.meta.url), 'utf8');
 
 test('configura provedores exclusivamente pelo contrato tipado do Core', () => {
-  assert.match(lib, /coreApi\.staff\.paymentProviders\(\)/);
-  assert.match(lib, /coreApi\.staff\.paymentProviderSave\(input\)/);
+  assert.match(lib, /coreApi\.staff\.catalog\(\{ kind: 'payment_providers' \}\)/);
+  assert.match(lib, /coreApi\.staff\.catalogSave/);
+  assert.match(lib, /catalog\.items\.map\(paymentEnvironment\)/);
+  assert.doesNotMatch(lib, /as unknown as PaymentProvider/);
   assert.doesNotMatch(lib, /api\.staff\.rpc|control_set_payment_provider_credentials|control_get_asaas/);
 });
 

@@ -1,9 +1,36 @@
 import { coreApi } from '../api/core';
-import type { StaffOfferType, StaffOfferTypeSaveInput } from '../api/core.gen';
 
-export type BillingType = StaffOfferType['billing_type'];
-export type BillingInterval = NonNullable<StaffOfferType['billing_interval']>;
-export type OfferDelivery = StaffOfferType['delivery'];
+export type BillingType = 'one_time' | 'recurring' | 'free';
+export type BillingInterval = 'week' | 'month' | '2month' | 'quarter' | 'semester' | 'year';
+export type OfferDelivery = 'club' | 'consultancy' | 'workout' | 'diet' | 'physical_product'
+  | 'course' | 'challenge' | 'community' | 'platform_membership';
+
+export interface StaffOfferTypeSaveInput {
+  key: string;
+  label: string;
+  description: string;
+  icon: string | null;
+  position: number;
+  delivery: OfferDelivery;
+  billing_type: BillingType;
+  billing_interval: BillingInterval | null;
+  minimum_price: number;
+  platform_fee_percent: number;
+  platform_fee_fixed: number;
+  max_per_business: number | null;
+  unique_per_owner_profile: boolean;
+  requires_affinity_group: boolean;
+  requires_product_category: boolean;
+  expected_version?: number | null;
+}
+
+interface StaffOfferType extends StaffOfferTypeSaveInput {
+  active: boolean;
+  version: number;
+  active_offers_count: number;
+  configured: boolean;
+}
+
 export type OfferingTypeBilling = StaffOfferType & {
   slug: string;
   name: string;
@@ -20,27 +47,57 @@ export type OfferingTypesSnapshot = {
   items: OfferingTypeBilling[];
 };
 
-function toOfferingType(item: StaffOfferType): OfferingTypeBilling {
+function toOfferingType(raw: unknown): OfferingTypeBilling {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('staff.invalid_offer_type');
+  const item = raw as Record<string, unknown>;
+  const data = item.data && typeof item.data === 'object' && !Array.isArray(item.data)
+    ? item.data as Record<string, unknown> : item;
+  const impact = item.impact && typeof item.impact === 'object' && !Array.isArray(item.impact)
+    ? item.impact as Record<string, unknown> : item;
+  const value = { ...data, ...item } as Record<string, unknown>;
+  const result = {
+    key: String(value.key ?? ''),
+    label: String(value.label ?? value.name_key ?? ''),
+    description: String(value.description ?? ''),
+    icon: typeof value.icon === 'string' ? value.icon : null,
+    active: value.active === true,
+    position: Number(value.position ?? 0),
+    version: Number(value.version ?? 1),
+    delivery: String(value.delivery ?? '') as OfferDelivery,
+    billing_type: String(value.billing_type ?? '') as BillingType,
+    billing_interval: typeof value.billing_interval === 'string' ? value.billing_interval as BillingInterval : null,
+    minimum_price: Number(value.minimum_price ?? 0),
+    platform_fee_percent: Number(value.platform_fee_percent ?? 0),
+    platform_fee_fixed: Number(value.platform_fee_fixed ?? 0),
+    max_per_business: value.max_per_business == null ? null : Number(value.max_per_business),
+    unique_per_owner_profile: value.unique_per_owner_profile === true,
+    requires_affinity_group: value.requires_affinity_group === true,
+    requires_product_category: value.requires_product_category === true,
+    expected_version: undefined,
+    active_offers_count: Number(value.active_offers_count ?? impact.offers ?? 0),
+    configured: value.configured === true || (value.minimum_price != null
+      && value.platform_fee_percent != null && value.platform_fee_fixed != null),
+  } satisfies StaffOfferType;
   return {
-    ...item,
-    slug: item.key,
-    name: item.label,
-    enabled: item.active,
-    sort_order: item.position,
-    minimum_price: item.minimum_price ?? 0,
-    platform_fee_percent: item.platform_fee_percent ?? 0,
-    platform_fee_fixed: item.platform_fee_fixed ?? 0,
-    active_offerings_count: item.active_offers_count,
+    ...result,
+    slug: result.key,
+    name: result.label,
+    enabled: result.active,
+    sort_order: result.position,
+    minimum_price: result.minimum_price ?? 0,
+    platform_fee_percent: result.platform_fee_percent ?? 0,
+    platform_fee_fixed: result.platform_fee_fixed ?? 0,
+    active_offerings_count: result.active_offers_count,
   };
 }
 
 export async function listOfferingTypeBilling(): Promise<OfferingTypesSnapshot> {
-  const result = await coreApi.staff.offerTypes();
+  const result = await coreApi.staff.catalog({ kind: 'offer_types' });
   return { canEdit: result.can_edit, items: result.items.map(toOfferingType) };
 }
 
 export async function saveOfferingType(item: StaffOfferTypeSaveInput): Promise<OfferingTypeBilling> {
-  return toOfferingType(await coreApi.staff.offerTypeSave({ item }));
+  return toOfferingType(await coreApi.staff.catalogSave({ kind: 'offer_types', item: { ...item } }));
 }
 
 export async function setOfferingTypeActive(input: {
@@ -48,10 +105,11 @@ export async function setOfferingTypeActive(input: {
   active: boolean;
   expectedVersion: number;
 }): Promise<OfferingTypeBilling> {
-  return toOfferingType(await coreApi.staff.offerTypeAct({
+  return toOfferingType(await coreApi.staff.catalogAct({
+    kind: 'offer_types',
     key: input.key,
     action: input.active ? 'activate' : 'deactivate',
-    expectedVersion: input.expectedVersion,
+    data: { expected_version: input.expectedVersion },
   }));
 }
 

@@ -3,8 +3,8 @@ import {
   getPaymentProviderStatus,
   setPaymentProviderCredentials,
   type PaymentEnvironment,
+  type PaymentProviderCredentials,
 } from '../lib/paymentProviders';
-import type { PaymentProviderCredentials } from '../api/core.gen';
 
 const queryKey = ['core-payment-providers'] as const;
 

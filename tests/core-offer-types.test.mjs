@@ -8,11 +8,10 @@ test('administra tipos de oferta somente pelo contrato tipado do Core', () => {
   const source = read('src/lib/offeringTypes.ts');
   const generated = read('src/api/core.gen.ts');
 
-  assert.match(source, /coreApi\.staff\.offerTypes\(\)/);
-  assert.match(source, /coreApi\.staff\.offerTypeSave/);
-  assert.match(source, /coreApi\.staff\.offerTypeAct/);
-  assert.match(generated, /StaffOfferTypeSaveInput/);
-  assert.match(generated, /staff_offer_type_save_v1/);
+  assert.match(source, /coreApi\.staff\.catalog\(\{ kind: 'offer_types' \}\)/);
+  assert.match(source, /coreApi\.staff\.catalogSave/);
+  assert.match(source, /coreApi\.staff\.catalogAct/);
+  assert.match(generated, /staff_catalog_save_v1/);
   assert.doesNotMatch(source, /\.from\(|\.loose\b|service_role/);
 });
 

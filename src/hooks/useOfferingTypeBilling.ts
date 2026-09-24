@@ -1,35 +1,39 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { StaffOfferTypeSaveInput } from '../api/core.gen';
 import {
   listOfferingTypeBilling,
-  updateOfferingTypeBilling,
-  type BillingInterval,
-  type BillingType,
+  saveOfferingType,
+  setOfferingTypeActive,
 } from '../lib/offeringTypes';
+
+const queryKey = ['core', 'staff', 'offer-types'] as const;
 
 export function useOfferingTypeBilling(enabled: boolean) {
   return useQuery({
-    queryKey: ['offering-type-billing'],
+    queryKey,
     queryFn: listOfferingTypeBilling,
     enabled,
-    staleTime: 60 * 1000,
+    staleTime: 60_000,
+    select: (snapshot) => snapshot.items,
   });
 }
 
-export function useUpdateOfferingTypeBilling() {
-  const queryClient = useQueryClient();
+export function useOfferingTypesAdmin(enabled: boolean) {
+  return useQuery({ queryKey, queryFn: listOfferingTypeBilling, enabled, staleTime: 60_000 });
+}
 
+export function useSaveOfferingType() {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: {
-      slug: string;
-      billingType: BillingType;
-      billingInterval: BillingInterval | null;
-      minimumPrice: number;
-      platformFeePercent: number;
-      platformFeeFixed: number;
-    }) =>
-      updateOfferingTypeBilling(input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['offering-type-billing'] });
-    },
+    mutationFn: (item: StaffOfferTypeSaveInput) => saveOfferingType(item),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey }),
+  });
+}
+
+export function useSetOfferingTypeActive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setOfferingTypeActive,
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey }),
   });
 }

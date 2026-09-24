@@ -47,8 +47,13 @@ import { useAuth } from './contexts/useAuth';
 import { formatCurrencyExact, formatDateTime, formatNumber } from './lib/format';
 import { PayoutQueuePanel, TransactionsPanel, ProviderIntegrationPanel, FinancialReconciliationPanel, FinancialReportsPanel } from './components/FinancePanels';
 import { normalizeEmail } from './lib/auth';
-import { supabase } from './lib/supabase';
-import { useOfferingTypeBilling, useUpdateOfferingTypeBilling } from './hooks/useOfferingTypeBilling';
+import { signInBoth } from './api/core';
+import {
+  useOfferingTypeBilling,
+  useOfferingTypesAdmin,
+  useSaveOfferingType,
+  useSetOfferingTypeActive,
+} from './hooks/useOfferingTypeBilling';
 import { useOfferingCatalog } from './hooks/useOfferingCatalog';
 import { usePlatformPaymentSettings, useUpdatePlatformPaymentSettings } from './hooks/usePlatformPaymentSettings';
 import { usePlatformStaff } from './hooks/usePlatformStaff';
@@ -67,6 +72,7 @@ import {
   offeringTypeErrorMessage,
   type BillingInterval,
   type BillingType,
+  type OfferDelivery,
   type OfferingTypeBilling,
 } from './lib/offeringTypes';
 import type { OfferingCatalogFilters, OfferingCatalogItem, OfferingCatalogSource, OfferingCatalogStatus } from './lib/offeringCatalog';
@@ -227,14 +233,28 @@ type SectionId =
 const billingTypeOptions: ReadonlyArray<{ value: BillingType; label: string }> = [
   { value: 'one_time', label: 'Pagamento único' },
   { value: 'recurring', label: 'Recorrente' },
+  { value: 'free', label: 'Gratuita' },
 ];
 
 const billingIntervalOptions: ReadonlyArray<{ value: BillingInterval; label: string }> = [
+  { value: 'week', label: 'Semanal' },
   { value: 'month', label: 'Mensal' },
   { value: '2month', label: 'Bimestral' },
   { value: 'quarter', label: 'Trimestral' },
   { value: 'semester', label: 'Semestral' },
   { value: 'year', label: 'Anual' },
+];
+
+const offerDeliveryOptions: ReadonlyArray<{ value: OfferDelivery; label: string }> = [
+  { value: 'club', label: 'Clube de conteúdo' },
+  { value: 'consultancy', label: 'Consultoria' },
+  { value: 'workout', label: 'Programa de treino' },
+  { value: 'diet', label: 'Dieta' },
+  { value: 'physical_product', label: 'Produto físico' },
+  { value: 'course', label: 'Curso' },
+  { value: 'challenge', label: 'Desafio' },
+  { value: 'community', label: 'Comunidade' },
+  { value: 'platform_membership', label: 'Assinatura da plataforma' },
 ];
 
 const settlementWeekdayOptions: ReadonlyArray<{ value: number; label: string }> = [
@@ -298,11 +318,8 @@ function LoginPage() {
     setSubmitting(true);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: normalizeEmail(email),
-        password,
-      });
-      if (authError) throw authError;
+      const normalizedEmail = normalizeEmail(email);
+      await signInBoth(normalizedEmail, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível entrar.');
     } finally {
@@ -458,7 +475,17 @@ function OfferingTypeBillingRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const updateMutation = useUpdateOfferingTypeBilling();
+  const saveMutation = useSaveOfferingType();
+  const activeMutation = useSetOfferingTypeActive();
+  const [label, setLabel] = useState(item.label);
+  const [description, setDescription] = useState(item.description);
+  const [icon, setIcon] = useState(item.icon ?? '');
+  const [delivery, setDelivery] = useState<OfferDelivery>(item.delivery);
+  const [position, setPosition] = useState(String(item.position));
+  const [maxPerBusiness, setMaxPerBusiness] = useState(item.max_per_business?.toString() ?? '');
+  const [uniquePerOwner, setUniquePerOwner] = useState(item.unique_per_owner_profile);
+  const [requiresAffinity, setRequiresAffinity] = useState(item.requires_affinity_group);
+  const [requiresCategory, setRequiresCategory] = useState(item.requires_product_category);
   const [billingType, setBillingType] = useState<BillingType>(item.billing_type);
   const [billingInterval, setBillingInterval] = useState<BillingInterval | null>(item.billing_interval);
   const [minimumPriceInput, setMinimumPriceInput] = useState(() => formatPriceInput(item.minimum_price));
@@ -481,7 +508,11 @@ function OfferingTypeBillingRow({
   const isFeeFixedInvalid = feeFixed === null || feeFixed < 0;
 
   const dirty =
-    billingType !== item.billing_type ||
+    label.trim() !== item.label || description.trim() !== item.description || icon.trim() !== (item.icon ?? '') ||
+    delivery !== item.delivery || Number(position) !== item.position ||
+    (maxPerBusiness.trim() === '' ? null : Number(maxPerBusiness)) !== item.max_per_business ||
+    uniquePerOwner !== item.unique_per_owner_profile || requiresAffinity !== item.requires_affinity_group ||
+    requiresCategory !== item.requires_product_category || billingType !== item.billing_type ||
     billingInterval !== item.billing_interval ||
     Math.round((minimumPrice ?? -1) * 100) !== Math.round(item.minimum_price * 100) ||
     Math.round((feePercent ?? -1) * 100) !== Math.round(item.platform_fee_percent * 100) ||
@@ -493,9 +524,17 @@ function OfferingTypeBillingRow({
     ? billingIntervalLabel(nextInterval ?? 'month')
     : billingTypeLabel(billingType);
   const feePreview = `${formatPriceInput(feePercent ?? 0)}%${(feeFixed ?? 0) > 0 ? ` + ${formatCurrencyExact(feeFixed ?? 0)}` : ''}`;
-  const raisesMinimum = minimumPrice !== null && minimumPrice > item.minimum_price;
 
   const reset = () => {
+    setLabel(item.label);
+    setDescription(item.description);
+    setIcon(item.icon ?? '');
+    setDelivery(item.delivery);
+    setPosition(String(item.position));
+    setMaxPerBusiness(item.max_per_business?.toString() ?? '');
+    setUniquePerOwner(item.unique_per_owner_profile);
+    setRequiresAffinity(item.requires_affinity_group);
+    setRequiresCategory(item.requires_product_category);
     setBillingType(item.billing_type);
     setBillingInterval(item.billing_interval);
     setMinimumPriceInput(formatPriceInput(item.minimum_price));
@@ -518,34 +557,58 @@ function OfferingTypeBillingRow({
       setMessage('Informe uma taxa fixa válida.');
       return;
     }
-    updateMutation.mutate(
+    const parsedPosition = Number(position);
+    const parsedMax = maxPerBusiness.trim() === '' ? null : Number(maxPerBusiness);
+    if (label.trim().length < 2 || !Number.isInteger(parsedPosition) || parsedPosition < 0
+      || (parsedMax !== null && (!Number.isInteger(parsedMax) || parsedMax < 1))) {
+      setMessage('Revise nome, ordem e limite por negócio.');
+      return;
+    }
+    saveMutation.mutate(
       {
-        slug: item.slug,
-        billingType,
-        billingInterval: nextInterval,
-        minimumPrice,
-        platformFeePercent: feePercent,
-        platformFeeFixed: feeFixed,
+        key: item.key,
+        label: label.trim(),
+        description: description.trim(),
+        icon: icon.trim() || null,
+        position: parsedPosition,
+        delivery,
+        billing_type: billingType,
+        billing_interval: nextInterval,
+        minimum_price: minimumPrice,
+        platform_fee_percent: feePercent,
+        platform_fee_fixed: feeFixed,
+        max_per_business: parsedMax,
+        unique_per_owner_profile: uniquePerOwner,
+        requires_affinity_group: requiresAffinity,
+        requires_product_category: requiresCategory,
+        expected_version: item.version,
       },
       {
         onSuccess: (result) => {
+          setLabel(result.label);
+          setDescription(result.description);
+          setIcon(result.icon ?? '');
+          setDelivery(result.delivery);
+          setPosition(String(result.position));
+          setMaxPerBusiness(result.max_per_business?.toString() ?? '');
           setBillingType(result.billing_type);
           setBillingInterval(result.billing_interval);
           setMinimumPriceInput(formatPriceInput(result.minimum_price));
           setFeePercentInput(formatPriceInput(result.platform_fee_percent));
           setFeeFixedInput(formatPriceInput(result.platform_fee_fixed));
-          if (result.paused_offerings_count > 0) {
-            setMessage(
-              `${formatNumber(result.paused_offerings_count)} oferta(s) pausada(s). ` +
-              `${formatNumber(result.notified_professionals_count)} profissional(is) avisado(s).`,
-            );
-            return;
-          }
           setMessage('Configuração salva.');
         },
         onError: (error) => setMessage(offeringTypeErrorMessage(error)),
       },
     );
+  };
+
+  const changeActive = () => {
+    setMessage('');
+    activeMutation.mutate({ key: item.key, active: !item.active, expectedVersion: item.version }, {
+      onSuccess: (result) => setMessage(result.active ? 'Tipo ativado.' : 'Tipo desativado.'),
+      onError: (error) => setMessage(offeringTypeErrorMessage(error)),
+    });
   };
 
   return (
@@ -566,10 +629,10 @@ function OfferingTypeBillingRow({
         <strong>{cadence}</strong>
       </div>
       <div className="offering-rule-value numeric" data-label="Preço mínimo">
-        <strong>{formatCurrencyExact(minimumPrice ?? 0)}</strong>
+        <strong>{item.configured ? formatCurrencyExact(minimumPrice ?? 0) : 'Não configurado'}</strong>
       </div>
       <div className="offering-rule-value numeric" data-label="Taxa OnlyFit">
-        <strong>{feePreview}</strong>
+        <strong>{item.configured ? feePreview : 'Não configurada'}</strong>
       </div>
       <div className="offering-rule-value numeric" data-label="Ofertas ativas">
         <strong>{formatNumber(item.active_offerings_count)}</strong>
@@ -599,6 +662,40 @@ function OfferingTypeBillingRow({
           </div>
 
           <div className="billing-controls">
+            <label>
+              <span>Nome</span>
+              <input value={label} disabled={!canEdit} maxLength={80} onChange={(event) => setLabel(event.target.value)} />
+            </label>
+            <label>
+              <span>Ícone</span>
+              <input value={icon} disabled={!canEdit} maxLength={60} onChange={(event) => setIcon(event.target.value)} />
+            </label>
+            <label>
+              <span>Ordem</span>
+              <input type="number" min="0" step="1" value={position} disabled={!canEdit} onChange={(event) => setPosition(event.target.value)} />
+            </label>
+            <label>
+              <span>Capacidade de entrega</span>
+              <select value={delivery} disabled={!canEdit || item.active_offers_count > 0} onChange={(event) => setDelivery(event.target.value as OfferDelivery)}>
+                {offerDeliveryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Máximo por negócio</span>
+              <input type="number" min="1" step="1" placeholder="Sem limite" value={maxPerBusiness} disabled={!canEdit} onChange={(event) => setMaxPerBusiness(event.target.value)} />
+            </label>
+          </div>
+          <label className="ambassador-field">
+            <span>Descrição</span>
+            <textarea value={description} disabled={!canEdit} maxLength={500} onChange={(event) => setDescription(event.target.value)} />
+          </label>
+          <div className="offering-badges">
+            <label><input type="checkbox" checked={uniquePerOwner} disabled={!canEdit} onChange={(event) => setUniquePerOwner(event.target.checked)} /> Única por perfil proprietário</label>
+            <label><input type="checkbox" checked={requiresAffinity} disabled={!canEdit} onChange={(event) => setRequiresAffinity(event.target.checked)} /> Exige grupo de afinidade</label>
+            <label><input type="checkbox" checked={requiresCategory} disabled={!canEdit} onChange={(event) => setRequiresCategory(event.target.checked)} /> Exige categoria de produto</label>
+          </div>
+
+          <div className="billing-controls">
           <label>
             <span>Cobrança</span>
             <select
@@ -609,6 +706,11 @@ function OfferingTypeBillingRow({
                 setBillingType(next);
                 if (next !== 'recurring') setBillingInterval(null);
                 if (next === 'recurring' && !billingInterval) setBillingInterval('month');
+                if (next === 'free') {
+                  setMinimumPriceInput('0,00');
+                  setFeePercentInput('0,00');
+                  setFeeFixedInput('0,00');
+                }
               }}
             >
               {billingTypeOptions.map((option) => (
@@ -694,10 +796,10 @@ function OfferingTypeBillingRow({
           </label>
         </div>
 
-          {raisesMinimum && (
+          {!item.active && !item.configured && (
             <div className="offering-impact-note" role="note">
               <AlertTriangle size={17} />
-              Ofertas abaixo do novo mínimo serão pausadas e os profissionais responsáveis serão avisados.
+              Preencha e salve a configuração comercial antes de ativar este tipo.
             </div>
           )}
 
@@ -707,17 +809,21 @@ function OfferingTypeBillingRow({
             </span>
             {canEdit && (
               <div>
-                <button className="button secondary" type="button" disabled={!dirty || updateMutation.isPending} onClick={reset}>
+                <button className="button secondary" type="button" disabled={saveMutation.isPending || activeMutation.isPending || (!item.active && !item.configured) || (item.active && item.active_offers_count > 0)} onClick={changeActive}>
+                  {activeMutation.isPending ? <RefreshCw className="spin" size={16} /> : null}
+                  {item.active ? 'Desativar' : 'Ativar'}
+                </button>
+                <button className="button secondary" type="button" disabled={!dirty || saveMutation.isPending} onClick={reset}>
                   Restaurar
                 </button>
                 <button
                   className="button primary"
                   type="button"
-                  disabled={!dirty || hasInvalid || updateMutation.isPending}
+                  disabled={!dirty || hasInvalid || saveMutation.isPending}
                   onClick={save}
                 >
-                  {updateMutation.isPending ? <RefreshCw className="spin" size={16} /> : <Save size={16} />}
-                  Salvar regra
+                  {saveMutation.isPending ? <RefreshCw className="spin" size={16} /> : <Save size={16} />}
+                  Salvar tipo
                 </button>
               </div>
             )}
@@ -870,11 +976,99 @@ function FeedDistributionPage() {
   );
 }
 
+function NewOfferingTypeForm({ onDone }: { onDone: (key: string) => void }) {
+  const mutation = useSaveOfferingType();
+  const [key, setKey] = useState('');
+  const [label, setLabel] = useState('');
+  const [description, setDescription] = useState('');
+  const [icon, setIcon] = useState('');
+  const [delivery, setDelivery] = useState<OfferDelivery>('consultancy');
+  const [billingType, setBillingType] = useState<BillingType>('one_time');
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>('month');
+  const [minimum, setMinimum] = useState('0,00');
+  const [feePercent, setFeePercent] = useState('0,00');
+  const [feeFixed, setFeeFixed] = useState('0,00');
+  const [position, setPosition] = useState('100');
+  const [maxPerBusiness, setMaxPerBusiness] = useState('');
+  const [uniquePerOwner, setUniquePerOwner] = useState(false);
+  const [requiresAffinity, setRequiresAffinity] = useState(false);
+  const [requiresCategory, setRequiresCategory] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setMessage('');
+    const minimumValue = parseCurrencyInput(minimum);
+    const feePercentValue = parseCurrencyInput(feePercent);
+    const feeFixedValue = parseCurrencyInput(feeFixed);
+    const positionValue = Number(position);
+    const maxValue = maxPerBusiness.trim() === '' ? null : Number(maxPerBusiness);
+    if (!/^[a-z0-9_]{2,40}$/.test(key) || label.trim().length < 2 || minimumValue === null
+      || feePercentValue === null || feePercentValue < 0 || feePercentValue > 100
+      || feeFixedValue === null || minimumValue < 0 || feeFixedValue < 0
+      || !Number.isInteger(positionValue) || positionValue < 0
+      || (maxValue !== null && (!Number.isInteger(maxValue) || maxValue < 1))) {
+      setMessage('Revise os campos obrigatórios e os limites informados.');
+      return;
+    }
+    mutation.mutate({
+      key,
+      label: label.trim(),
+      description: description.trim(),
+      icon: icon.trim() || null,
+      position: positionValue,
+      delivery,
+      billing_type: billingType,
+      billing_interval: billingType === 'recurring' ? billingInterval : null,
+      minimum_price: minimumValue,
+      platform_fee_percent: feePercentValue,
+      platform_fee_fixed: feeFixedValue,
+      max_per_business: maxValue,
+      unique_per_owner_profile: uniquePerOwner,
+      requires_affinity_group: requiresAffinity,
+      requires_product_category: requiresCategory,
+      expected_version: null,
+    }, {
+      onSuccess: (result) => onDone(result.key),
+      onError: (error) => setMessage(offeringTypeErrorMessage(error)),
+    });
+  };
+
+  return (
+    <form className="offering-editor" onSubmit={submit}>
+      <div className="offering-editor-heading"><div><strong>Novo tipo de oferta</strong><span>Nasce inativo até a ativação explícita.</span></div></div>
+      <div className="billing-controls">
+        <label><span>Chave estável</span><input required pattern="[a-z0-9_]{2,40}" value={key} onChange={(event) => setKey(event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} /></label>
+        <label><span>Nome</span><input required minLength={2} maxLength={80} value={label} onChange={(event) => setLabel(event.target.value)} /></label>
+        <label><span>Ícone</span><input maxLength={60} value={icon} onChange={(event) => setIcon(event.target.value)} /></label>
+        <label><span>Ordem</span><input type="number" min="0" step="1" value={position} onChange={(event) => setPosition(event.target.value)} /></label>
+        <label><span>Entrega</span><select value={delivery} onChange={(event) => setDelivery(event.target.value as OfferDelivery)}>{offerDeliveryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label><span>Máximo por negócio</span><input type="number" min="1" step="1" placeholder="Sem limite" value={maxPerBusiness} onChange={(event) => setMaxPerBusiness(event.target.value)} /></label>
+      </div>
+      <label className="ambassador-field"><span>Descrição</span><textarea maxLength={500} value={description} onChange={(event) => setDescription(event.target.value)} /></label>
+      <div className="billing-controls">
+        <label><span>Cobrança</span><select value={billingType} onChange={(event) => { const next = event.target.value as BillingType; setBillingType(next); if (next === 'free') { setMinimum('0,00'); setFeePercent('0,00'); setFeeFixed('0,00'); } }}>{billingTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label><span>Intervalo</span><select disabled={billingType !== 'recurring'} value={billingInterval} onChange={(event) => setBillingInterval(event.target.value as BillingInterval)}>{billingIntervalOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label><span>Preço mínimo</span><input inputMode="decimal" value={minimum} onChange={(event) => setMinimum(event.target.value.replace(/[^\d.,]/g, ''))} /></label>
+        <label><span>Taxa %</span><input inputMode="decimal" value={feePercent} onChange={(event) => setFeePercent(event.target.value.replace(/[^\d.,]/g, ''))} /></label>
+        <label><span>Taxa fixa</span><input inputMode="decimal" value={feeFixed} onChange={(event) => setFeeFixed(event.target.value.replace(/[^\d.,]/g, ''))} /></label>
+      </div>
+      <div className="offering-badges">
+        <label><input type="checkbox" checked={uniquePerOwner} onChange={(event) => setUniquePerOwner(event.target.checked)} /> Única por perfil proprietário</label>
+        <label><input type="checkbox" checked={requiresAffinity} onChange={(event) => setRequiresAffinity(event.target.checked)} /> Exige grupo de afinidade</label>
+        <label><input type="checkbox" checked={requiresCategory} onChange={(event) => setRequiresCategory(event.target.checked)} /> Exige categoria de produto</label>
+      </div>
+      <div className="offering-editor-footer"><span>{message}</span><button className="button primary" type="submit" disabled={mutation.isPending}>{mutation.isPending ? <RefreshCw className="spin" size={16} /> : <Save size={16} />}Criar tipo</button></div>
+    </form>
+  );
+}
+
 function OfferingTypesPage() {
-  const { data = [], isLoading, isError, refetch, isFetching } = useOfferingTypeBilling(true);
-  const { data: currentRole } = useCurrentStaffRole();
+  const { data: snapshot, isLoading, isError, refetch, isFetching } = useOfferingTypesAdmin(true);
+  const data = snapshot?.items ?? [];
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
-  const canEdit = currentRole === 'super_admin' || currentRole === 'admin';
+  const [creating, setCreating] = useState(false);
+  const canEdit = snapshot?.canEdit ?? false;
   const totalActiveOfferings = data.reduce((sum, item) => sum + item.active_offerings_count, 0);
   const recurringCount = data.filter((item) => item.billing_type === 'recurring').length;
   const fixedFeeCount = data.filter((item) => item.platform_fee_fixed > 0).length;
@@ -888,6 +1082,11 @@ function OfferingTypesPage() {
           <span>Gerencie cobrança, preço mínimo e taxa da plataforma por categoria.</span>
         </div>
         <div className="header-actions">
+          {canEdit && (
+            <button className="button primary" type="button" onClick={() => setCreating((value) => !value)}>
+              <Tags size={16} />{creating ? 'Cancelar novo tipo' : 'Novo tipo'}
+            </button>
+          )}
           <button className="button secondary" type="button" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={isFetching ? 'spin' : ''} size={16} />
             Atualizar
@@ -896,6 +1095,7 @@ function OfferingTypesPage() {
       </header>
 
       <section className="content">
+        {creating && <NewOfferingTypeForm onDone={(key) => { setCreating(false); setExpandedSlug(key); }} />}
         {isLoading ? (
           <div className="dashboard-grid" aria-label="Carregando tipos de oferta">
             {Array.from({ length: 5 }, (_, index) => <div className="skeleton" key={index} />)}

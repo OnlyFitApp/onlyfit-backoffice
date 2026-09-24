@@ -1,144 +1,92 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffOfferType, StaffOfferTypeSaveInput } from '../api/core.gen';
 
-export type BillingType = 'one_time' | 'recurring';
-export type BillingInterval = 'month' | '2month' | 'quarter' | 'semester' | 'year';
-
-export type OfferingTypeBilling = {
+export type BillingType = StaffOfferType['billing_type'];
+export type BillingInterval = NonNullable<StaffOfferType['billing_interval']>;
+export type OfferDelivery = StaffOfferType['delivery'];
+export type OfferingTypeBilling = StaffOfferType & {
   slug: string;
   name: string;
-  description: string | null;
-  icon: string | null;
   enabled: boolean;
   sort_order: number;
-  billing_type: BillingType;
-  billing_interval: BillingInterval | null;
   minimum_price: number;
   platform_fee_percent: number;
   platform_fee_fixed: number;
-  max_per_business: number | null;
-  unique_per_owner_profile: boolean;
-  requires_affinity_group: boolean;
-  requires_product_category: boolean;
   active_offerings_count: number;
-  below_minimum_active_count: number;
-  previous_minimum_price: number;
-  paused_offerings_count: number;
-  notified_professionals_count: number;
-  notification_batch_id: string | null;
 };
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-}
+export type OfferingTypesSnapshot = {
+  canEdit: boolean;
+  items: OfferingTypeBilling[];
+};
 
-function numberFrom(value: unknown): number {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') return Number(value) || 0;
-  return 0;
-}
-
-function parseOfferingType(value: unknown): OfferingTypeBilling {
-  const row = asRecord(value);
+function toOfferingType(item: StaffOfferType): OfferingTypeBilling {
   return {
-    slug: String(row.slug ?? ''),
-    name: String(row.name ?? ''),
-    description: typeof row.description === 'string' ? row.description : null,
-    icon: typeof row.icon === 'string' ? row.icon : null,
-    enabled: row.enabled !== false,
-    sort_order: numberFrom(row.sort_order),
-    billing_type: row.billing_type === 'recurring' ? 'recurring' : 'one_time',
-    billing_interval:
-      row.billing_interval === 'month' ||
-      row.billing_interval === '2month' ||
-      row.billing_interval === 'quarter' ||
-      row.billing_interval === 'semester' ||
-      row.billing_interval === 'year'
-        ? row.billing_interval
-        : null,
-    minimum_price: numberFrom(row.minimum_price),
-    platform_fee_percent: numberFrom(row.platform_fee_percent),
-    platform_fee_fixed: numberFrom(row.platform_fee_fixed),
-    max_per_business: row.max_per_business === null || row.max_per_business === undefined ? null : numberFrom(row.max_per_business),
-    unique_per_owner_profile: row.unique_per_owner_profile === true,
-    requires_affinity_group: row.requires_affinity_group === true,
-    requires_product_category: row.requires_product_category === true,
-    active_offerings_count: numberFrom(row.active_offerings_count),
-    below_minimum_active_count: numberFrom(row.below_minimum_active_count),
-    previous_minimum_price: numberFrom(row.previous_minimum_price),
-    paused_offerings_count: numberFrom(row.paused_offerings_count),
-    notified_professionals_count: numberFrom(row.notified_professionals_count),
-    notification_batch_id: typeof row.notification_batch_id === 'string' ? row.notification_batch_id : null,
+    ...item,
+    slug: item.key,
+    name: item.label,
+    enabled: item.active,
+    sort_order: item.position,
+    minimum_price: item.minimum_price ?? 0,
+    platform_fee_percent: item.platform_fee_percent ?? 0,
+    platform_fee_fixed: item.platform_fee_fixed ?? 0,
+    active_offerings_count: item.active_offers_count,
   };
 }
 
-export async function listOfferingTypeBilling(): Promise<OfferingTypeBilling[]> {
-  const { data, error } = await api.staff.rpc('control_list_offering_type_billing');
-  if (error) throw error;
-  return Array.isArray(data) ? data.map(parseOfferingType) : [];
+export async function listOfferingTypeBilling(): Promise<OfferingTypesSnapshot> {
+  const result = await coreApi.staff.offerTypes();
+  return { canEdit: result.can_edit, items: result.items.map(toOfferingType) };
 }
 
-export async function updateOfferingTypeBilling(input: {
-  slug: string;
-  billingType: BillingType;
-  billingInterval: BillingInterval | null;
-  minimumPrice: number;
-  platformFeePercent: number;
-  platformFeeFixed: number;
+export async function saveOfferingType(item: StaffOfferTypeSaveInput): Promise<OfferingTypeBilling> {
+  return toOfferingType(await coreApi.staff.offerTypeSave({ item }));
+}
+
+export async function setOfferingTypeActive(input: {
+  key: string;
+  active: boolean;
+  expectedVersion: number;
 }): Promise<OfferingTypeBilling> {
-  const { data, error } = await api.staff.rpc('control_update_offering_type_billing', {
-    p_slug: input.slug,
-    p_billing_type: input.billingType,
-    p_billing_interval: input.billingInterval,
-    p_minimum_price: input.minimumPrice,
-    p_platform_fee_percent: input.platformFeePercent,
-    p_platform_fee_fixed: input.platformFeeFixed,
-  });
-  if (error) throw error;
-  return parseOfferingType(data);
+  return toOfferingType(await coreApi.staff.offerTypeAct({
+    key: input.key,
+    action: input.active ? 'activate' : 'deactivate',
+    expectedVersion: input.expectedVersion,
+  }));
 }
 
-/**
- * Mensagem para o código que `control_update_offering_type_billing` levanta.
- *
- * A RPC recusa com `RAISE EXCEPTION '<código>'`, e o PostgREST devolve isso
- * como objeto — não como `Error` —, então a tela caía sempre no texto genérico
- * e escondia qual regra tinha barrado o salvamento.
- */
 export function offeringTypeErrorMessage(error: unknown): string {
-  const raw =
-    error instanceof Error
-      ? error.message
-      : typeof error === 'object' && error !== null && 'message' in error
-        ? String((error as { message: unknown }).message)
-        : String(error ?? '');
-  if (raw.includes('invalid_platform_fee_fixed')) return 'A taxa fixa não pode ser negativa.';
-  if (raw.includes('invalid_platform_fee_percent')) return 'A taxa percentual precisa estar entre 0 e 100.';
-  if (raw.includes('invalid_minimum_price')) return 'O valor mínimo não pode ser negativo.';
-  if (raw.includes('invalid_billing_interval')) return 'Escolha um intervalo válido para a cobrança recorrente.';
-  if (raw.includes('invalid_offering_type')) return 'Este tipo de oferta não existe mais. Atualize a lista.';
-  if (raw.includes('forbidden')) return 'Somente administradores podem alterar as regras de cobrança.';
-  console.error('[offering-types] falha ao salvar a regra de cobrança', error);
-  return 'Não foi possível salvar.';
+  const raw = error instanceof Error
+    ? error.message
+    : typeof error === 'object' && error !== null && 'message' in error
+      ? String((error as { message: unknown }).message)
+      : String(error ?? '');
+  if (raw.includes('staff.catalog_changed')) return 'Outra pessoa alterou este tipo. Atualize a lista antes de salvar.';
+  if (raw.includes('staff.delivery_in_use')) return 'A capacidade de entrega não muda depois que o tipo possui ofertas.';
+  if (raw.includes('staff.offer_type_in_use')) return 'Pause ou arquive as ofertas vinculadas antes de desativar este tipo.';
+  if (raw.includes('staff.offer_type_not_configured')) return 'Preencha preço mínimo e taxas antes de ativar.';
+  if (raw.includes('staff.unsupported_delivery')) return 'Escolha uma capacidade de entrega implementada.';
+  if (raw.includes('staff.invalid_billing')) return 'A cobrança e o intervalo não formam uma configuração válida.';
+  if (raw.includes('staff.invalid_offer_type')) return 'Revise os limites; ofertas gratuitas precisam ter preço e taxas zerados.';
+  if (raw.includes('staff.mfa_required')) return 'Confirme o segundo fator do OnlyFit Core.';
+  if (raw.includes('staff.forbidden')) return 'Sua função no OnlyFit Core não permite esta alteração.';
+  return 'Não foi possível salvar o tipo de oferta.';
 }
 
 export function billingTypeLabel(value: BillingType): string {
   if (value === 'recurring') return 'Recorrente';
+  if (value === 'free') return 'Gratuita';
   return 'Pagamento único';
 }
 
 export function billingIntervalLabel(value: BillingInterval | null): string {
   switch (value) {
-    case 'month':
-      return 'Mensal';
-    case '2month':
-      return 'Bimestral';
-    case 'quarter':
-      return 'Trimestral';
-    case 'semester':
-      return 'Semestral';
-    case 'year':
-      return 'Anual';
-    default:
-      return 'Sem intervalo';
+    case 'week': return 'Semanal';
+    case 'month': return 'Mensal';
+    case '2month': return 'Bimestral';
+    case 'quarter': return 'Trimestral';
+    case 'semester': return 'Semestral';
+    case 'year': return 'Anual';
+    default: return 'Sem intervalo';
   }
 }

@@ -1,6 +1,7 @@
 import type { Session, User } from '@supabase/supabase-js';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { coreSessionMatches, signOutCore } from '../api/core';
 import { AuthContext } from './auth-context';
 
 export type AuthContextValue = {
@@ -16,16 +17,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let alive = true;
+    let validation = 0;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!alive) return;
-      setSession(data.session);
-      setIsLoading(false);
-    });
+    const acceptSession = async (nextSession: Session | null) => {
+      const attempt = ++validation;
+      try {
+        if (nextSession && !await coreSessionMatches(nextSession.user.id)) {
+          throw new Error('dual_session_mismatch');
+        }
+        if (alive && attempt === validation) setSession(nextSession);
+      } catch {
+        await Promise.allSettled([supabase.auth.signOut({ scope: 'local' }), signOutCore()]);
+        if (alive && attempt === validation) setSession(null);
+      }
+      if (alive) setIsLoading(false);
+    };
+
+    supabase.auth.getSession()
+      .then(({ data }) => acceptSession(data.session))
+      .catch(() => acceptSession(null));
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setIsLoading(false);
+      void acceptSession(nextSession);
     });
 
     return () => {
@@ -40,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: session?.user ?? null,
       isLoading,
       signOut: async () => {
-        await supabase.auth.signOut();
+        await Promise.allSettled([supabase.auth.signOut(), signOutCore()]);
       },
     }),
     [isLoading, session],

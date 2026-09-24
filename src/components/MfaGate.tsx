@@ -1,5 +1,7 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { RefreshCw, ShieldCheck } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { requireCoreClient } from '../api/core';
 import { supabase } from '../lib/supabase';
 
 type TotpEnrollment = {
@@ -7,6 +9,10 @@ type TotpEnrollment = {
   qrCode: string;
   secret: string;
 };
+
+function mfaClient(provider: 'legacy' | 'core'): SupabaseClient {
+  return provider === 'legacy' ? supabase : requireCoreClient();
+}
 
 export function MfaGate({ onVerified, onSignOut }: {
   onVerified: () => void;
@@ -18,20 +24,26 @@ export function MfaGate({ onVerified, onSignOut }: {
   const [error, setError] = useState('');
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
+  const [provider, setProvider] = useState<'legacy' | 'core'>('legacy');
 
   const loadFactors = useCallback(async () => {
     setError('');
     setLoading(true);
     try {
-      const { data: assurance, error: assuranceError } =
-        await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (assuranceError) throw assuranceError;
-      if (assurance.currentLevel === 'aal2') {
+      const core = requireCoreClient();
+      const [legacyAssurance, coreAssurance] = await Promise.all([
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        core.auth.mfa.getAuthenticatorAssuranceLevel(),
+      ]);
+      if (legacyAssurance.error) throw legacyAssurance.error;
+      if (coreAssurance.error) throw coreAssurance.error;
+      if (legacyAssurance.data.currentLevel === 'aal2' && coreAssurance.data.currentLevel === 'aal2') {
         onVerified();
         return;
       }
-
-      const { data, error: factorsError } = await supabase.auth.mfa.listFactors();
+      const nextProvider = legacyAssurance.data.currentLevel === 'aal2' ? 'core' : 'legacy';
+      setProvider(nextProvider);
+      const { data, error: factorsError } = await mfaClient(nextProvider).auth.mfa.listFactors();
       if (factorsError) throw factorsError;
       const verified = data.totp.find((factor) => factor.status === 'verified');
       setFactorId(verified?.id ?? null);
@@ -51,15 +63,16 @@ export function MfaGate({ onVerified, onSignOut }: {
     setError('');
     setSubmitting(true);
     try {
-      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const client = mfaClient(provider);
+      const { data: factors } = await client.auth.mfa.listFactors();
       await Promise.all(
         (factors?.totp ?? [])
           .filter((factor) => factor.status !== 'verified')
-          .map((factor) => supabase.auth.mfa.unenroll({ factorId: factor.id })),
+          .map((factor) => client.auth.mfa.unenroll({ factorId: factor.id })),
       );
-      const { data, error: enrollError } = await supabase.auth.mfa.enroll({
+      const { data, error: enrollError } = await client.auth.mfa.enroll({
         factorType: 'totp',
-        friendlyName: 'OnlyFit Backoffice',
+        friendlyName: provider === 'core' ? 'OnlyFit Backoffice Core' : 'OnlyFit Backoffice',
       });
       if (enrollError) throw enrollError;
       setEnrollment({
@@ -81,14 +94,18 @@ export function MfaGate({ onVerified, onSignOut }: {
     setError('');
     setSubmitting(true);
     try {
-      const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
+      const client = mfaClient(provider);
+      const { error: verifyError } = await client.auth.mfa.challengeAndVerify({
         factorId,
         code,
       });
       if (verifyError) throw verifyError;
-      const { error: refreshError } = await supabase.auth.refreshSession();
+      const { error: refreshError } = await client.auth.refreshSession();
       if (refreshError) throw refreshError;
-      onVerified();
+      setCode('');
+      setEnrollment(null);
+      setFactorId(null);
+      await loadFactors();
     } catch {
       setError('Código inválido ou expirado. Gere um novo código e tente novamente.');
       setCode('');
@@ -103,7 +120,8 @@ export function MfaGate({ onVerified, onSignOut }: {
         <div className="status-icon"><ShieldCheck size={24} /></div>
         <div>
           <h1>Verificação em duas etapas</h1>
-          <p>O backoffice protege dados financeiros e exige um código do aplicativo autenticador.</p>
+          <p>O backoffice protege dados financeiros e exige MFA nos dois bancos durante a migração.</p>
+          <small>{provider === 'core' ? 'Etapa OnlyFit Core' : 'Etapa plataforma atual'}</small>
         </div>
 
         {isLoading ? (

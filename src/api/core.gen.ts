@@ -71,16 +71,20 @@ export type ApiErrorCode =
   | 'org.document_required'
   | 'org.forbidden'
   | 'org.idempotency_required'
+  | 'org.invalid_access_level'
   | 'org.invalid_action'
   | 'org.invalid_business'
   | 'org.invalid_commercial_profile'
   | 'org.invalid_company_document'
   | 'org.invalid_consent_action'
   | 'org.invalid_consent_items'
+  | 'org.invalid_consultancy_settings'
   | 'org.invalid_kind'
   | 'org.invalid_location'
   | 'org.invalid_niche'
-  | 'org.invalid_role'
+  | 'org.invalid_offer'
+  | 'org.invalid_offer_state'
+  | 'org.invalid_scope'
   | 'org.invalid_search'
   | 'org.invalid_sports'
   | 'org.invalid_state'
@@ -91,15 +95,23 @@ export type ApiErrorCode =
   | 'org.member_banned'
   | 'org.member_not_found'
   | 'org.not_consultancy'
+  | 'org.offer_changed'
+  | 'org.offer_in_use'
+  | 'org.offer_limit_reached'
+  | 'org.offer_locked'
   | 'org.offer_not_found'
+  | 'org.offer_type_immutable'
+  | 'org.offer_type_unavailable'
   | 'org.offer_unavailable'
   | 'org.owner_protected'
   | 'org.pause_requires_published'
+  | 'org.price_below_minimum'
   | 'org.professional_not_found'
   | 'org.professional_required'
   | 'org.restore_requires_archived'
   | 'org.resubmit_requires_rejected'
   | 'org.resume_requires_paused'
+  | 'org.scope_required'
   | 'org.self_invite'
   | 'org.verification_pending'
   | 'org.website_in_use'
@@ -217,7 +229,7 @@ export interface Activity {
   ended_at: string | null;
   metrics: Record<string, unknown>;
   scheduled_id: string | null;
-  link_method: "session" | "exact" | "auto" | "manual" | null | null;
+  link_method: "session" | "exact" | "auto" | "manual" | null;
   link_confidence: number | null;
   title: string | null;
   workout: ActivityWorkout | null;
@@ -240,7 +252,7 @@ export interface ActivityItem {
   ended_at: string | null;
   metrics: Record<string, unknown>;
   scheduled_id: string | null;
-  link_method: "session" | "exact" | "auto" | "manual" | null | null;
+  link_method: "session" | "exact" | "auto" | "manual" | null;
   link_confidence: number | null;
   workout_title: string | null;
   has_route: boolean;
@@ -366,7 +378,8 @@ export interface BusinessDetail {
   can_delete: boolean;
   owner: BusinessAccount;
   inviter: BusinessAccount | null;
-  my_role: "owner" | "admin" | "coach" | "support";
+  my_access_level: "admin" | "editor" | "member";
+  is_owner: boolean;
   membership_status: "invited" | "active";
   created_at: string;
   updated_at: string;
@@ -375,7 +388,8 @@ export interface BusinessDetail {
 
 export interface BusinessMember {
   account: BusinessAccount;
-  role: "owner" | "admin" | "coach" | "support";
+  access_level: "admin" | "editor" | "member";
+  is_owner: boolean;
   status: "invited" | "active" | "left";
   invited_by: string | null;
   created_at: string;
@@ -435,7 +449,8 @@ export interface BusinessSummary {
   verification_reason: string | null;
   owner: BusinessAccount;
   inviter: BusinessAccount | null;
-  my_role: "owner" | "admin" | "coach" | "support";
+  my_access_level: "admin" | "editor" | "member";
+  is_owner: boolean;
   membership_status: "invited" | "active";
   created_at: string;
   updated_at: string;
@@ -500,7 +515,7 @@ export interface CheckoutPurchase {
   currency: string;
   offer_name: string;
   billing_type: "one_time" | "recurring" | "free";
-  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null | null;
+  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
   provider_reference: string | null;
   contract_id: string | null;
   confirmed_at: string | null;
@@ -575,10 +590,115 @@ export interface ConsultancyOffer {
   settings: Record<string, unknown>;
 }
 
+export interface ConsultancyOfferAction {
+  id: string;
+  status: "draft" | "published" | "paused" | "archived" | "deleted";
+  version: number;
+}
+
+export interface ConsultancyOfferBusiness {
+  id: string;
+  name: string;
+  logo_url: string;
+  verified: boolean;
+}
+
+export interface ConsultancyOfferDetail {
+  offer: ConsultancyOfferManaged;
+  business: ConsultancyOfferBusiness;
+  professional: ConsultancyProfessional;
+}
+
+export interface ConsultancyOfferList {
+  can_edit: boolean;
+  items: ConsultancyOfferManaged[];
+}
+
+export interface ConsultancyOfferManaged {
+  id: string;
+  business_id: string;
+  professional_id: string;
+  type: string;
+  name: string;
+  description: string;
+  image_url: string | null;
+  status: "draft" | "ready" | "published" | "paused" | "archived";
+  price: number;
+  currency: string;
+  billing_type: "one_time" | "recurring" | "free";
+  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
+  settings: ConsultancySettings;
+  data_access_scope: ("training" | "diet" | "protocols" | "health")[];
+  version: number;
+  first_sold_at: string | null;
+  created_at: string;
+  updated_at: string;
+  can_edit: boolean;
+}
+
+export interface ConsultancyOfferSaveInput {
+  id: string | null;
+  business_id: string;
+  type: string;
+  name: string;
+  description: string;
+  image_url: string | null;
+  price: number;
+  settings: ConsultancySettingsInput;
+  data_access_scope: ("training" | "diet" | "protocols" | "health")[];
+  expected_version: number | null;
+  idempotency_key: string | null;
+}
+
+export interface ConsultancyOfferType {
+  key: string;
+  label: string;
+  description: string;
+  icon: string | null;
+  billing_type: "one_time" | "recurring" | "free";
+  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
+  minimum_price: number;
+  max_per_business: number | null;
+}
+
+export interface ConsultancyOfferTypeList {
+  items: ConsultancyOfferType[];
+}
+
 export interface ConsultancyParty {
   id: string;
   display_name: string;
   avatar_url: string | null;
+}
+
+export interface ConsultancyProfessional {
+  id: string;
+  username: string | null;
+  display_name: string;
+  avatar_url: string | null;
+  is_professional: boolean;
+}
+
+export interface ConsultancySettings {
+  format: "online" | "in_person" | "hybrid";
+  duration_minutes: number;
+  sessions_per_cycle: number;
+  deliverables: string[];
+  scheduling_notes: string;
+  intake_form_required: boolean;
+  welcome_message: string;
+  requires_physical_activity_risk_acknowledgement: boolean;
+}
+
+export interface ConsultancySettingsInput {
+  format: "online" | "in_person" | "hybrid";
+  duration_minutes: number;
+  sessions_per_cycle: number;
+  deliverables: string[];
+  scheduling_notes: string;
+  intake_form_required: boolean;
+  welcome_message: string;
+  requires_physical_activity_risk_acknowledgement: boolean;
 }
 
 export interface DeletedActivityInput {
@@ -931,7 +1051,7 @@ export interface NutritionDayMeal {
   title: string;
   time: string | null;
   edited: boolean;
-  status: "done" | "not_done" | null | null;
+  status: "done" | "not_done" | null;
   reason: string | null;
   note: string | null;
   photo: MealPhoto | null;
@@ -1313,7 +1433,7 @@ export interface StaffOfferType {
   version: number;
   delivery: "club" | "consultancy" | "workout" | "diet" | "physical_product" | "course" | "challenge" | "community" | "platform_membership";
   billing_type: "one_time" | "recurring" | "free";
-  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null | null;
+  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
   minimum_price: number | null;
   platform_fee_percent: number | null;
   platform_fee_fixed: number | null;
@@ -1333,7 +1453,7 @@ export interface StaffOfferTypeSaveInput {
   position: number;
   delivery: "club" | "consultancy" | "workout" | "diet" | "physical_product" | "course" | "challenge" | "community" | "platform_membership";
   billing_type: "one_time" | "recurring" | "free";
-  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null | null;
+  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
   minimum_price: number;
   platform_fee_percent: number;
   platform_fee_fixed: number;
@@ -1367,7 +1487,7 @@ export interface TeamAccount {
 export interface TeamActionInput {
   username?: string;
   account_id?: string;
-  role?: "admin" | "coach" | "support";
+  access_level?: "admin" | "editor" | "member";
 }
 
 export interface TeamActionResult {
@@ -1377,7 +1497,8 @@ export interface TeamActionResult {
 
 export interface TeamMember {
   account: TeamAccount;
-  role: "owner" | "admin" | "coach" | "support";
+  access_level: "admin" | "editor" | "member";
+  is_owner: boolean;
   status: "invited" | "active" | "left";
   invited_by: string | null;
   created_at: string;
@@ -1510,12 +1631,22 @@ export function createApi(call: Transport) {
       businessSave: (input: { business: BusinessSaveInput }) => call('org_business_save_v1', { p_business: input.business }) as Promise<BusinessSaveResult>,
       /** Permite ao titular autorizar, negar ou revogar itens de acesso do contrato de consultoria. (command; contract/org/consent_decide.v1.json) */
       consentDecide: (input: { contractId: string; action: "allow" | "deny" | "revoke"; items: ("training" | "diet" | "protocols" | "health")[] }) => call('org_consent_decide_v1', { p_contract_id: input.contractId, p_action: input.action, p_items: input.items }) as Promise<ConsultancyConsentResult>,
+      /** Lê uma consultoria publicada para contratação ou uma oferta própria para gestão. (query; contract/org/consultancy_offer.v1.json) */
+      consultancyOffer: (input: { offerId: string }) => call('org_consultancy_offer_v1', { p_offer_id: input.offerId }) as Promise<ConsultancyOfferDetail>,
+      /** Muda o ciclo de vida de uma oferta de consultoria com versão otimista. (command; contract/org/consultancy_offer_act.v1.json) */
+      consultancyOfferAct: (input: { offerId: string; action: "publish" | "pause" | "resume" | "archive" | "restore" | "delete"; expectedVersion: number }) => call('org_consultancy_offer_act_v1', { p_offer_id: input.offerId, p_action: input.action, p_expected_version: input.expectedVersion }) as Promise<ConsultancyOfferAction>,
+      /** Cria ou atualiza uma oferta de consultoria com configuração integralmente tipada. (command; contract/org/consultancy_offer_save.v1.json) */
+      consultancyOfferSave: (input: { offer: ConsultancyOfferSaveInput }) => call('org_consultancy_offer_save_v1', { p_offer: input.offer }) as Promise<ConsultancyOfferManaged>,
+      /** Lista tipos ativos cuja entrega real é consultoria. (query; contract/org/consultancy_offer_types.v1.json) */
+      consultancyOfferTypes: () => call('org_consultancy_offer_types_v1', {}) as Promise<ConsultancyOfferTypeList>,
+      /** Lista as ofertas de consultoria de um negócio para a equipe autorizada. (query; contract/org/consultancy_offers.v1.json) */
+      consultancyOffers: (input: { businessId: string }) => call('org_consultancy_offers_v1', { p_business_id: input.businessId }) as Promise<ConsultancyOfferList>,
       /** Encerra imediatamente um contrato de consultoria por uma das partes e remove seus acessos. (command; contract/org/contract_end.v1.json) */
       contractEnd: (input: { contractId: string; reason: string }) => call('org_contract_end_v1', { p_contract_id: input.contractId, p_reason: input.reason }) as Promise<ConsultancyContractEndResult>,
       /** Prepara a contratação de uma consultoria com partes, escopo e documentos vigentes validados no servidor. (query; contract/org/hire_prepare.v1.json) */
       hirePrepare: (input: { offerId: string }) => call('org_hire_prepare_v1', { p_offer_id: input.offerId }) as Promise<ConsultancyHirePreparation>,
-      /** Convida, aceita, recusa, muda papel ou remove uma pessoa da equipe. (command; contract/org/team_act.v1.json) */
-      teamAct: (input: { businessId: string; action: "invite" | "accept" | "decline" | "setRole" | "remove"; input?: TeamActionInput }) => call('org_team_act_v1', { p_business_id: input.businessId, p_action: input.action, p_input: input.input }) as Promise<TeamActionResult>,
+      /** Convida, aceita, recusa, muda o nível de acesso ou remove uma pessoa da equipe. (command; contract/org/team_act.v1.json) */
+      teamAct: (input: { businessId: string; action: "invite" | "accept" | "decline" | "setAccess" | "remove"; input?: TeamActionInput }) => call('org_team_act_v1', { p_business_id: input.businessId, p_action: input.action, p_input: input.input }) as Promise<TeamActionResult>,
     },
     staff: {
       /** Ativa ou desativa um tipo de oferta sem apagar seu histórico nem quebrar referências. (command; contract/staff/offer_type_act.v1.json) */

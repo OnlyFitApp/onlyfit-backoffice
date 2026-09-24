@@ -1,6 +1,6 @@
 import { api } from '../api';
 
-export type StaffRole = 'super_admin' | 'admin' | 'moderator' | 'support';
+export type StaffRole = 'super_admin' | 'admin' | 'operator';
 
 export type PlatformStaffMember = {
   user_id: string;
@@ -49,7 +49,7 @@ function parseStaffMember(value: unknown): PlatformStaffMember {
   const row = asRecord(value);
   return {
     user_id: String(row.user_id ?? row.id ?? ''),
-    role: String(row.role ?? 'support') as StaffRole,
+    role: String(row.role ?? 'operator') as StaffRole,
     created_at: String(row.created_at ?? ''),
     created_by: typeof row.created_by === 'string' ? row.created_by : null,
     email: typeof row.email === 'string' ? row.email : null,

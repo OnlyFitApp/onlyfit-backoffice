@@ -268,8 +268,7 @@ const settlementWeekdayOptions: ReadonlyArray<{ value: number; label: string }> 
 ];
 
 const staffRoleOptions: ReadonlyArray<{ value: StaffRole; label: string; description: string }> = [
-  { value: 'support', label: 'Suporte', description: 'Atendimento e consulta operacional.' },
-  { value: 'moderator', label: 'Moderação', description: 'Triagem e moderação de conteúdo.' },
+  { value: 'operator', label: 'Operador', description: 'Atendimento, consulta e moderação operacional.' },
   { value: 'admin', label: 'Administrador', description: 'Configuração e operação da plataforma.' },
   { value: 'super_admin', label: 'Superadministrador', description: 'Acesso total, incluindo gestão da equipe.' },
 ];
@@ -1748,7 +1747,7 @@ function staffErrorMessage(error: unknown): string {
   if (message.includes('full_name_required')) return 'Informe o nome completo.';
   if (message.includes('invalid_email')) return 'Informe um e-mail válido.';
   if (message.includes('email_already_exists')) return 'Este e-mail já pertence a outra conta da plataforma.';
-  if (message.includes('last_super_admin')) return 'O último superadministrador não pode perder esse papel.';
+  if (message.includes('last_super_admin')) return 'O último superadministrador não pode perder esse nível de acesso.';
   if (message.includes('cannot_remove_self')) return 'Você não pode remover o próprio acesso interno.';
   if (message.includes('staff_not_found')) return 'Este acesso interno não existe mais. Atualize a lista.';
   if (message.includes('forbidden')) return 'Somente superadministradores podem gerenciar a equipe.';
@@ -1768,13 +1767,13 @@ function UsersPage() {
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<StaffRole>('support');
+  const [role, setRole] = useState<StaffRole>('operator');
   const [editingMember, setEditingMember] = useState<PlatformStaffMember | null>(null);
   const [editEmail, setEditEmail] = useState('');
   const [editFullName, setEditFullName] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editPasswordConfirmation, setEditPasswordConfirmation] = useState('');
-  const [editRole, setEditRole] = useState<StaffRole>('support');
+  const [editRole, setEditRole] = useState<StaffRole>('operator');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const startEditing = (member: PlatformStaffMember) => {
@@ -1809,7 +1808,7 @@ function UsersPage() {
           setEmail('');
           setFullName('');
           setPassword('');
-          setRole('support');
+          setRole('operator');
         },
         onError: (error) => setMessage({ type: 'error', text: staffErrorMessage(error) }),
       },
@@ -1882,7 +1881,7 @@ function UsersPage() {
             <div className="status-icon danger"><Shield size={24} /></div>
             <div>
               <h2>Gestão restrita</h2>
-              <p>Seu papel permite usar o backoffice, mas não conceder acesso a outros funcionários.</p>
+              <p>Seu nível permite usar o backoffice, mas não conceder acesso a outros funcionários.</p>
             </div>
           </div>
         ) : (
@@ -1917,7 +1916,7 @@ function UsersPage() {
                   />
                 </label>
                 <label>
-                  <span>Papel no backoffice</span>
+                  <span>Nível de acesso</span>
                   <select value={role} onChange={(event) => setRole(event.target.value as StaffRole)}>
                     {staffRoleOptions.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -1983,7 +1982,7 @@ function UsersPage() {
                     />
                   </label>
                   <label>
-                    <span>Papel no backoffice</span>
+                    <span>Nível de acesso</span>
                     <select value={editRole} onChange={(event) => setEditRole(event.target.value as StaffRole)}>
                       {staffRoleOptions.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -2069,7 +2068,7 @@ function UsersPage() {
                     <thead>
                       <tr>
                         <th>Pessoa</th>
-                        <th>Papel interno</th>
+                        <th>Nível interno</th>
                         <th>Incluído em</th>
                         <th><span className="sr-only">Ações</span></th>
                       </tr>

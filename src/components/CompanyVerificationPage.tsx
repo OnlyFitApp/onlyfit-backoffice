@@ -41,7 +41,7 @@ export function CompanyVerificationPage() {
   const companies = useCompanyVerifications(status, pageSize, page * pageSize);
   const review = useReviewCompanyVerification();
   const { data: role } = useCurrentStaffRole();
-  const canDecide = role === 'super_admin' || role === 'admin' || role === 'support';
+  const canDecide = role === 'super_admin' || role === 'admin' || role === 'operator';
 
   const selectStatus = (value: CompanyVerificationStatus) => {
     setStatus(value);

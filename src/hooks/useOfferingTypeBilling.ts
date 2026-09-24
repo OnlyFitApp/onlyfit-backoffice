@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { StaffOfferTypeSaveInput } from '../api/core.gen';
 import {
   listOfferingTypeBilling,
   saveOfferingType,
   setOfferingTypeActive,
+  type StaffOfferTypeSaveInput,
 } from '../lib/offeringTypes';
 
 const queryKey = ['core', 'staff', 'offer-types'] as const;

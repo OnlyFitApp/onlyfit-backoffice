@@ -12,17 +12,57 @@ export type ApiErrorCode =
   | 'auth.access_pending'
   | 'auth.invalid_token'
   | 'auth.required'
-  | 'commerce.acceptance_required'
   | 'commerce.acceptances_required'
-  | 'commerce.cannot_buy_self'
-  | 'commerce.contract_already_active'
-  | 'commerce.delivery_not_available'
+  | 'commerce.access_required'
+  | 'commerce.content_not_found'
+  | 'commerce.forbidden'
   | 'commerce.idempotency_conflict'
-  | 'commerce.idempotency_required'
+  | 'commerce.insufficient_balance'
+  | 'commerce.invalid_ad_booking'
+  | 'commerce.invalid_card_action'
   | 'commerce.invalid_channel'
+  | 'commerce.invalid_network_action'
+  | 'commerce.invalid_network_tab'
+  | 'commerce.invalid_offer'
+  | 'commerce.invalid_offer_action'
+  | 'commerce.invalid_order_action'
+  | 'commerce.invalid_payout'
+  | 'commerce.invalid_progress'
+  | 'commerce.invalid_purchase_action'
+  | 'commerce.offer_changed'
+  | 'commerce.offer_locked'
   | 'commerce.offer_not_found'
+  | 'commerce.offer_type_unavailable'
   | 'commerce.offer_unavailable'
+  | 'commerce.order_changed'
+  | 'commerce.provider_not_configured'
+  | 'commerce.purchase_changed'
   | 'commerce.purchase_not_found'
+  | 'health.answers_incomplete'
+  | 'health.assistant_limit'
+  | 'health.assistant_unavailable'
+  | 'health.extraction_unavailable'
+  | 'health.file_not_found'
+  | 'health.file_unavailable'
+  | 'health.forbidden'
+  | 'health.form_not_found'
+  | 'health.invalid_action'
+  | 'health.invalid_answers'
+  | 'health.invalid_assistant_message'
+  | 'health.invalid_correction'
+  | 'health.invalid_delivery_rule'
+  | 'health.invalid_event'
+  | 'health.invalid_extraction'
+  | 'health.invalid_file'
+  | 'health.invalid_media'
+  | 'health.invalid_period'
+  | 'health.invalid_questionnaire'
+  | 'health.invalid_recipient'
+  | 'health.invalid_report'
+  | 'health.questionnaire_not_found'
+  | 'health.upload_failed'
+  | 'health.upload_incomplete'
+  | 'help.invalid_request'
   | 'identity.access_required'
   | 'identity.auth_not_configured'
   | 'identity.code_exhausted'
@@ -50,16 +90,24 @@ export type ApiErrorCode =
   | 'identity.unknown_level'
   | 'identity.username_invalid'
   | 'identity.username_taken'
+  | 'interaction.comments_disabled'
+  | 'interaction.forbidden'
+  | 'interaction.invalid_action'
+  | 'interaction.invalid_comment'
+  | 'interaction.target_not_found'
   | 'internal.error'
   | 'nutrition.diet_not_editable'
   | 'nutrition.diet_not_found'
+  | 'nutrition.food_not_found'
   | 'nutrition.free_meal_not_found'
   | 'nutrition.idempotency_required'
   | 'nutrition.invalid_diet'
+  | 'nutrition.invalid_food'
   | 'nutrition.invalid_free_meal'
   | 'nutrition.invalid_meal'
   | 'nutrition.invalid_photo'
   | 'nutrition.invalid_range'
+  | 'nutrition.meal_item_not_found'
   | 'nutrition.meal_not_found'
   | 'nutrition.unknown_action'
   | 'org.access_already_available'
@@ -94,13 +142,9 @@ export type ApiErrorCode =
   | 'org.invalid_company_document'
   | 'org.invalid_consent_action'
   | 'org.invalid_consent_items'
-  | 'org.invalid_consultancy_settings'
   | 'org.invalid_kind'
   | 'org.invalid_location'
   | 'org.invalid_niche'
-  | 'org.invalid_offer'
-  | 'org.invalid_offer_state'
-  | 'org.invalid_scope'
   | 'org.invalid_search'
   | 'org.invalid_sports'
   | 'org.invalid_state'
@@ -111,23 +155,15 @@ export type ApiErrorCode =
   | 'org.member_banned'
   | 'org.member_not_found'
   | 'org.not_consultancy'
-  | 'org.offer_changed'
-  | 'org.offer_in_use'
-  | 'org.offer_limit_reached'
-  | 'org.offer_locked'
   | 'org.offer_not_found'
-  | 'org.offer_type_immutable'
-  | 'org.offer_type_unavailable'
   | 'org.offer_unavailable'
   | 'org.owner_protected'
   | 'org.pause_requires_published'
-  | 'org.price_below_minimum'
   | 'org.professional_not_found'
   | 'org.professional_required'
   | 'org.restore_requires_archived'
   | 'org.resubmit_requires_rejected'
   | 'org.resume_requires_paused'
-  | 'org.scope_required'
   | 'org.self_invite'
   | 'org.verification_pending'
   | 'org.website_in_use'
@@ -136,21 +172,62 @@ export type ApiErrorCode =
   | 'platform.reason_note_required'
   | 'platform.reason_required'
   | 'request.invalid_json'
+  | 'social.access_immutable'
+  | 'social.access_required'
+  | 'social.adult_required'
+  | 'social.audio_attestation_required'
+  | 'social.blocked'
+  | 'social.file_not_found'
+  | 'social.forbidden'
+  | 'social.group_not_found'
+  | 'social.idempotency_required'
+  | 'social.invalid_action'
+  | 'social.invalid_challenge'
+  | 'social.invalid_community'
+  | 'social.invalid_container'
+  | 'social.invalid_group'
+  | 'social.invalid_hosted_challenge'
+  | 'social.invalid_media'
+  | 'social.invalid_message'
+  | 'social.invalid_offer'
+  | 'social.invalid_post'
+  | 'social.invalid_relation'
+  | 'social.invalid_state'
+  | 'social.invalid_story'
+  | 'social.invalid_tab'
+  | 'social.message_not_found'
+  | 'social.message_rate_limit'
+  | 'social.paid_offer_required'
+  | 'social.post_not_found'
+  | 'social.prize_terms_required'
+  | 'social.profile_not_found'
+  | 'social.story_expired'
+  | 'social.story_too_long'
+  | 'social.upload_failed'
+  | 'social.upload_incomplete'
+  | 'staff.account_not_found'
   | 'staff.catalog_changed'
-  | 'staff.delivery_in_use'
+  | 'staff.catalog_confirmation_required'
+  | 'staff.catalog_in_use'
+  | 'staff.catalog_item_not_found'
+  | 'staff.catalog_name_taken'
   | 'staff.forbidden'
   | 'staff.invalid_action'
-  | 'staff.invalid_billing'
+  | 'staff.invalid_catalog'
+  | 'staff.invalid_catalog_action'
+  | 'staff.invalid_catalog_item'
   | 'staff.invalid_catalog_key'
-  | 'staff.invalid_offer_type'
-  | 'staff.invalid_payment_provider'
-  | 'staff.invalid_payment_secret'
+  | 'staff.invalid_dashboard'
+  | 'staff.invalid_filter'
+  | 'staff.invalid_mail'
+  | 'staff.invalid_queue_action'
+  | 'staff.invalid_role'
+  | 'staff.invalid_settings'
+  | 'staff.last_catalog_item'
+  | 'staff.mail_not_found'
   | 'staff.mfa_required'
-  | 'staff.offer_type_in_use'
-  | 'staff.offer_type_not_configured'
-  | 'staff.offer_type_not_found'
-  | 'staff.payment_secret_required'
-  | 'staff.unsupported_delivery'
+  | 'staff.queue_item_not_found'
+  | 'staff.settings_changed'
   | 'training.activity_not_found'
   | 'training.already_started'
   | 'training.cannot_delete_session'
@@ -223,10 +300,6 @@ export interface AccountPrivate {
   goal: string | null;
   /** catálogo fitness_levels */
   level: string | null;
-}
-
-export interface Activities {
-  activities: ActivityItem[];
 }
 
 export interface ActivitiesSaved {
@@ -521,25 +594,187 @@ export interface CatalogsResponse {
   catalogs: Catalogs | null;
 }
 
-export interface CheckoutAcceptance {
+export interface CommerceAcceptance {
   key: string;
   version: string;
 }
 
-export interface CheckoutPurchase {
+export interface CommerceAdBooking {
   id: string;
-  offer_id: string;
-  status: "pending" | "confirmed" | "failed" | "cancelled" | "refunded";
-  channel: "free" | "stripe_card";
+  business_id: string;
+  status: "requested";
+  placement: string;
+  starts_on: string;
+  ends_on: string;
+}
+
+export interface CommerceAdBookingInput {
+  business_id: string;
+  placement: string;
+  starts_on: string;
+  ends_on: string;
+  idempotency_key: string;
+}
+
+export interface CommerceCardAction {
+  status: "queued";
+}
+
+export interface CommerceCheckoutResult {
+  purchase: Record<string, unknown>;
+  checkout_url: string | null;
+}
+
+export interface CommerceContent {
+  purchase_id: string;
+  course_id: string;
+  content: Record<string, unknown>;
+  progress: Record<string, unknown>;
+  version: number;
+}
+
+export interface CommerceMarket {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface CommerceMembers {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface CommerceNetwork {
+  items: Record<string, unknown>[];
+}
+
+export interface CommerceNetworkActionData {
+  network_classification?: string;
+}
+
+export interface CommerceNetworkMembership {
+  id: string;
+  container_id: string;
+  account_id: string;
+  status: string;
+  classification: string | null;
+}
+
+export interface CommerceOffer {
+  id: string;
+  business_id: string;
+  professional_id: string;
+  type: string;
+  delivery: string;
+  name: string;
+  description?: string;
+  image_url?: string | null;
+  status: string;
+  price: number;
+  currency: string;
+  billing_type: string;
+  billing_interval?: string | null;
+  settings: Record<string, unknown>;
+  target: Record<string, unknown>;
+  data_access_scope?: string[];
+  version: number;
+  first_sold_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  can_edit: boolean;
+}
+
+export interface CommerceOfferSaveInput {
+  id: string | null;
+  business_id: string;
+  type: string;
+  name: string;
+  description: string;
+  image_url: string | null;
+  price: number;
+  currency: string;
+  billing_type: "free" | "one_time" | "recurring";
+  billing_interval: string | null;
+  settings: Record<string, unknown>;
+  target: Record<string, unknown>;
+  data_access_scope: string[];
+  expected_version: number | null;
+  idempotency_key: string | null;
+}
+
+export interface CommerceOffers {
+  can_edit: boolean;
+  items: Record<string, unknown>[];
+}
+
+export interface CommerceOrderAction {
+  tracking_code?: string;
+}
+
+export interface CommerceOrders {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface CommercePayments {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface CommercePayout {
+  id: string;
+  status: string;
   amount: number;
   currency: string;
-  offer_name: string;
-  billing_type: "one_time" | "recurring" | "free";
-  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
-  provider_reference: string | null;
-  contract_id: string | null;
-  confirmed_at: string | null;
-  created_at: string;
+  destination: Record<string, unknown>;
+  version: number;
+}
+
+export interface CommercePayoutDestination {
+  kind: "pix" | "bank";
+  value: string;
+}
+
+export interface CommerceProgress {
+  purchase_id: string;
+  progress: Record<string, unknown>;
+  version: number;
+}
+
+export interface CommerceProgressInput {
+  lesson?: string;
+  percent?: number;
+  completed?: string[];
+}
+
+export interface CommercePurchase {
+  id: string;
+  offer_id: string;
+  status: string;
+  channel: string;
+  amount: number;
+  currency: string;
+  offer_name?: string;
+  billing_type?: string;
+  billing_interval?: string | null;
+  provider_reference?: string | null;
+  contract_id?: string | null;
+  confirmed_at?: string | null;
+  created_at?: string;
+  fulfillment: Record<string, unknown>;
+  progress: Record<string, unknown>;
+  version: number;
+  charges: Record<string, unknown>[];
+}
+
+export interface CommercePurchases {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface CommerceWallet {
+  business_id: string;
+  balances: Record<string, unknown>[];
+  payouts: Record<string, unknown>[];
 }
 
 export interface CommercialProfile {
@@ -610,115 +845,10 @@ export interface ConsultancyOffer {
   settings: Record<string, unknown>;
 }
 
-export interface ConsultancyOfferAction {
-  id: string;
-  status: "draft" | "published" | "paused" | "archived" | "deleted";
-  version: number;
-}
-
-export interface ConsultancyOfferBusiness {
-  id: string;
-  name: string;
-  logo_url: string;
-  verified: boolean;
-}
-
-export interface ConsultancyOfferDetail {
-  offer: ConsultancyOfferManaged;
-  business: ConsultancyOfferBusiness;
-  professional: ConsultancyProfessional;
-}
-
-export interface ConsultancyOfferList {
-  can_edit: boolean;
-  items: ConsultancyOfferManaged[];
-}
-
-export interface ConsultancyOfferManaged {
-  id: string;
-  business_id: string;
-  professional_id: string;
-  type: string;
-  name: string;
-  description: string;
-  image_url: string | null;
-  status: "draft" | "ready" | "published" | "paused" | "archived";
-  price: number;
-  currency: string;
-  billing_type: "one_time" | "recurring" | "free";
-  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
-  settings: ConsultancySettings;
-  data_access_scope: ("training" | "diet" | "protocols" | "health")[];
-  version: number;
-  first_sold_at: string | null;
-  created_at: string;
-  updated_at: string;
-  can_edit: boolean;
-}
-
-export interface ConsultancyOfferSaveInput {
-  id: string | null;
-  business_id: string;
-  type: string;
-  name: string;
-  description: string;
-  image_url: string | null;
-  price: number;
-  settings: ConsultancySettingsInput;
-  data_access_scope: ("training" | "diet" | "protocols" | "health")[];
-  expected_version: number | null;
-  idempotency_key: string | null;
-}
-
-export interface ConsultancyOfferType {
-  key: string;
-  label: string;
-  description: string;
-  icon: string | null;
-  billing_type: "one_time" | "recurring" | "free";
-  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
-  minimum_price: number;
-  max_per_business: number | null;
-}
-
-export interface ConsultancyOfferTypeList {
-  items: ConsultancyOfferType[];
-}
-
 export interface ConsultancyParty {
   id: string;
   display_name: string;
   avatar_url: string | null;
-}
-
-export interface ConsultancyProfessional {
-  id: string;
-  username: string | null;
-  display_name: string;
-  avatar_url: string | null;
-  is_professional: boolean;
-}
-
-export interface ConsultancySettings {
-  format: "online" | "in_person" | "hybrid";
-  duration_minutes: number;
-  sessions_per_cycle: number;
-  deliverables: string[];
-  scheduling_notes: string;
-  intake_form_required: boolean;
-  welcome_message: string;
-  requires_physical_activity_risk_acknowledgement: boolean;
-}
-
-export interface ConsultancySettingsInput {
-  format: "online" | "in_person" | "hybrid";
-  duration_minutes: number;
-  sessions_per_cycle: number;
-  deliverables: string[];
-  scheduling_notes: string;
-  intake_form_required: boolean;
-  welcome_message: string;
-  requires_physical_activity_risk_acknowledgement: boolean;
 }
 
 export interface DeletedActivityInput {
@@ -902,6 +1032,22 @@ export interface FoodPortion {
   grams: number;
 }
 
+export interface FoodSaveInput {
+  id: string | null;
+  name: string;
+  brand: string | null;
+  barcode: string | null;
+  per_100g: Record<string, unknown>;
+  portions: FoodSavePortion[];
+  delete?: boolean;
+}
+
+export interface FoodSavePortion {
+  unit: string;
+  label?: string | null;
+  grams: number;
+}
+
 export interface FreeMeal {
   id: string;
   title: string;
@@ -951,6 +1097,79 @@ export interface Habits {
   history: HabitDay[];
 }
 
+export interface HealthAssistant {
+  conversation_id: string | null;
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+  usage: Record<string, unknown>;
+}
+
+export interface HealthAssistantMessage {
+  id: string;
+  role: "assistant";
+  body: string;
+  created_at: string;
+}
+
+export interface HealthAssistantReply {
+  conversation_id: string;
+  message: HealthAssistantMessage;
+}
+
+export interface HealthFileAccess {
+  id: string;
+  url: string;
+  expires_at: string;
+  data: Record<string, unknown>;
+}
+
+export interface HealthForm {
+  response_id: string;
+  questionnaire_id: string;
+  version: number;
+  questionnaire: Record<string, unknown>;
+  answers: Record<string, unknown>;
+  status: string;
+  expires_at: string | null;
+  submitted_at: string | null;
+}
+
+export interface HealthHome {
+  from: string;
+  to: string;
+  activities: ActivityItem[];
+  daily: Record<string, unknown>[];
+  events: Record<string, unknown>[];
+  reports: Record<string, unknown>[];
+  files: Record<string, unknown>[];
+  questionnaires: Record<string, unknown>[];
+}
+
+export interface HealthQuestionnaires {
+  items: Record<string, unknown>[];
+  responses: Record<string, unknown>[];
+}
+
+export interface HealthUpload {
+  id: string;
+  kind: string;
+  status: "pending" | "ready" | "processing";
+  url: string | null;
+}
+
+export interface HealthUploadInput {
+  action: "prepare" | "complete";
+  id: string | null;
+  mime: string | null;
+  bytes: number | null;
+}
+
+export interface HelpRequest {
+  id: string;
+  status: string;
+  created_at: string;
+}
+
 export interface IdentityDeleteResult {
   ok: boolean;
 }
@@ -994,6 +1213,12 @@ export interface ImportedActivityInput {
   steps_done?: Record<string, unknown>;
 }
 
+export interface InteractionThread {
+  target: Record<string, unknown>;
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
 export interface InviteCode {
   code: string | null;
   uses: number | null;
@@ -1015,7 +1240,7 @@ export interface Library {
   personal: WorkoutSummary[];
   assigned: AssignedWorkout[];
   onlyfit_health: OfficialWorkout[];
-  programs: ProgramApplication[];
+  programs: ProgramSummary[];
 }
 
 export interface LibraryQuota {
@@ -1106,6 +1331,14 @@ export interface NutritionDayMeal {
   reason: string | null;
   note: string | null;
   photo: MealPhoto | null;
+}
+
+export interface NutritionSwapSuggestions {
+  meal_id: string;
+  item_id: string;
+  date: string;
+  suggestions: Record<string, unknown>[];
+  basis: "catalog" | "energy_range";
 }
 
 /** Campos discriminados por action: remove, mark, edit ou swapExercise. */
@@ -1206,33 +1439,6 @@ export interface PaymentChannel {
   provider: string;
 }
 
-export interface PaymentProviderCredentials {
-  stripe_publishable_key?: string;
-  stripe_secret_key?: string;
-  stripe_webhook_secret?: string;
-  asaas_api_key?: string;
-  asaas_webhook_token?: string;
-}
-
-export interface PaymentProviderEnvironment {
-  environment: "sandbox" | "production";
-  stripe_publishable_key_configured: boolean;
-  stripe_publishable_key_last4: string | null;
-  stripe_secret_key_configured: boolean;
-  stripe_secret_key_last4: string | null;
-  stripe_webhook_secret_configured: boolean;
-  stripe_webhook_secret_last4: string | null;
-  asaas_api_key_configured: boolean;
-  asaas_api_key_last4: string | null;
-  asaas_webhook_token_configured: boolean;
-  updated_at: string | null;
-}
-
-export interface PaymentProviderSettings {
-  can_edit: boolean;
-  environments: PaymentProviderEnvironment[];
-}
-
 export interface Preferences {
   /** Documento de preferências (locale, theme, timezone, push_marketing...) */
   settings: Record<string, unknown>;
@@ -1249,16 +1455,6 @@ export interface Program {
   progress: ProgramProgress | null;
   active_application: string | null;
   days: ProgramDay[];
-}
-
-export interface ProgramApplication {
-  id: string;
-  title: string;
-  sport_id: string;
-  weeks: number;
-  start_date: string;
-  source_program_id: string | null;
-  progress: ProgramProgress;
 }
 
 export interface ProgramDay {
@@ -1283,7 +1479,7 @@ export interface ProgramSummary {
   sport_id: string;
   weeks: number;
   weekly_sessions: number;
-  origin: "catalog" | "purchase" | "professional";
+  origin: string;
   active_application: string | null;
 }
 
@@ -1505,6 +1701,199 @@ export interface SessionSummary {
   completed_at: string | null;
 }
 
+export interface SocialChallenge {
+  id: string;
+  kind: "challenge";
+  creator_id?: string;
+  business_id?: string | null;
+  community_id?: string | null;
+  offer_id?: string | null;
+  status: string;
+  name: string;
+  description?: string;
+  image_url?: string | null;
+  visibility?: string;
+  access_mode: string;
+  publishing?: string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  config: Record<string, unknown>;
+  version?: number;
+  members: number;
+  my_membership: Record<string, unknown> | null;
+}
+
+export interface SocialChallengeAfterAction {
+  id: string;
+  kind: "challenge";
+  creator_id?: string;
+  business_id?: string | null;
+  community_id?: string | null;
+  offer_id?: string | null;
+  status: string;
+  name: string;
+  description?: string;
+  image_url?: string | null;
+  visibility?: string;
+  access_mode: string;
+  publishing?: string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  config: Record<string, unknown>;
+  version?: number;
+  members: number;
+  my_membership: Record<string, unknown> | null;
+}
+
+export interface SocialChallengeSaved {
+  id: string;
+  kind: "challenge";
+  creator_id?: string;
+  business_id?: string | null;
+  community_id?: string | null;
+  offer_id?: string | null;
+  status: string;
+  name: string;
+  description?: string;
+  image_url?: string | null;
+  visibility?: string;
+  access_mode: string;
+  publishing?: string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  config: Record<string, unknown>;
+  version?: number;
+  members: number;
+  my_membership: Record<string, unknown> | null;
+}
+
+export interface SocialChallenges {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface SocialCommunities {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface SocialCommunity {
+  id: string;
+  kind: "community";
+  creator_id?: string;
+  business_id?: string | null;
+  community_id?: string | null;
+  offer_id?: string | null;
+  status: string;
+  name: string;
+  description?: string;
+  image_url?: string | null;
+  visibility?: string;
+  access_mode: string;
+  publishing?: string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  config: Record<string, unknown>;
+  version?: number;
+  members: number;
+  my_membership: Record<string, unknown> | null;
+}
+
+export interface SocialCommunityAfterAction {
+  id: string;
+  kind: "community";
+  creator_id?: string;
+  business_id?: string | null;
+  community_id?: string | null;
+  offer_id?: string | null;
+  status: string;
+  name: string;
+  description?: string;
+  image_url?: string | null;
+  visibility?: string;
+  access_mode: string;
+  publishing?: string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  config: Record<string, unknown>;
+  version?: number;
+  members: number;
+  my_membership: Record<string, unknown> | null;
+}
+
+export interface SocialCommunitySaved {
+  id: string;
+  kind: "community";
+  creator_id?: string;
+  business_id?: string | null;
+  community_id?: string | null;
+  offer_id?: string | null;
+  status: string;
+  name: string;
+  description?: string;
+  image_url?: string | null;
+  visibility?: string;
+  access_mode: string;
+  publishing?: string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  config: Record<string, unknown>;
+  version?: number;
+  members: number;
+  my_membership: Record<string, unknown> | null;
+}
+
+export interface SocialConversation {
+  peer: Record<string, unknown> | null;
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface SocialExplore {
+  items: Record<string, unknown>[];
+  people: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface SocialFeed {
+  items: Record<string, unknown>[];
+  stories: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface SocialInbox {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+  unread_count: number;
+}
+
+export interface SocialMediaUpload {
+  file_id: string;
+  status: "pending" | "ready" | "processing";
+  url: string | null;
+  audio_attested: boolean;
+}
+
+export interface SocialMediaUploadInput {
+  action: "prepare" | "complete";
+  id: string | null;
+  mime: string | null;
+  bytes: number | null;
+  audio_attested: boolean;
+}
+
+export interface SocialProfile {
+  profile: Record<string, unknown>;
+  posts: Record<string, unknown>[];
+  stories: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface SocialStories {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
 export interface Sport {
   id: string;
   name_key: string;
@@ -1512,50 +1901,56 @@ export interface Sport {
   affinity_group_id: string | null;
 }
 
-export interface StaffOfferType {
-  key: string;
-  label: string;
-  description: string;
-  icon: string | null;
-  active: boolean;
-  position: number;
-  version: number;
-  delivery: "club" | "consultancy" | "workout" | "diet" | "physical_product" | "course" | "challenge" | "community" | "platform_membership";
-  billing_type: "one_time" | "recurring" | "free";
-  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
-  minimum_price: number | null;
-  platform_fee_percent: number | null;
-  platform_fee_fixed: number | null;
-  max_per_business: number | null;
-  unique_per_owner_profile: boolean;
-  requires_affinity_group: boolean;
-  requires_product_category: boolean;
-  active_offers_count: number;
-  configured: boolean;
+export interface StaffAccount {
+  account: Record<string, unknown>;
+  businesses: Record<string, unknown>[];
+  purchases: Record<string, unknown>[];
+  mail: Record<string, unknown>[];
 }
 
-export interface StaffOfferTypeSaveInput {
-  key: string;
-  label: string;
-  description: string;
-  icon: string | null;
-  position: number;
-  delivery: "club" | "consultancy" | "workout" | "diet" | "physical_product" | "course" | "challenge" | "community" | "platform_membership";
-  billing_type: "one_time" | "recurring" | "free";
-  billing_interval: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
-  minimum_price: number;
-  platform_fee_percent: number;
-  platform_fee_fixed: number;
-  max_per_business: number | null;
-  unique_per_owner_profile: boolean;
-  requires_affinity_group: boolean;
-  requires_product_category: boolean;
-  expected_version?: number | null;
+export interface StaffAccounts {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
 }
 
-export interface StaffOfferTypes {
+export interface StaffAudit {
+  items: Record<string, unknown>[];
+  next_cursor: number | null;
+}
+
+export interface StaffCatalog {
+  kind: string;
   can_edit: boolean;
-  items: StaffOfferType[];
+  items: Record<string, unknown>[];
+}
+
+export interface StaffDashboard {
+  section: string;
+  from: string;
+  to: string;
+  metrics: Record<string, unknown>[];
+  totals: Record<string, unknown>;
+}
+
+export interface StaffMail {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface StaffQueue {
+  items: Record<string, unknown>[];
+  next_cursor: string | null;
+}
+
+export interface StaffSetting {
+  key: string;
+  version: number;
+  values: Record<string, unknown>;
+}
+
+export interface StaffSettings {
+  can_edit: boolean;
+  items: Record<string, unknown>[];
 }
 
 export interface StepMark {
@@ -1712,10 +2107,78 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       eventsSave: (input: { events: Record<string, unknown>[] }) => call('app_events_save_v1', { p_events: input.events }) as Promise<EventsSaved>,
     },
     commerce: {
-      /** Consulta o estado confirmado pelo servidor de um checkout do titular. (query; contract/commerce/checkout.v1.json) */
-      checkout: (input: { purchaseId: string }) => call('commerce_checkout_v1', { p_purchase_id: input.purchaseId }) as Promise<CheckoutPurchase>,
-      /** Inicia um checkout com preço, partes, escopo e documentos resolvidos pelo servidor; R$ 0 confirma atomicamente. (command; contract/commerce/checkout_start.v1.json) */
-      checkoutStart: (input: { offerId: string; channel: "free" | "stripe_card"; idempotencyKey: string; acceptances: CheckoutAcceptance[] }) => call('commerce_checkout_start_v1', { p_offer_id: input.offerId, p_channel: input.channel, p_idempotency_key: input.idempotencyKey, p_acceptances: input.acceptances }) as Promise<CheckoutPurchase>,
+      /** Solicita reserva de mídia para revisão comercial. (command; contract/commerce/ad_book.v1.json) */
+      adBook: (input: { booking: CommerceAdBookingInput }) => call('commerce_ad_book_v1', { p_booking: input.booking }) as Promise<CommerceAdBooking>,
+      /** Agenda remoção segura de um meio de pagamento tokenizado. (command; contract/commerce/card_act.v1.json) */
+      cardAct: (input: { action: "remove"; paymentMethodReference: string }) => call('commerce_card_act_v1', { p_action: input.action, p_payment_method_reference: input.paymentMethodReference }) as Promise<CommerceCardAction>,
+      /** Congela a oferta e inicia ou confirma um checkout idempotente. (command; contract/commerce/checkout.v1.json) */
+      checkout: (input: { offerId: string; channel: "free" | "stripe_card"; idempotencyKey: string; acceptances: CommerceAcceptance[] }) => invoke('worker', '/commerce/checkout', { offer_id: input.offerId, channel: input.channel, idempotency_key: input.idempotencyKey, acceptances: input.acceptances }) as Promise<CommerceCheckoutResult>,
+      /** Entrega conteúdo comprado e seu progresso. (query; contract/commerce/content.v1.json) */
+      content: (input: { purchaseId: string }) => call('commerce_content_v1', { p_purchase_id: input.purchaseId }) as Promise<CommerceContent>,
+      /** Lista ofertas publicadas de todos os tipos configurados. (query; contract/commerce/market.v1.json) */
+      market: (input: { query?: string | null; type?: string | null; cursor?: string | null; limit?: number } = {}) => call('commerce_market_v1', { p_query: input.query, p_type: input.type, p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommerceMarket>,
+      /** Lista compradores confirmados de um negócio. (query; contract/commerce/members.v1.json) */
+      members: (input: { businessId: string; cursor?: string | null; limit?: number }) => call('commerce_members_v1', { p_business_id: input.businessId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommerceMembers>,
+      /** Lista vínculos da rede comercial. (query; contract/commerce/network.v1.json) */
+      network: (input: { tab?: "mine" | "discover" } = {}) => call('commerce_network_v1', { p_tab: input.tab }) as Promise<CommerceNetwork>,
+      /** Solicita, decide ou encerra vínculo na rede. (command; contract/commerce/network_act.v1.json) */
+      networkAct: (input: { action: "request" | "approve" | "reject" | "leave"; containerId: string; targetId?: string | null; data?: CommerceNetworkActionData }) => call('commerce_network_act_v1', { p_action: input.action, p_container_id: input.containerId, p_target_id: input.targetId, p_data: input.data }) as Promise<CommerceNetworkMembership>,
+      /** Lê uma oferta pública ou administrada. (query; contract/commerce/offer.v1.json) */
+      offer: (input: { offerId: string }) => call('commerce_offer_v1', { p_offer_id: input.offerId }) as Promise<CommerceOffer>,
+      /** Publica, pausa, retoma ou arquiva uma oferta. (command; contract/commerce/offer_act.v1.json) */
+      offerAct: (input: { offerId: string; action: "ready" | "publish" | "pause" | "resume" | "archive"; expectedVersion: number }) => call('commerce_offer_act_v1', { p_offer_id: input.offerId, p_action: input.action, p_expected_version: input.expectedVersion }) as Promise<Record<string, unknown>>,
+      /** Cria ou altera qualquer oferta segundo seu tipo configurado. (command; contract/commerce/offer_save.v1.json) */
+      offerSave: (input: { offer: CommerceOfferSaveInput }) => call('commerce_offer_save_v1', { p_offer: input.offer }) as Promise<Record<string, unknown>>,
+      /** Lista ofertas geridas por um negócio. (query; contract/commerce/offers.v1.json) */
+      offers: (input: { businessId: string; status?: string | null }) => call('commerce_offers_v1', { p_business_id: input.businessId, p_status: input.status }) as Promise<CommerceOffers>,
+      /** Avança a separação e entrega de pedido físico. (command; contract/commerce/order_act.v1.json) */
+      orderAct: (input: { purchaseId: string; action: "prepare" | "ship" | "deliver" | "cancel"; data: CommerceOrderAction; expectedVersion: number }) => call('commerce_order_act_v1', { p_purchase_id: input.purchaseId, p_action: input.action, p_data: input.data, p_expected_version: input.expectedVersion }) as Promise<Record<string, unknown>>,
+      /** Lista pedidos físicos de um negócio. (query; contract/commerce/orders.v1.json) */
+      orders: (input: { businessId: string; status?: string | null; cursor?: string | null; limit?: number }) => call('commerce_orders_v1', { p_business_id: input.businessId, p_status: input.status, p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommerceOrders>,
+      /** Lista cobranças do negócio sem dados secretos do meio de pagamento. (query; contract/commerce/payments.v1.json) */
+      payments: (input: { businessId: string; cursor?: string | null; limit?: number }) => call('commerce_payments_v1', { p_business_id: input.businessId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommercePayments>,
+      /** Solicita repasse sem persistir a chave bancária em claro. (command; contract/commerce/payout.v1.json) */
+      payout: (input: { businessId: string; amount: number; currency: string; destination: CommercePayoutDestination; idempotencyKey: string }) => call('commerce_payout_v1', { p_business_id: input.businessId, p_amount: input.amount, p_currency: input.currency, p_destination: input.destination, p_idempotency_key: input.idempotencyKey }) as Promise<CommercePayout>,
+      /** Salva progresso de curso com concorrência otimista. (command; contract/commerce/progress_save.v1.json) */
+      progressSave: (input: { purchaseId: string; progress: CommerceProgressInput; expectedVersion: number }) => call('commerce_progress_save_v1', { p_purchase_id: input.purchaseId, p_progress: input.progress, p_expected_version: input.expectedVersion }) as Promise<CommerceProgress>,
+      /** Lê compra, entrega, progresso e cobranças autorizadas. (query; contract/commerce/purchase.v1.json) */
+      purchase: (input: { purchaseId: string }) => call('commerce_purchase_v1', { p_purchase_id: input.purchaseId }) as Promise<CommercePurchase>,
+      /** Cancela ou repete uma compra ainda não confirmada. (command; contract/commerce/purchase_act.v1.json) */
+      purchaseAct: (input: { purchaseId: string; action: "cancel" | "retry"; expectedVersion: number }) => call('commerce_purchase_act_v1', { p_purchase_id: input.purchaseId, p_action: input.action, p_expected_version: input.expectedVersion }) as Promise<Record<string, unknown>>,
+      /** Lista compras do titular. (query; contract/commerce/purchases.v1.json) */
+      purchases: (input: { status?: string | null; cursor?: string | null; limit?: number } = {}) => call('commerce_purchases_v1', { p_status: input.status, p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommercePurchases>,
+      /** Consulta saldos derivados do razão e repasses. (query; contract/commerce/wallet.v1.json) */
+      wallet: (input: { businessId: string }) => call('commerce_wallet_v1', { p_business_id: input.businessId }) as Promise<CommerceWallet>,
+    },
+    health: {
+      /** Histórico privado e uso do assistente. (query; contract/health/assistant.v1.json) */
+      assistant: (input: { conversationId?: string; cursor?: string; limit?: number } = {}) => call('health_assistant_v1', { p_conversation_id: input.conversationId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<HealthAssistant>,
+      /** Pergunta ao assistente não diagnóstico usando apenas o histórico da conversa. (command; contract/health/assistant_ask.v1.json) */
+      assistantAsk: (input: { conversationId?: string; message: string }) => invoke('worker', '/health/assistant', { conversation_id: input.conversationId, message: input.message }) as Promise<HealthAssistantReply>,
+      /** Dossiê consentido do cliente para profissional autorizado. (query; contract/health/client_record.v1.json) */
+      clientRecord: (input: { businessId: string; clientId: string; from?: string; to?: string }) => call('health_client_record_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_from: input.from, p_to: input.to }) as Promise<Record<string, unknown>>,
+      /** Registra fato de saúde imutável ou sua correção. (command; contract/health/event_save.v1.json) */
+      eventSave: (input: { event: Record<string, unknown> }) => call('health_event_save_v1', { p_event: input.event }) as Promise<Record<string, unknown>>,
+      /** Abre arquivo de saúde por URL assinada curta. (query; contract/health/file.v1.json) */
+      file: (input: { id: string }) => invoke('worker', '/health/file', { id: input.id }) as Promise<HealthFileAccess>,
+      /** Confirma extração ou exclui arquivo de Saúde. (command; contract/health/file_act.v1.json) */
+      fileAct: (input: { id: string; action: "confirmExtraction" | "delete" }) => call('health_file_act_v1', { p_id: input.id, p_action: input.action }) as Promise<Record<string, unknown>>,
+      /** Abre questionário atribuído ou link público. (query; contract/health/form.v1.json) */
+      form: (input: { questionnaireId?: string; token?: string } = {}) => call('health_form_v1', { p_questionnaire_id: input.questionnaireId, p_token: input.token }) as Promise<HealthForm>,
+      /** Salva rascunho ou envia resposta na versão recebida. (command; contract/health/form_save.v1.json) */
+      formSave: (input: { responseId: string; token?: string; answers?: Record<string, unknown>; submit?: boolean }) => call('health_form_save_v1', { p_response_id: input.responseId, p_token: input.token, p_answers: input.answers, p_submit: input.submit }) as Promise<Record<string, unknown>>,
+      /** Painel privado de Saúde no período, incluindo o histórico unificado de atividades. (query; contract/health/home.v1.json) */
+      home: (input: { from?: string; to?: string } = {}) => call('health_home_v1', { p_from: input.from, p_to: input.to }) as Promise<HealthHome>,
+      /** Configura entrega, envia, cria link ou arquiva questionário. (command; contract/health/questionnaire_act.v1.json) */
+      questionnaireAct: (input: { id: string; action: "setDeliveryRule" | "send" | "createLink" | "archive"; data?: Record<string, unknown> }) => call('health_questionnaire_act_v1', { p_id: input.id, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
+      /** Salva modelo; edição respondida cria nova versão. (command; contract/health/questionnaire_save.v1.json) */
+      questionnaireSave: (input: { questionnaire: Record<string, unknown> }) => call('health_questionnaire_save_v1', { p_questionnaire: input.questionnaire }) as Promise<Record<string, unknown>>,
+      /** Modelos, entregas e respostas do negócio. (query; contract/health/questionnaires.v1.json) */
+      questionnaires: (input: { businessId: string }) => call('health_questionnaires_v1', { p_business_id: input.businessId }) as Promise<HealthQuestionnaires>,
+      /** Salva relatório; publicado vira versão imutável. (command; contract/health/report_save.v1.json) */
+      reportSave: (input: { report: Record<string, unknown> }) => call('health_report_save_v1', { p_report: input.report }) as Promise<Record<string, unknown>>,
+      /** Prepara e confirma upload assinado em armazenamento privado. (command; contract/health/upload.v1.json) */
+      upload: (input: { file: HealthUploadInput; kind: "health_document" | "progress_photo" }) => invoke('worker', '/health/upload', { file: input.file, kind: input.kind }) as Promise<HealthUpload>,
     },
     identity: {
       /** applyCode: usa o código de indicação de outra pessoa para sair da fila. Devolve o veredito de acesso. (command; contract/identity/access_act.v1.json) */
@@ -1750,6 +2213,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       dietAct: (input: { dietId: string; action: "apply" | "remove" | "mealTime"; input?: DietActionInput }) => call('nutrition_diet_act_v1', { p_diet_id: input.dietId, p_action: input.action, p_input: input.input }) as Promise<DietLibrary>,
       /** Salva a dieta própria inteira (cria com idempotency_key ou substitui). Metas somadas dos itens. (command; contract/nutrition/diet_save.v1.json) */
       dietSave: (input: { diet: DietSaveInput }) => call('nutrition_diet_save_v1', { p_diet: input.diet }) as Promise<Diet>,
+      /** Cria, altera ou remove alimento pessoal validado. (command; contract/nutrition/food_save.v1.json) */
+      foodSave: (input: { food: FoodSaveInput }) => call('nutrition_food_save_v1', { p_food: input.food }) as Promise<Record<string, unknown>>,
       /** Busca de alimentos: começo do nome e bases comuns (TACO, TBCA) primeiro; pessoais só para quem criou; código de barras exato. (query; contract/nutrition/food_search.v1.json) */
       foodSearch: (input: { query?: string; barcode?: string; limit?: number; offset?: number } = {}) => call('nutrition_food_search_v1', { p_query: input.query, p_barcode: input.barcode, p_limit: input.limit, p_offset: input.offset }) as Promise<Food[]>,
       /** Refeição livre (J16.37–40): já consumida, só o título é obrigatório, sem horário inventado; criar, editar e excluir só hoje e ontem. Devolve o dia. (command; contract/nutrition/free_meal_save.v1.json) */
@@ -1758,6 +2223,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       library: () => call('nutrition_library_v1', {}) as Promise<DietLibrary>,
       /** mark (feito | não feito com motivo, J16.22) · unmark — hoje e ontem; edit/remove só neste dia (J16.67), qualquer data. Devolve o dia. (command; contract/nutrition/meal_act.v1.json) */
       mealAct: (input: { mealId: string; action: "mark" | "unmark" | "edit" | "remove"; date?: string; input?: MealActionInput }) => call('nutrition_meal_act_v1', { p_meal_id: input.mealId, p_action: input.action, p_date: input.date, p_input: input.input }) as Promise<NutritionDay>,
+      /** Sugere trocas determinísticas por equivalência energética no catálogo autorizado. (query; contract/nutrition/swap_suggest.v1.json) */
+      swapSuggest: (input: { mealId: string; itemId: string; date?: string | null; limit?: number }) => call('nutrition_swap_suggest_v1', { p_meal_id: input.mealId, p_item_id: input.itemId, p_date: input.date, p_limit: input.limit }) as Promise<NutritionSwapSuggestions>,
     },
     org: {
       /** Lista os negócios, compõe perfil e equipe e pesquisa profissionais elegíveis para convite. (query; contract/org/business.v1.json) */
@@ -1774,16 +2241,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       clients: (input: { businessId: string; view?: "all" | "lead" | "client" | "former" | "archived"; search?: string; cursor?: string; limit?: number }) => call('org_clients_v1', { p_business_id: input.businessId, p_view: input.view, p_search: input.search, p_cursor: input.cursor, p_limit: input.limit }) as Promise<OrgClientsResult>,
       /** Permite ao titular autorizar, negar ou revogar itens de acesso do contrato de consultoria. (command; contract/org/consent_decide.v1.json) */
       consentDecide: (input: { contractId: string; action: "allow" | "deny" | "revoke"; items: ("training" | "diet" | "protocols" | "health")[] }) => call('org_consent_decide_v1', { p_contract_id: input.contractId, p_action: input.action, p_items: input.items }) as Promise<ConsultancyConsentResult>,
-      /** Lê uma consultoria publicada para contratação ou uma oferta própria para gestão. (query; contract/org/consultancy_offer.v1.json) */
-      consultancyOffer: (input: { offerId: string }) => call('org_consultancy_offer_v1', { p_offer_id: input.offerId }) as Promise<ConsultancyOfferDetail>,
-      /** Muda o ciclo de vida de uma oferta de consultoria com versão otimista. (command; contract/org/consultancy_offer_act.v1.json) */
-      consultancyOfferAct: (input: { offerId: string; action: "publish" | "pause" | "resume" | "archive" | "restore" | "delete"; expectedVersion: number }) => call('org_consultancy_offer_act_v1', { p_offer_id: input.offerId, p_action: input.action, p_expected_version: input.expectedVersion }) as Promise<ConsultancyOfferAction>,
-      /** Cria ou atualiza uma oferta de consultoria com configuração integralmente tipada. (command; contract/org/consultancy_offer_save.v1.json) */
-      consultancyOfferSave: (input: { offer: ConsultancyOfferSaveInput }) => call('org_consultancy_offer_save_v1', { p_offer: input.offer }) as Promise<ConsultancyOfferManaged>,
-      /** Lista tipos ativos cuja entrega real é consultoria. (query; contract/org/consultancy_offer_types.v1.json) */
-      consultancyOfferTypes: () => call('org_consultancy_offer_types_v1', {}) as Promise<ConsultancyOfferTypeList>,
-      /** Lista as ofertas de consultoria de um negócio para a equipe autorizada. (query; contract/org/consultancy_offers.v1.json) */
-      consultancyOffers: (input: { businessId: string }) => call('org_consultancy_offers_v1', { p_business_id: input.businessId }) as Promise<ConsultancyOfferList>,
       /** Encerra imediatamente um contrato de consultoria por uma das partes e remove seus acessos. (command; contract/org/contract_end.v1.json) */
       contractEnd: (input: { contractId: string; reason: string }) => call('org_contract_end_v1', { p_contract_id: input.contractId, p_reason: input.reason }) as Promise<ConsultancyContractEndResult>,
       /** Prepara a contratação de uma consultoria com partes, escopo e documentos vigentes validados no servidor. (query; contract/org/hire_prepare.v1.json) */
@@ -1791,21 +2248,93 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Convida, aceita, recusa, muda o nível de acesso ou remove uma pessoa da equipe. (command; contract/org/team_act.v1.json) */
       teamAct: (input: { businessId: string; action: "invite" | "accept" | "decline" | "setAccess" | "remove"; input?: TeamActionInput }) => call('org_team_act_v1', { p_business_id: input.businessId, p_action: input.action, p_input: input.input }) as Promise<TeamActionResult>,
     },
+    social: {
+      /** Abre uma edição de desafio e o progresso congelável do participante. (query; contract/social/challenge.v1.json) */
+      challenge: (input: { id: string }) => call('social_challenge_v1', { p_id: input.id }) as Promise<SocialChallenge>,
+      /** Publica pelo criador e administra participação, encerramento ou cancelamento. (command; contract/social/challenge_act.v1.json) */
+      challengeAct: (input: { id: string; action: "publish" | "join" | "leave" | "approve" | "reject" | "cancel" | "end"; targetId?: string; data?: Record<string, unknown> }) => call('social_challenge_act_v1', { p_id: input.id, p_action: input.action, p_target_id: input.targetId, p_data: input.data }) as Promise<SocialChallengeAfterAction>,
+      /** Salva desafio avulso gratuito/pago ou desafio nativo de comunidade. (command; contract/social/challenge_save.v1.json) */
+      challengeSave: (input: { challenge: Record<string, unknown> }) => call('social_challenge_save_v1', { p_challenge: input.challenge }) as Promise<SocialChallengeSaved>,
+      /** Lista desafios gratuitos ou pagos com acesso e progresso atuais. (query; contract/social/challenges.v1.json) */
+      challenges: (input: { tab?: "discover" | "mine" | "history"; cursor?: string; limit?: number } = {}) => call('social_challenges_v1', { p_tab: input.tab, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialChallenges>,
+      /** Lista comunidades descobríveis, atuais ou históricas. (query; contract/social/communities.v1.json) */
+      communities: (input: { tab?: "discover" | "mine" | "history"; cursor?: string; limit?: number } = {}) => call('social_communities_v1', { p_tab: input.tab, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialCommunities>,
+      /** Abre uma comunidade com sua política efetiva de acesso. (query; contract/social/community.v1.json) */
+      community: (input: { id: string }) => call('social_community_v1', { p_id: input.id }) as Promise<SocialCommunity>,
+      /** Publica, administra entrada ou encerra uma comunidade. (command; contract/social/community_act.v1.json) */
+      communityAct: (input: { id: string; action: "publish" | "pauseEntry" | "archive" | "join" | "leave" | "approve" | "reject"; targetId?: string; data?: Record<string, unknown> }) => call('social_community_act_v1', { p_id: input.id, p_action: input.action, p_target_id: input.targetId, p_data: input.data }) as Promise<SocialCommunityAfterAction>,
+      /** Cria ou edita comunidade gratuita ou paga, sem permitir trocar a política após a primeira entrada. (command; contract/social/community_save.v1.json) */
+      communitySave: (input: { community: Record<string, unknown> }) => call('social_community_save_v1', { p_community: input.community }) as Promise<SocialCommunitySaved>,
+      /** Mensagens privadas com uma pessoa. (query; contract/social/conversation.v1.json) */
+      conversation: (input: { peerId: string; cursor?: string; limit?: number }) => call('social_conversation_v1', { p_peer_id: input.peerId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialConversation>,
+      /** Explora conteúdo de criadores e busca pessoas. (query; contract/social/explore.v1.json) */
+      explore: (input: { search?: string; affinity?: string; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
+      /** Feed por cursor, com seguidos e descoberta sem duplicação. (query; contract/social/feed.v1.json) */
+      feed: (input: { affinity?: string; cursor?: string; limit?: number } = {}) => call('social_feed_v1', { p_affinity: input.affinity, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialFeed>,
+      /** Segue, deixa de seguir, bloqueia ou desbloqueia. (command; contract/social/follow_act.v1.json) */
+      followAct: (input: { accountId: string; action: "follow" | "unfollow" | "block" | "unblock" }) => call('social_follow_act_v1', { p_account_id: input.accountId, p_action: input.action }) as Promise<Record<string, unknown>>,
+      /** Central de conversas ou notificações. (query; contract/social/inbox.v1.json) */
+      inbox: (input: { tab?: "messages" | "notifications"; cursor?: string; limit?: number } = {}) => call('social_inbox_v1', { p_tab: input.tab, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialInbox>,
+      /** Envia, compartilha, lê ou exclui mensagem privada. (command; contract/social/message_act.v1.json) */
+      messageAct: (input: { recipientIds: string[]; action: "send" | "share" | "markRead" | "delete"; data?: Record<string, unknown> }) => call('social_message_act_v1', { p_recipient_ids: input.recipientIds, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
+      /** Marca notificações sem confundir badge com leitura. (command; contract/social/notification_act.v1.json) */
+      notificationAct: (input: { ids?: string[]; action?: "markRead" | "markAllRead" | "clearBadge" } = {}) => call('social_notification_act_v1', { p_ids: input.ids, p_action: input.action }) as Promise<Record<string, unknown>>,
+      /** Abre publicação visível com interação atual. (query; contract/social/post.v1.json) */
+      post: (input: { id: string }) => call('social_post_v1', { p_id: input.id }) as Promise<Record<string, unknown>>,
+      /** Cria ou edita publicação idempotente. (command; contract/social/post_save.v1.json) */
+      postSave: (input: { post: Record<string, unknown> }) => call('social_post_save_v1', { p_post: input.post }) as Promise<Record<string, unknown>>,
+      /** Perfil público, publicações e stories ativos. (query; contract/social/profile.v1.json) */
+      profile: (input: { username: string; cursor?: string; limit?: number }) => call('social_profile_v1', { p_username: input.username, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialProfile>,
+      /** Stories ativos e visíveis agrupáveis por autor. (query; contract/social/stories.v1.json) */
+      stories: (input: { authorId?: string; cursor?: string; limit?: number } = {}) => call('social_stories_v1', { p_author_id: input.authorId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialStories>,
+      /** Registra visualização ou muda o estado do story. (command; contract/social/story_act.v1.json) */
+      storyAct: (input: { ids: string[]; action: "view" | "toggleComments" | "convertToPost" | "delete"; data?: Record<string, unknown> }) => call('social_story_act_v1', { p_ids: input.ids, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
+      /** Publica story por 24 horas. (command; contract/social/story_save.v1.json) */
+      storySave: (input: { story: Record<string, unknown> }) => call('social_story_save_v1', { p_story: input.story }) as Promise<Record<string, unknown>>,
+      /** Prepara e confirma upload assinado de foto ou vídeo. (command; contract/social/upload.v1.json) */
+      upload: (input: { file: SocialMediaUploadInput }) => invoke('worker', '/social/upload', { file: input.file }) as Promise<SocialMediaUpload>,
+    },
+    interaction: {
+      /** Curtir, comentar, responder, excluir ou denunciar. (command; contract/social/interaction_act.v1.json) */
+      act: (input: { targetId: string; action: "like" | "unlike" | "comment" | "reply" | "delete" | "report"; data?: Record<string, unknown> }) => call('interaction_act_v1', { p_target_id: input.targetId, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
+      /** Thread única para comentários de qualquer conteúdo. (query; contract/social/interaction_thread.v1.json) */
+      thread: (input: { targetId: string; cursor?: string; limit?: number }) => call('interaction_thread_v1', { p_target_id: input.targetId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<InteractionThread>,
+    },
     staff: {
-      /** Ativa ou desativa um tipo de oferta sem apagar seu histórico nem quebrar referências. (command; contract/staff/offer_type_act.v1.json) */
-      offerTypeAct: (input: { key: string; action: "activate" | "deactivate"; expectedVersion: number }) => call('staff_offer_type_act_v1', { p_key: input.key, p_action: input.action, p_expected_version: input.expectedVersion }) as Promise<StaffOfferType>,
-      /** Cria ou substitui atomicamente toda a configuração de um tipo de oferta; a chave é imutável. (command; contract/staff/offer_type_save.v1.json) */
-      offerTypeSave: (input: { item: StaffOfferTypeSaveInput }) => call('staff_offer_type_save_v1', { p_item: input.item }) as Promise<StaffOfferType>,
-      /** Lista todos os tipos de oferta, inclusive inativos, com configuração comercial, versão e impacto de desativação. (query; contract/staff/offer_types.v1.json) */
-      offerTypes: () => call('staff_offer_types_v1', {}) as Promise<StaffOfferTypes>,
-      /** Atualiza somente os segredos enviados para um ambiente de pagamentos. (command; contract/staff/payment_provider_save.v1.json) */
-      paymentProviderSave: (input: { environment: "sandbox" | "production"; credentials: PaymentProviderCredentials }) => call('staff_payment_provider_save_v1', { p_environment: input.environment, p_credentials: input.credentials }) as Promise<PaymentProviderEnvironment>,
-      /** Lista o estado das credenciais de pagamento sem revelar segredos. (query; contract/staff/payment_providers.v1.json) */
-      paymentProviders: () => call('staff_payment_providers_v1', {}) as Promise<PaymentProviderSettings>,
+      /** Cadastro operacional sem segredos. (query; contract/staff/account.v1.json) */
+      account: (input: { id: string }) => call('staff_account_v1', { p_id: input.id }) as Promise<StaffAccount>,
+      /** Redefine acesso ou papel interno com segregação. (command; contract/staff/account_act.v1.json) */
+      accountAct: (input: { id: string; action: "resetPassword" | "resetMfa" | "setStaffRole" | "removeFromStaff"; data?: Record<string, unknown> }) => call('staff_account_act_v1', { p_id: input.id, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
+      /** Busca pessoas por cursor e filtro operacional. (query; contract/staff/accounts.v1.json) */
+      accounts: (input: { search?: string; filter?: "all" | "staff" | "professional" | "inactive"; cursor?: string; limit?: number } = {}) => call('staff_accounts_v1', { p_search: input.search, p_filter: input.filter, p_cursor: input.cursor, p_limit: input.limit }) as Promise<StaffAccounts>,
+      /** Auditoria append-only filtrada. (query; contract/staff/audit.v1.json) */
+      audit: (input: { actorId?: string; targetType?: string; targetId?: string; from?: string; to?: string; cursor?: number; limit?: number } = {}) => call('staff_audit_v1', { p_actor_id: input.actorId, p_target_type: input.targetType, p_target_id: input.targetId, p_from: input.from, p_to: input.to, p_cursor: input.cursor, p_limit: input.limit }) as Promise<StaffAudit>,
+      /** Lê qualquer catálogo com inativos e impacto. (query; contract/staff/catalog.v1.json) */
+      catalog: (input: { kind: string }) => call('staff_catalog_v1', { p_kind: input.kind }) as Promise<StaffCatalog>,
+      /** Ativa, desativa ou ordena item após revalidar impacto. (command; contract/staff/catalog_act.v1.json) */
+      catalogAct: (input: { kind: string; key: string; action: "activate" | "deactivate" | "reorder"; data?: Record<string, unknown> }) => call('staff_catalog_act_v1', { p_kind: input.kind, p_key: input.key, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
+      /** Salva item inteiro com concorrência otimista. (command; contract/staff/catalog_save.v1.json) */
+      catalogSave: (input: { kind: string; item: Record<string, unknown> }) => call('staff_catalog_save_v1', { p_kind: input.kind, p_item: input.item }) as Promise<Record<string, unknown>>,
+      /** Indicadores internos por seção e período. (query; contract/staff/dashboard.v1.json) */
+      dashboard: (input: { section?: "overview" | "acquisition" | "activation" | "engagement" | "retention" | "network" | "business" | "accounts"; from?: string; to?: string } = {}) => call('staff_dashboard_v1', { p_section: input.section, p_from: input.from, p_to: input.to }) as Promise<StaffDashboard>,
+      /** Caixas e conversas administrativas. (query; contract/staff/mail.v1.json) */
+      mail: (input: { mailbox?: string; search?: string; status?: string; cursor?: string; limit?: number } = {}) => call('staff_mail_v1', { p_mailbox: input.mailbox, p_search: input.search, p_status: input.status, p_cursor: input.cursor, p_limit: input.limit }) as Promise<StaffMail>,
+      /** Enfileira envio, resposta ou encerra conversa. (command; contract/staff/mail_act.v1.json) */
+      mailAct: (input: { id?: string; action: "send" | "reply" | "close"; data?: Record<string, unknown> }) => call('staff_mail_act_v1', { p_id: input.id, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
+      /** Fila única de revisão e atendimento. (query; contract/staff/queue.v1.json) */
+      queue: (input: { kind?: string; status?: string; cursor?: string; limit?: number } = {}) => call('staff_queue_v1', { p_kind: input.kind, p_status: input.status, p_cursor: input.cursor, p_limit: input.limit }) as Promise<StaffQueue>,
+      /** Decide item com motivo tipado e auditoria. (command; contract/staff/queue_act.v1.json) */
+      queueAct: (input: { id: string; action: "approve" | "reject" | "resolve" | "removeContent" | "markPaid"; reason: string }) => call('staff_queue_act_v1', { p_id: input.id, p_action: input.action, p_reason: input.reason }) as Promise<Record<string, unknown>>,
+      /** Configurações internas versionadas. (query; contract/staff/settings.v1.json) */
+      settings: (input: { subject?: string } = {}) => call('staff_settings_v1', { p_subject: input.subject }) as Promise<StaffSettings>,
+      /** Salva configuração com versão lida. (command; contract/staff/settings_save.v1.json) */
+      settingsSave: (input: { subject: string; values: Record<string, unknown>; expectedVersion?: number }) => call('staff_settings_save_v1', { p_subject: input.subject, p_values: input.values, p_expected_version: input.expectedVersion }) as Promise<StaffSetting>,
+    },
+    help: {
+      /** Abre pedido de ajuda na fila única. (command; contract/staff/help_request_save.v1.json) */
+      requestSave: (input: { request: Record<string, unknown> }) => call('help_request_save_v1', { p_request: input.request }) as Promise<HelpRequest>,
     },
     training: {
-      /** Histórico unificado: importadas, manuais e execuções no app ou no Watch, um item por esforço, do mais recente ao mais antigo. (query; contract/training/activities.v1.json) */
-      activities: (input: { before?: string; limit?: number } = {}) => call('training_activities_v1', { p_before: input.before, p_limit: input.limit }) as Promise<Activities>,
       /** Importa um lote do Watch, Apple Saúde ou Health Connect. A execução iniciada no OnlyFit volta com o mesmo id e é enriquecida; repetir não duplica; a mesma execução regravada pela mesma origem vira observação; o vínculo é decidido por dia (J20.7). Lote vazio só reavalia os dias pendentes. (command; contract/training/activities_save.v1.json) */
       activitiesSave: (input: { activities: ImportedActivityInput[]; deleted?: DeletedActivityInput[] }) => call('training_activities_save_v1', { p_activities: input.activities, p_deleted: input.deleted }) as Promise<ActivitiesSaved>,
       /** Detalhe da atividade: provedor, tipo exato, métricas, rota, observações de cada origem, vínculo com confiança e os treinos do dia para corrigir. (query; contract/training/activity.v1.json) */
@@ -1838,8 +2367,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       programAct: (input: { programId: string; action: "apply" | "reschedule" | "remove"; idempotencyKey: string; startDate?: string }) => call('training_program_act_v1', { p_program_id: input.programId, p_action: input.action, p_idempotency_key: input.idempotencyKey, p_start_date: input.startDate }) as Promise<Program>,
       /** Salva atomicamente o modelo completo do programa de um negócio. (command; contract/training/program_save.v1.json) */
       programSave: (input: { program: TrainingProgramSaveInput }) => call('training_program_save_v1', { p_program: input.program }) as Promise<TrainingProgramModel>,
-      /** Programas de treino disponíveis para o membro, sem criar aplicação ao consultar. (query; contract/training/programs.v1.json) */
-      programs: (input: { sport?: string } = {}) => call('training_programs_v1', { p_sport: input.sport }) as Promise<ProgramSummary[]>,
       /** Grava os passos realizados em lote e, com finish, encerra. Tudo ou nada; repetir dá o mesmo resultado. (command; contract/training/session_save.v1.json) */
       sessionSave: (input: { sessionId: string; steps?: SessionStepInput[]; finish?: boolean; review?: SessionReviewInput }) => call('training_session_save_v1', { p_session_id: input.sessionId, p_steps: input.steps, p_finish: input.finish, p_review: input.review }) as Promise<Session>,
       /** Inicia (ou retoma) a sessão de um treino agendado. Congela o prescrito. (command; contract/training/session_start.v1.json) */

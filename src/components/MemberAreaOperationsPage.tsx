@@ -341,16 +341,12 @@ function ReportsPanel() {
   </>;
 }
 
-function AuditPanel({ role }: { role: StaffRole }) {
+function AuditPanel() {
   const [action, setAction] = useState<AuditAction>('all');
   const [cursors, setCursors] = useState<Array<PageCursor | null>>([null]);
   const [page, setPage] = useState(0);
   const audit = useMemberAreaAudit(action, cursors[page], true);
-  const visibleFilters = role === 'support'
-    ? auditFilters.filter((item) => item.value === 'all' || item.value === 'access_suspended')
-    : role === 'moderator'
-      ? auditFilters.filter((item) => item.value === 'all' || item.value !== 'access_suspended')
-      : auditFilters;
+  const visibleFilters = auditFilters;
 
   const chooseAction = (value: AuditAction) => {
     setAction(value);
@@ -399,8 +395,8 @@ function AuditPanel({ role }: { role: StaffRole }) {
 export function MemberAreaOperationsPage() {
   const { data: role, isLoading, isError } = useCurrentStaffRole();
   const [tab, setTab] = useState<OperationsTab>('accesses');
-  const canViewAccesses = role === 'support' || role === 'admin' || role === 'super_admin';
-  const canModerate = role === 'moderator' || role === 'admin' || role === 'super_admin';
+  const canViewAccesses = role === 'operator' || role === 'admin' || role === 'super_admin';
+  const canModerate = role === 'operator' || role === 'admin' || role === 'super_admin';
   const canSuspend = role === 'admin' || role === 'super_admin';
   const tabs: Array<{ id: OperationsTab; label: string; icon: typeof BookOpen }> = [
     ...(canViewAccesses ? [{ id: 'accesses' as const, label: 'Acessos', icon: BookOpen }] : []),
@@ -429,7 +425,7 @@ export function MemberAreaOperationsPage() {
         <div className="member-ops-panel">
           {activeTab === 'accesses' && <AccessesPanel canSuspend={canSuspend} />}
           {activeTab === 'reports' && <ReportsPanel />}
-          {activeTab === 'audit' && <AuditPanel role={role} />}
+          {activeTab === 'audit' && <AuditPanel />}
         </div>
       </>}
     </section>

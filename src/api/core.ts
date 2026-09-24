@@ -48,12 +48,20 @@ export async function requireCoreSession(): Promise<SupabaseClient> {
   return client;
 }
 
-export const coreApi = createApi(async (fn, args) => {
-  const client = await requireCoreSession();
-  const { data, error } = await client.schema('api').rpc(fn, args);
-  if (error) throw error;
-  return data;
-});
+export const coreApi = createApi(
+  async (fn, args) => {
+    const client = await requireCoreSession();
+    const { data, error } = await client.schema('api').rpc(fn, args);
+    if (error) throw error;
+    return data;
+  },
+  async (functionName, path, body) => {
+    const client = requireCoreClient();
+    const { data, error } = await client.functions.invoke(`${functionName}${path}`, { body });
+    if (error) throw error;
+    return data;
+  },
+);
 
 export async function signInBoth(email: string, password: string): Promise<void> {
   const client = requireCoreClient();

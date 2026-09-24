@@ -1,12 +1,16 @@
 // GERADO por scripts/contract.mjs a partir de contract/. Não editar.
-// Cada método chama exatamente uma fachada api.*_v1 do OnlyFit Core.
+// Cada método chama uma fachada api.*_v1 ou uma rota Edge tipada do OnlyFit Core.
 
 /** Executa a fachada `fn` (schema api) com os parâmetros nomeados. */
 export type Transport = (fn: string, args: Record<string, unknown>) => Promise<unknown>;
 
+/** Executa uma rota de um dos roteadores Edge canônicos. */
+export type EdgeTransport = (fn: 'worker' | 'auth', path: string, body: Record<string, unknown>) => Promise<unknown>;
+
 /** Códigos de erro estáveis; o app traduz cada um para uma chave de i18n. */
 export type ApiErrorCode =
   | 'auth.access_pending'
+  | 'auth.invalid_token'
   | 'auth.required'
   | 'commerce.acceptance_required'
   | 'commerce.acceptances_required'
@@ -20,17 +24,21 @@ export type ApiErrorCode =
   | 'commerce.offer_unavailable'
   | 'commerce.purchase_not_found'
   | 'identity.access_required'
+  | 'identity.auth_not_configured'
   | 'identity.code_exhausted'
+  | 'identity.delete_failed'
   | 'identity.document_in_use'
   | 'identity.invalid_address'
   | 'identity.invalid_changes'
   | 'identity.invalid_code'
+  | 'identity.invalid_credentials'
   | 'identity.invalid_device'
   | 'identity.invalid_document'
   | 'identity.invalid_preferences'
   | 'identity.invalid_value'
   | 'identity.legal_required'
   | 'identity.legal_version_outdated'
+  | 'identity.missing_credentials'
   | 'identity.onboarding_incomplete'
   | 'identity.one_default_address'
   | 'identity.own_code'
@@ -42,6 +50,7 @@ export type ApiErrorCode =
   | 'identity.unknown_level'
   | 'identity.username_invalid'
   | 'identity.username_taken'
+  | 'internal.error'
   | 'nutrition.diet_not_editable'
   | 'nutrition.diet_not_found'
   | 'nutrition.free_meal_not_found'
@@ -53,16 +62,22 @@ export type ApiErrorCode =
   | 'nutrition.invalid_range'
   | 'nutrition.meal_not_found'
   | 'nutrition.unknown_action'
+  | 'org.access_already_available'
+  | 'org.access_request_invalid'
   | 'org.already_member'
   | 'org.archive_requires_paused'
   | 'org.business_has_clients'
   | 'org.business_locked'
   | 'org.business_not_found'
   | 'org.cannot_hire_self'
+  | 'org.client_forbidden'
+  | 'org.client_not_found'
+  | 'org.client_scope_required'
   | 'org.company_document_in_use'
   | 'org.company_fields_required'
   | 'org.consent_item_not_requested'
   | 'org.consent_owner_required'
+  | 'org.consultancy_required'
   | 'org.contract_already_ended'
   | 'org.contract_end_reason_required'
   | 'org.contract_ended'
@@ -74,6 +89,7 @@ export type ApiErrorCode =
   | 'org.invalid_access_level'
   | 'org.invalid_action'
   | 'org.invalid_business'
+  | 'org.invalid_client_view'
   | 'org.invalid_commercial_profile'
   | 'org.invalid_company_document'
   | 'org.invalid_consent_action'
@@ -119,6 +135,7 @@ export type ApiErrorCode =
   | 'platform.mark_window_closed'
   | 'platform.reason_note_required'
   | 'platform.reason_required'
+  | 'request.invalid_json'
   | 'staff.catalog_changed'
   | 'staff.delivery_in_use'
   | 'staff.forbidden'
@@ -148,10 +165,13 @@ export type ApiErrorCode =
   | 'training.invalid_link'
   | 'training.invalid_mark'
   | 'training.invalid_occurrence_edit'
+  | 'training.invalid_program'
+  | 'training.invalid_program_state'
   | 'training.invalid_range'
   | 'training.invalid_review'
   | 'training.invalid_routine'
   | 'training.invalid_scope'
+  | 'training.invalid_sport'
   | 'training.invalid_start_date'
   | 'training.invalid_steps'
   | 'training.invalid_workout'
@@ -931,6 +951,29 @@ export interface Habits {
   history: HabitDay[];
 }
 
+export interface IdentityDeleteResult {
+  ok: boolean;
+}
+
+export interface IdentitySession {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  token_type: string;
+  user: IdentitySessionUser;
+}
+
+export interface IdentitySessionUser {
+  id: string;
+  email: string | null;
+}
+
+export interface IdentitySignInResult {
+  status: "signed_in" | "email_not_confirmed";
+  email: string | null;
+  session: IdentitySession | null;
+}
+
 export interface ImportedActivityInput {
   onlyfit_id?: string;
   provider: "apple_health" | "health_connect" | "onlyfit_watch";
@@ -1037,6 +1080,14 @@ export interface NutritionCalendarDay {
   free_meals: number;
 }
 
+export interface NutritionClientDiet {
+  client_id: string;
+  from: string;
+  to: string;
+  diet: Record<string, unknown> | null;
+  days: Record<string, unknown>[];
+}
+
 export interface NutritionDay {
   date: string;
   /** Registrar vale hoje e ontem (J16.1/36). */
@@ -1099,6 +1150,44 @@ export interface OfficialWorkout {
 export interface Onboarding {
   done: boolean;
   missing: ("goal" | "birth_date" | "interests" | "level")[];
+}
+
+export interface OrgClient {
+  id: string;
+  account: Record<string, unknown>;
+  stage: "lead" | "client" | "former";
+  archived: boolean;
+  purchases: Record<string, unknown>[];
+  pending: Record<string, unknown>[];
+  contracts: Record<string, unknown>[];
+  tools: string[];
+  history: Record<string, unknown>[];
+}
+
+export interface OrgClientAfterAction {
+  id: string;
+  account: Record<string, unknown>;
+  stage: "lead" | "client" | "former";
+  archived: boolean;
+  purchases: Record<string, unknown>[];
+  pending: Record<string, unknown>[];
+  contracts: Record<string, unknown>[];
+  tools: string[];
+  history: Record<string, unknown>[];
+}
+
+export interface OrgClientCard {
+  id: string;
+  account: Record<string, unknown>;
+  stage: "lead" | "client" | "former";
+  archived: boolean;
+  purchases: Record<string, unknown>[];
+  pending: Record<string, unknown>[];
+}
+
+export interface OrgClientsResult {
+  items: OrgClientCard[];
+  next_cursor: string | null;
 }
 
 export interface Outcome {
@@ -1504,9 +1593,49 @@ export interface TeamMember {
   created_at: string;
 }
 
+export interface TrainingClientPlan {
+  client_id: string;
+  week_start: string;
+  programs: Record<string, unknown>[];
+  days: Record<string, unknown>[];
+}
+
+export interface TrainingClientProgramResult {
+  program: Record<string, unknown>;
+  plan: Record<string, unknown>;
+}
+
 export interface TrainingDay {
   date: string;
   workouts: ScheduledWorkout[];
+}
+
+export interface TrainingProgramDayInput {
+  week: number;
+  weekday: number;
+  workout_id: string;
+}
+
+export interface TrainingProgramModel {
+  id: string;
+  business_id: string;
+  title: string;
+  sport_id: string;
+  weeks: number;
+  days: Record<string, unknown>[];
+  status: string;
+  updated_at: string;
+  assigned_clients: number;
+}
+
+export interface TrainingProgramSaveInput {
+  id?: string;
+  business_id: string;
+  title: string;
+  sport_id: string;
+  weeks: number;
+  days: TrainingProgramDayInput[];
+  idempotency_key: string;
 }
 
 export interface UnlinkedActivity {
@@ -1572,7 +1701,9 @@ export interface WorkoutSummary {
   updated_at: string;
 }
 
-export function createApi(call: Transport) {
+const missingEdgeTransport: EdgeTransport = async () => { throw new Error('core.edge_transport_required'); };
+
+export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTransport) {
   return {
     app: {
       /** Todos os catálogos do app numa leitura. Mande a versão que o app já tem: se nada mudou, vem changed = false e sem catálogos. (query; contract/app/catalogs.v1.json) */
@@ -1591,6 +1722,8 @@ export function createApi(call: Transport) {
       accessAct: (input: { action: "applyCode"; code?: string }) => call('identity_access_act_v1', { p_action: input.action, p_code: input.code }) as Promise<Access>,
       /** Tudo o que o app precisa ao abrir: conta, dados privados, preferências, interesses, endereços, veredito de acesso, onboarding, termos pendentes e situação do documento. (query; contract/identity/bootstrap.v1.json) */
       bootstrap: () => call('identity_bootstrap_v1', {}) as Promise<Bootstrap>,
+      /** Exclui a própria conta e agenda a remoção segura dos seus arquivos externos. (command; contract/identity/delete.v1.json) */
+      delete: () => invoke('auth', '/delete', {}) as Promise<IdentityDeleteResult>,
       /** register grava o aparelho só quando o token muda (e tira o token de outra conta); remove tira o token no logout. (command; contract/identity/device_act.v1.json) */
       deviceAct: (input: { action: "register" | "remove"; token: string; platform?: "ios" | "android" | "web"; deviceId?: string }) => call('identity_device_act_v1', { p_action: input.action, p_token: input.token, p_platform: input.platform, p_device_id: input.deviceId }) as Promise<Devices>,
       /** Guarda o CPF cifrado (exigido só quando há pagamento). O app só volta a ver os 4 últimos dígitos. (command; contract/identity/document_save.v1.json) */
@@ -1601,10 +1734,14 @@ export function createApi(call: Transport) {
       onboardingSave: (input: { onboarding: Record<string, unknown> }) => call('identity_onboarding_save_v1', { p_onboarding: input.onboarding }) as Promise<Bootstrap>,
       /** Salva o perfil por blocos (public, private, preferences, interests, addresses, legal). Tudo ou nada; devolve o bootstrap atualizado. (command; contract/identity/profile_save.v1.json) */
       profileSave: (input: { profile: Record<string, unknown> }) => call('identity_profile_save_v1', { p_profile: input.profile }) as Promise<Bootstrap>,
+      /** Entra com e-mail ou @usuário sem expor o endereço resolvido quando a credencial é inválida. (command; contract/identity/sign_in.v1.json) */
+      signIn: (input: { identifier: string; password: string }) => invoke('auth', '/sign-in', { identifier: input.identifier, password: input.password }) as Promise<IdentitySignInResult>,
     },
     nutrition: {
       /** Calendário de Nutrição (J16.57/58): por dia, refeições previstas, feitas, não feitas e refeições livres. (query; contract/nutrition/calendar.v1.json) */
       calendar: (input: { from: string; to: string }) => call('nutrition_calendar_v1', { p_from: input.from, p_to: input.to }) as Promise<NutritionCalendarDay[]>,
+      /** Lê a dieta ativa e a adesão do cliente sem incluir refeições livres. (query; contract/nutrition/client_diet.v1.json) */
+      clientDiet: (input: { businessId: string; clientId: string; from?: string; to?: string }) => call('nutrition_client_diet_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_from: input.from, p_to: input.to }) as Promise<NutritionClientDiet>,
       /** O dia de Nutrição: dieta ativa, marcação e edição de cada refeição no dia e refeições livres. (query; contract/nutrition/day.v1.json) */
       day: (input: { date?: string } = {}) => call('nutrition_day_v1', { p_date: input.date }) as Promise<NutritionDay>,
       /** Detalhe da dieta: refeições, itens, metas e quem prescreveu. (query; contract/nutrition/diet.v1.json) */
@@ -1629,6 +1766,12 @@ export function createApi(call: Transport) {
       businessAct: (input: { businessId: string; action: "publish" | "pause" | "resume" | "archive" | "restore" | "delete" | "resubmit" }) => call('org_business_act_v1', { p_business_id: input.businessId, p_action: input.action }) as Promise<BusinessActionResult>,
       /** Cria ou substitui atomicamente o perfil inteiro do negócio. (command; contract/org/business_save.v1.json) */
       businessSave: (input: { business: BusinessSaveInput }) => call('org_business_save_v1', { p_business: input.business }) as Promise<BusinessSaveResult>,
+      /** Abre a ficha comercial única e libera somente as ferramentas consentidas. (query; contract/org/client.v1.json) */
+      client: (input: { businessId: string; clientId: string }) => call('org_client_v1', { p_business_id: input.businessId, p_client_id: input.clientId }) as Promise<OrgClient>,
+      /** Arquiva a ficha ou administra pedidos de acesso sem transformar cliente em papel. (command; contract/org/client_act.v1.json) */
+      clientAct: (input: { businessId: string; clientId: string; action: "archive" | "restore" | "requestAccess" | "renounceAccess"; items?: ("training" | "diet" | "protocols" | "health")[]; reason?: string }) => call('org_client_act_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_action: input.action, p_items: input.items, p_reason: input.reason }) as Promise<OrgClientAfterAction>,
+      /** Lista paginada do CRM com estágio apurado por compras e contratos. (query; contract/org/clients.v1.json) */
+      clients: (input: { businessId: string; view?: "all" | "lead" | "client" | "former" | "archived"; search?: string; cursor?: string; limit?: number }) => call('org_clients_v1', { p_business_id: input.businessId, p_view: input.view, p_search: input.search, p_cursor: input.cursor, p_limit: input.limit }) as Promise<OrgClientsResult>,
       /** Permite ao titular autorizar, negar ou revogar itens de acesso do contrato de consultoria. (command; contract/org/consent_decide.v1.json) */
       consentDecide: (input: { contractId: string; action: "allow" | "deny" | "revoke"; items: ("training" | "diet" | "protocols" | "health")[] }) => call('org_consent_decide_v1', { p_contract_id: input.contractId, p_action: input.action, p_items: input.items }) as Promise<ConsultancyConsentResult>,
       /** Lê uma consultoria publicada para contratação ou uma oferta própria para gestão. (query; contract/org/consultancy_offer.v1.json) */
@@ -1671,6 +1814,10 @@ export function createApi(call: Transport) {
       activitySave: (input: { activity: ActivitySaveInput }) => call('training_activity_save_v1', { p_activity: input.activity }) as Promise<ActivitySaved>,
       /** Dias de um intervalo (até 62): treinos com estado, minutos de atividade e atividades importadas sem vínculo. (query; contract/training/calendar.v1.json) */
       calendar: (input: { from: string; to: string }) => call('training_calendar_v1', { p_from: input.from, p_to: input.to }) as Promise<CalendarDay[]>,
+      /** Lê a semana e os ciclos de treino de um cliente com contrato e consentimento vigentes. (query; contract/training/client_plan.v1.json) */
+      clientPlan: (input: { businessId: string; clientId: string; week?: string }) => call('training_client_plan_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_week: input.week }) as Promise<TrainingClientPlan>,
+      /** Atribui, libera, oculta ou restaura a cópia independente do programa do cliente. (command; contract/training/client_program_act.v1.json) */
+      clientProgramAct: (input: { businessId: string; clientId: string; programId: string | null; action: "assign" | "release" | "hide" | "restore"; sourceProgramId?: string | null; startDate?: string | null; idempotencyKey?: string | null }) => call('training_client_program_act_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_program_id: input.programId, p_action: input.action, p_source_program_id: input.sourceProgramId, p_start_date: input.startDate, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingClientProgramResult>,
       /** Treinos do dia com passos, mídia, execução no player, desfecho (feito, incompleto, não feito, perdido) e atividade vinculada. (query; contract/training/day.v1.json) */
       day: (input: { date?: string } = {}) => call('training_day_v1', { p_date: input.date }) as Promise<TrainingDay>,
       /** Busca exercícios ignorando acento e caixa (J16.77): oficiais e os próprios. (query; contract/training/exercise_search.v1.json) */
@@ -1689,6 +1836,8 @@ export function createApi(call: Transport) {
       program: (input: { programId: string }) => call('training_program_v1', { p_program_id: input.programId }) as Promise<Program>,
       /** apply (uma aplicação ativa por programa, J16.47) · reschedule (só o pendente muda, J16.48) · remove (sai a agenda futura, execuções ficam, J16.49). Devolve o programa. (command; contract/training/program_act.v1.json) */
       programAct: (input: { programId: string; action: "apply" | "reschedule" | "remove"; idempotencyKey: string; startDate?: string }) => call('training_program_act_v1', { p_program_id: input.programId, p_action: input.action, p_idempotency_key: input.idempotencyKey, p_start_date: input.startDate }) as Promise<Program>,
+      /** Salva atomicamente o modelo completo do programa de um negócio. (command; contract/training/program_save.v1.json) */
+      programSave: (input: { program: TrainingProgramSaveInput }) => call('training_program_save_v1', { p_program: input.program }) as Promise<TrainingProgramModel>,
       /** Programas de treino disponíveis para o membro, sem criar aplicação ao consultar. (query; contract/training/programs.v1.json) */
       programs: (input: { sport?: string } = {}) => call('training_programs_v1', { p_sport: input.sport }) as Promise<ProgramSummary[]>,
       /** Grava os passos realizados em lote e, com finish, encerra. Tudo ou nada; repetir dá o mesmo resultado. (command; contract/training/session_save.v1.json) */

@@ -842,8 +842,8 @@ function FeedDistributionPage() {
   const [draft, setDraft] = useState<{ followed: string; discovery: string } | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const followed = draft?.followed ?? String(settings?.slots_followed ?? 6);
-  const discovery = draft?.discovery ?? String(settings?.slots_discovery ?? 4);
+  const followed = draft?.followed ?? String(settings?.followed ?? 6);
+  const discovery = draft?.discovery ?? String(settings?.discovery ?? 4);
   const followedCount = Number(followed);
   const discoveryCount = Number(discovery);
   const valid = Number.isInteger(followedCount) && followedCount >= 1 && followedCount <= 100
@@ -860,14 +860,14 @@ function FeedDistributionPage() {
       return;
     }
     updateMutation.mutate(
-      { slotsFollowed: followedCount, slotsDiscovery: discoveryCount, expectedUpdatedAt: settings.updated_at },
+      { slotsFollowed: followedCount, slotsDiscovery: discoveryCount, expectedVersion: settings.version },
       {
         onSuccess: () => {
           setDraft(null);
           setMessage({ type: 'success', text: 'Distribuição salva. O feed usa esta configuração na próxima atualização.' });
         },
         onError: (error) => {
-          if (error instanceof Error && error.message.includes('feed_settings_changed')) {
+          if (error instanceof Error && error.message.includes('staff.settings_changed')) {
             setMessage({ type: 'error', text: 'Outra pessoa alterou o feed. Atualize a configuração e tente novamente.' });
           } else {
             setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Não foi possível salvar.' });

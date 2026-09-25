@@ -225,6 +225,7 @@ export type ApiErrorCode =
   | 'social.invalid_group'
   | 'social.invalid_hosted_challenge'
   | 'social.invalid_media'
+  | 'social.invalid_member'
   | 'social.invalid_message'
   | 'social.invalid_offer'
   | 'social.invalid_post'
@@ -639,6 +640,22 @@ export interface CatalogsResponse {
   catalogs: Catalogs | null;
 }
 
+export interface ChallengeSaveInput {
+  id?: string | null;
+  business_id?: string | null;
+  community_id?: string | null;
+  offer_id?: string | null;
+  name: string;
+  description: string;
+  image_url?: string | null;
+  visibility?: "listed" | "hidden";
+  access_mode: "open" | "approval" | "invite" | "paid" | "inherited";
+  publishing?: "admins" | "team" | "members";
+  starts_at: string;
+  ends_at: string;
+  config: Record<string, unknown>;
+}
+
 export interface CommerceAcceptance {
   key: string;
   version: string;
@@ -853,6 +870,20 @@ export interface CommercialProfileInput {
   professionals: string;
   story: string;
   achievements: string[];
+}
+
+export interface CommunitySaveInput {
+  id?: string | null;
+  business_id?: string | null;
+  offer_id?: string | null;
+  name: string;
+  description: string;
+  image_url?: string | null;
+  visibility?: "listed" | "hidden";
+  access_mode: "open" | "approval" | "invite" | "paid";
+  publishing?: "admins" | "team" | "members";
+  publish?: boolean;
+  config: Record<string, unknown>;
 }
 
 export interface ConsultancyAccessDecision {
@@ -1831,6 +1862,8 @@ export interface SocialChallenge {
   version?: number;
   members: number;
   my_membership: Record<string, unknown> | null;
+  creator?: SocialProfileReadCard;
+  participants: SocialChallengeParticipant[];
 }
 
 export interface SocialChallengeAfterAction {
@@ -1853,6 +1886,13 @@ export interface SocialChallengeAfterAction {
   version?: number;
   members: number;
   my_membership: Record<string, unknown> | null;
+}
+
+export interface SocialChallengeParticipant {
+  account_id: string;
+  access_level: "admin" | "editor" | "member";
+  status: "active" | "requested";
+  profile?: SocialProfileReadCard;
 }
 
 export interface SocialChallengeSaved {
@@ -1907,6 +1947,8 @@ export interface SocialCommunity {
   version?: number;
   members: number;
   my_membership: Record<string, unknown> | null;
+  creator?: SocialProfileReadCard;
+  participants: SocialCommunityParticipant[];
 }
 
 export interface SocialCommunityAfterAction {
@@ -1929,6 +1971,13 @@ export interface SocialCommunityAfterAction {
   version?: number;
   members: number;
   my_membership: Record<string, unknown> | null;
+}
+
+export interface SocialCommunityParticipant {
+  account_id: string;
+  access_level: "admin" | "editor" | "member";
+  status: "active" | "requested";
+  profile?: SocialProfileReadCard;
 }
 
 export interface SocialCommunitySaved {
@@ -2772,17 +2821,17 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Publica pelo criador e administra participação, encerramento ou cancelamento. (command; contract/social/challenge_act.v1.json) */
       challengeAct: (input: { id: string; action: "publish" | "join" | "leave" | "approve" | "reject" | "cancel" | "end"; targetId?: string; data?: Record<string, unknown> }) => call('social_challenge_act_v1', { p_id: input.id, p_action: input.action, p_target_id: input.targetId, p_data: input.data }) as Promise<SocialChallengeAfterAction>,
       /** Salva desafio avulso gratuito/pago ou desafio nativo de comunidade. (command; contract/social/challenge_save.v1.json) */
-      challengeSave: (input: { challenge: Record<string, unknown> }) => call('social_challenge_save_v1', { p_challenge: input.challenge }) as Promise<SocialChallengeSaved>,
+      challengeSave: (input: { challenge: ChallengeSaveInput }) => call('social_challenge_save_v1', { p_challenge: input.challenge }) as Promise<SocialChallengeSaved>,
       /** Lista desafios gratuitos ou pagos com acesso e progresso atuais. (query; contract/social/challenges.v1.json) */
-      challenges: (input: { tab?: "discover" | "mine" | "history"; cursor?: string; limit?: number } = {}) => call('social_challenges_v1', { p_tab: input.tab, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialChallenges>,
+      challenges: (input: { tab?: "discover" | "mine" | "history"; search?: string; cursor?: string; limit?: number } = {}) => call('social_challenges_v1', { p_tab: input.tab, p_search: input.search, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialChallenges>,
       /** Lista comunidades descobríveis, atuais ou históricas. (query; contract/social/communities.v1.json) */
-      communities: (input: { tab?: "discover" | "mine" | "history"; cursor?: string; limit?: number } = {}) => call('social_communities_v1', { p_tab: input.tab, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialCommunities>,
+      communities: (input: { tab?: "discover" | "mine" | "history"; search?: string; cursor?: string; limit?: number } = {}) => call('social_communities_v1', { p_tab: input.tab, p_search: input.search, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialCommunities>,
       /** Abre uma comunidade com sua política efetiva de acesso. (query; contract/social/community.v1.json) */
       community: (input: { id: string }) => call('social_community_v1', { p_id: input.id }) as Promise<SocialCommunity>,
       /** Publica, administra entrada ou encerra uma comunidade. (command; contract/social/community_act.v1.json) */
-      communityAct: (input: { id: string; action: "publish" | "pauseEntry" | "archive" | "join" | "leave" | "approve" | "reject"; targetId?: string; data?: Record<string, unknown> }) => call('social_community_act_v1', { p_id: input.id, p_action: input.action, p_target_id: input.targetId, p_data: input.data }) as Promise<SocialCommunityAfterAction>,
+      communityAct: (input: { id: string; action: "publish" | "pauseEntry" | "resumeEntry" | "ban" | "archive" | "join" | "leave" | "approve" | "reject"; targetId?: string; data?: Record<string, unknown> }) => call('social_community_act_v1', { p_id: input.id, p_action: input.action, p_target_id: input.targetId, p_data: input.data }) as Promise<SocialCommunityAfterAction>,
       /** Cria ou edita comunidade gratuita ou paga, sem permitir trocar a política após a primeira entrada. (command; contract/social/community_save.v1.json) */
-      communitySave: (input: { community: Record<string, unknown> }) => call('social_community_save_v1', { p_community: input.community }) as Promise<SocialCommunitySaved>,
+      communitySave: (input: { community: CommunitySaveInput }) => call('social_community_save_v1', { p_community: input.community }) as Promise<SocialCommunitySaved>,
       /** Mensagens privadas paginadas com uma pessoa. (query; contract/social/conversation.v1.json) */
       conversation: (input: { peerId: string; cursor?: string; limit?: number }) => call('social_conversation_v1', { p_peer_id: input.peerId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialConversation>,
       /** Inspeciona a capa em quarentena e a publica no bucket de miniaturas; a escolha (quadro ou galeria) fica imutável. (command; contract/social/cover_prepare.v1.json) */
@@ -2792,7 +2841,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Explora conteúdo de criadores e busca pessoas. (query; contract/social/explore.v1.json) */
       explore: (input: { search?: string; affinity?: string; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
       /** Feed por cursor, com seguidos e descoberta sem duplicação. (query; contract/social/feed.v1.json) */
-      feed: (input: { affinities?: string[]; cursor?: string; limit?: number } = {}) => call('social_feed_v1', { p_affinities: input.affinities, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialFeed>,
+      feed: (input: { affinities?: string[]; cursor?: string; limit?: number; containerType?: "community" | "challenge"; containerId?: string } = {}) => call('social_feed_v1', { p_affinities: input.affinities, p_cursor: input.cursor, p_limit: input.limit, p_container_type: input.containerType, p_container_id: input.containerId }) as Promise<SocialFeed>,
       /** Segue, deixa de seguir, bloqueia ou desbloqueia e devolve o estado final. (command; contract/social/follow_act.v1.json) */
       followAct: (input: { accountId: string; action: "follow" | "unfollow" | "block" | "unblock" }) => call('social_follow_act_v1', { p_account_id: input.accountId, p_action: input.action }) as Promise<SocialRelationState>,
       /** Central paginada de conversas, busca privada ou notificações. (query; contract/social/inbox.v1.json) */

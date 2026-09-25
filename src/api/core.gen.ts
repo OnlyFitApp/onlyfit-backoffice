@@ -93,11 +93,14 @@ export type ApiErrorCode =
   | 'identity.one_default_address'
   | 'identity.own_code'
   | 'identity.preferences_conflict'
+  | 'identity.professional_profile_required'
+  | 'identity.professional_vertical_required'
   | 'identity.too_young'
   | 'identity.unknown_action'
   | 'identity.unknown_field'
   | 'identity.unknown_interest'
   | 'identity.unknown_level'
+  | 'identity.unknown_professional_vertical'
   | 'identity.username_invalid'
   | 'identity.username_taken'
   | 'interaction.comments_disabled'
@@ -224,6 +227,7 @@ export type ApiErrorCode =
   | 'social.invalid_post'
   | 'social.invalid_relation'
   | 'social.invalid_scope'
+  | 'social.invalid_search'
   | 'social.invalid_sport'
   | 'social.invalid_state'
   | 'social.invalid_story'
@@ -320,6 +324,8 @@ export interface Account {
   /** Redes sociais: { instagram: "...", ... } */
   social_links: Record<string, unknown>;
   is_professional: boolean;
+  /** Única vertical profissional ativa; interesses pessoais permanecem separados. */
+  professional_vertical: string | null;
 }
 
 export interface AccountCard {
@@ -1266,8 +1272,8 @@ export interface ImportedActivityInput {
 }
 
 export interface InteractionThread {
-  target: Record<string, unknown>;
-  items: Record<string, unknown>[];
+  target: SocialPost;
+  items: SocialPost[];
   next_cursor: string | null;
 }
 
@@ -1915,14 +1921,24 @@ export interface SocialCommunitySaved {
 }
 
 export interface SocialConversation {
-  peer: Record<string, unknown> | null;
-  items: Record<string, unknown>[];
+  peer: SocialProfileReadCard;
+  items: SocialMessage[];
   next_cursor: string | null;
 }
 
+export interface SocialConversationSummary {
+  peer: SocialProfileReadCard;
+  last_message: SocialMessage;
+  unread: number;
+  hired_professional: boolean;
+  client: boolean;
+  lead: boolean;
+  connection: boolean;
+}
+
 export interface SocialExplore {
-  items: Record<string, unknown>[];
-  people: Record<string, unknown>[];
+  items: SocialPost[];
+  people: SocialProfileReadCard[];
   next_cursor: string | null;
 }
 
@@ -1950,9 +1966,17 @@ export interface SocialImageOverlayInput {
 }
 
 export interface SocialInbox {
-  items: Record<string, unknown>[];
+  conversations: SocialConversationSummary[];
+  notifications: SocialNotification[];
+  search_hits: SocialInboxSearchHit[];
   next_cursor: string | null;
   unread_count: number;
+}
+
+export interface SocialInboxSearchHit {
+  result_kind: "person" | "message";
+  peer: SocialProfileReadCard;
+  message: SocialMessage;
 }
 
 export interface SocialMedia {
@@ -2003,6 +2027,56 @@ export interface SocialMediaInput {
   user_tags: SocialUserTagInput[];
 }
 
+export interface SocialMessage {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  body: string | null;
+  media_type: "image" | "video" | "audio" | "post" | "community_post" | null;
+  media: SocialMessageMedia | null;
+  shared_content: SocialSharedContent | null;
+  read: boolean;
+  created_at: string;
+}
+
+export interface SocialMessageActionData {
+  type?: "text" | "image" | "video" | "audio" | "post" | "community_post" | null;
+  body?: string | null;
+  media?: SocialMessageMediaInput | null;
+  shared_post_id?: string | null;
+  idempotency_key?: string | null;
+  peer_id?: string | null;
+  id?: string | null;
+}
+
+export interface SocialMessageActionResult {
+  messages: SocialMessage[];
+  deleted_id: string | null;
+  unread_count: number;
+}
+
+export interface SocialMessageMedia {
+  file_id: string;
+  kind: "image" | "video" | "audio";
+  url: string;
+  mime: string;
+  size: number;
+  name: string | null;
+  duration_ms: number | null;
+  width: number | null;
+  height: number | null;
+  poster_url: string | null;
+}
+
+export interface SocialMessageMediaInput {
+  file_id: string;
+  kind: "image" | "video" | "audio";
+  name?: string | null;
+  duration_ms?: number | null;
+  width?: number | null;
+  height?: number | null;
+}
+
 export interface SocialNetworkIdentity {
   classification: "professional" | "associate" | "ambassador";
   badge_label?: string | null;
@@ -2011,9 +2085,45 @@ export interface SocialNetworkIdentity {
   public_visible: boolean;
 }
 
+export interface SocialNotification {
+  id: string;
+  kind: string;
+  actor: SocialNotificationActor | null;
+  intent: SocialNotificationIntent;
+  data: SocialNotificationData;
+  seen_at: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface SocialNotificationActor {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url?: string | null;
+}
+
+export interface SocialNotificationData {
+  message_id?: string | null;
+  scheduled_id?: string | null;
+  scope?: string | null;
+  from_date?: string | null;
+}
+
+export interface SocialNotificationIntent {
+  type: "profile" | "post" | "story" | "comment" | "conversation" | "client";
+  account_id?: string | null;
+  post_id?: string | null;
+  story_id?: string | null;
+  comment_id?: string | null;
+  reply_id?: string | null;
+  peer_id?: string | null;
+  member_id?: string | null;
+}
+
 export interface SocialPost {
   id: string;
-  kind: "post" | "story";
+  kind: "post" | "story" | "comment";
   author: SocialProfileReadCard;
   parent_id?: string | null;
   container_type?: string | null;
@@ -2033,7 +2143,9 @@ export interface SocialPost {
   like_count: number;
   comment_count: number;
   view_count: number;
+  viewed?: boolean | null;
   liked: boolean;
+  my_reaction: "like" | "dislike" | null;
   created_at: string;
   updated_at: string;
 }
@@ -2082,6 +2194,7 @@ export interface SocialPostSaved {
   comment_count: number;
   view_count: number;
   liked: boolean;
+  my_reaction: "like" | "dislike" | null;
   created_at: string;
   updated_at: string;
 }
@@ -2117,9 +2230,55 @@ export interface SocialProfileReadCard {
   network_identity?: SocialNetworkIdentity | null;
 }
 
+export interface SocialRelationState {
+  account_id: string;
+  following: boolean;
+  followed_by: boolean;
+  blocked_by_me: boolean;
+}
+
+export interface SocialSharedContent {
+  available: boolean;
+  kind: "post" | "community_post" | null;
+  id: string | null;
+  container_id: string | null;
+  title: string | null;
+  creator_id: string | null;
+  creator_name: string | null;
+  creator_username: string | null;
+  creator_avatar_url: string | null;
+  creator_network_classification: "professional" | "associate" | "ambassador" | null;
+  creator_badge_label: string | null;
+  creator_affinity_group_key: string | null;
+  body: string | null;
+  thumbnail_url: string | null;
+  media_kind: "image" | "video" | null;
+  media_aspect_ratio: number | null;
+  has_access: boolean;
+}
+
 export interface SocialStories {
-  items: Record<string, unknown>[];
+  items: SocialPost[];
   next_cursor: string | null;
+}
+
+export interface SocialStoryActionData {
+  enabled?: boolean | null;
+  post_id?: string | null;
+}
+
+export interface SocialStoryActionResult {
+  action: "view" | "setCommentsEnabled" | "convertToPost" | "delete";
+  items: SocialPost[];
+}
+
+export interface SocialStoryInput {
+  id?: string | null;
+  idempotency_key?: string | null;
+  visibility: "public" | "followers";
+  body: string;
+  media: SocialMediaInput;
+  comments_enabled: boolean;
 }
 
 export interface SocialTextOverlay {
@@ -2568,7 +2727,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       communityAct: (input: { id: string; action: "publish" | "pauseEntry" | "archive" | "join" | "leave" | "approve" | "reject"; targetId?: string; data?: Record<string, unknown> }) => call('social_community_act_v1', { p_id: input.id, p_action: input.action, p_target_id: input.targetId, p_data: input.data }) as Promise<SocialCommunityAfterAction>,
       /** Cria ou edita comunidade gratuita ou paga, sem permitir trocar a política após a primeira entrada. (command; contract/social/community_save.v1.json) */
       communitySave: (input: { community: Record<string, unknown> }) => call('social_community_save_v1', { p_community: input.community }) as Promise<SocialCommunitySaved>,
-      /** Mensagens privadas com uma pessoa. (query; contract/social/conversation.v1.json) */
+      /** Mensagens privadas paginadas com uma pessoa. (query; contract/social/conversation.v1.json) */
       conversation: (input: { peerId: string; cursor?: string; limit?: number }) => call('social_conversation_v1', { p_peer_id: input.peerId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialConversation>,
       /** Inspeciona a capa em quarentena e a publica no bucket de miniaturas; a escolha (quadro ou galeria) fica imutável. (command; contract/social/cover_prepare.v1.json) */
       coverPrepare: (input: { uploadId: string; source: "frame" | "gallery"; frameTimeSeconds?: number }) => invoke('worker', '/media/cover-prepare', { upload_id: input.uploadId, source: input.source, frame_time_seconds: input.frameTimeSeconds }) as Promise<CoverPrepared>,
@@ -2577,31 +2736,31 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Explora conteúdo de criadores e busca pessoas. (query; contract/social/explore.v1.json) */
       explore: (input: { search?: string; affinity?: string; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
       /** Feed por cursor, com seguidos e descoberta sem duplicação. (query; contract/social/feed.v1.json) */
-      feed: (input: { sports?: string[]; cursor?: string; limit?: number } = {}) => call('social_feed_v1', { p_sports: input.sports, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialFeed>,
-      /** Segue, deixa de seguir, bloqueia ou desbloqueia. (command; contract/social/follow_act.v1.json) */
-      followAct: (input: { accountId: string; action: "follow" | "unfollow" | "block" | "unblock" }) => call('social_follow_act_v1', { p_account_id: input.accountId, p_action: input.action }) as Promise<Record<string, unknown>>,
-      /** Central de conversas ou notificações. (query; contract/social/inbox.v1.json) */
-      inbox: (input: { tab?: "messages" | "notifications"; cursor?: string; limit?: number } = {}) => call('social_inbox_v1', { p_tab: input.tab, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialInbox>,
-      /** Envia, compartilha, lê ou exclui mensagem privada. (command; contract/social/message_act.v1.json) */
-      messageAct: (input: { recipientIds: string[]; action: "send" | "share" | "markRead" | "delete"; data?: Record<string, unknown> }) => call('social_message_act_v1', { p_recipient_ids: input.recipientIds, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
-      /** Marca notificações sem confundir badge com leitura. (command; contract/social/notification_act.v1.json) */
-      notificationAct: (input: { ids?: string[]; action?: "markRead" | "markAllRead" | "clearBadge" } = {}) => call('social_notification_act_v1', { p_ids: input.ids, p_action: input.action }) as Promise<Record<string, unknown>>,
+      feed: (input: { affinities?: string[]; cursor?: string; limit?: number } = {}) => call('social_feed_v1', { p_affinities: input.affinities, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialFeed>,
+      /** Segue, deixa de seguir, bloqueia ou desbloqueia e devolve o estado final. (command; contract/social/follow_act.v1.json) */
+      followAct: (input: { accountId: string; action: "follow" | "unfollow" | "block" | "unblock" }) => call('social_follow_act_v1', { p_account_id: input.accountId, p_action: input.action }) as Promise<SocialRelationState>,
+      /** Central paginada de conversas, busca privada ou notificações. (query; contract/social/inbox.v1.json) */
+      inbox: (input: { tab?: "messages" | "notifications"; cursor?: string; limit?: number; search?: string } = {}) => call('social_inbox_v1', { p_tab: input.tab, p_cursor: input.cursor, p_limit: input.limit, p_search: input.search }) as Promise<SocialInbox>,
+      /** Envia, compartilha, lê ou exclui mensagem privada de modo idempotente. (command; contract/social/message_act.v1.json) */
+      messageAct: (input: { recipientIds: string[]; action: "send" | "share" | "markRead" | "delete"; data?: SocialMessageActionData }) => call('social_message_act_v1', { p_recipient_ids: input.recipientIds, p_action: input.action, p_data: input.data }) as Promise<SocialMessageActionResult>,
+      /** Marca visualização ou leitura sem misturar as duas semânticas. (command; contract/social/notification_act.v1.json) */
+      notificationAct: (input: { ids?: string[]; action?: "markRead" | "markAllRead" | "clearBadge" } = {}) => call('social_notification_act_v1', { p_ids: input.ids, p_action: input.action }) as Promise<SocialInbox>,
       /** Abre publicação visível com interação atual. (query; contract/social/post.v1.json) */
       post: (input: { id: string }) => call('social_post_v1', { p_id: input.id }) as Promise<SocialPost>,
       /** Edita campos isolados, troca a capa ou remove uma publicação própria. (command; contract/social/post_act.v1.json) */
       postAct: (input: { id: string; action: "updateCaption" | "setCommentsEnabled" | "setCover" | "delete"; data?: Record<string, unknown> }) => call('social_post_act_v1', { p_id: input.id, p_action: input.action, p_data: input.data }) as Promise<SocialPost>,
-      /** Localiza uma publicação própria pela chave idempotente antes de repetir uploads. (query; contract/social/post_lookup.v1.json) */
-      postLookup: (input: { idempotencyKey: string }) => call('social_post_lookup_v1', { p_idempotency_key: input.idempotencyKey }) as Promise<SocialPostLookup>,
+      /** Localiza uma publicação ou story próprio pela chave idempotente antes de repetir uploads. (query; contract/social/post_lookup.v1.json) */
+      postLookup: (input: { idempotencyKey: string; kind?: "post" | "story" }) => call('social_post_lookup_v1', { p_idempotency_key: input.idempotencyKey, p_kind: input.kind }) as Promise<SocialPostLookup>,
       /** Cria ou edita uma publicação idempotente e vincula somente mídias prontas do autor. (command; contract/social/post_save.v1.json) */
       postSave: (input: { post: SocialPostInput }) => call('social_post_save_v1', { p_post: input.post }) as Promise<SocialPostSaved>,
       /** Perfil público, publicações e stories ativos. (query; contract/social/profile.v1.json) */
       profile: (input: { username: string; cursor?: string; limit?: number; scope?: "all" | "free" | "paid" | "owned" }) => call('social_profile_v1', { p_username: input.username, p_cursor: input.cursor, p_limit: input.limit, p_scope: input.scope }) as Promise<SocialProfile>,
-      /** Stories ativos e visíveis agrupáveis por autor. (query; contract/social/stories.v1.json) */
+      /** Stories ativos e visíveis em ordem de exibição. (query; contract/social/stories.v1.json) */
       stories: (input: { authorId?: string; cursor?: string; limit?: number } = {}) => call('social_stories_v1', { p_author_id: input.authorId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialStories>,
-      /** Registra visualização ou muda o estado do story. (command; contract/social/story_act.v1.json) */
-      storyAct: (input: { ids: string[]; action: "view" | "toggleComments" | "convertToPost" | "delete"; data?: Record<string, unknown> }) => call('social_story_act_v1', { p_ids: input.ids, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
-      /** Publica story por 24 horas. (command; contract/social/story_save.v1.json) */
-      storySave: (input: { story: Record<string, unknown> }) => call('social_story_save_v1', { p_story: input.story }) as Promise<Record<string, unknown>>,
+      /** Registra visualizações ou altera um story de modo idempotente. (command; contract/social/story_act.v1.json) */
+      storyAct: (input: { ids: string[]; action: "view" | "setCommentsEnabled" | "convertToPost" | "delete"; data?: SocialStoryActionData }) => call('social_story_act_v1', { p_ids: input.ids, p_action: input.action, p_data: input.data }) as Promise<SocialStoryActionResult>,
+      /** Publica ou edita um story de mídia única que expira em 24 horas. (command; contract/social/story_save.v1.json) */
+      storySave: (input: { story: SocialStoryInput }) => call('social_story_save_v1', { p_story: input.story }) as Promise<SocialPost>,
       /** URL assinada para enviar foto, áudio, miniatura, avatar ou mídia de story direto ao R2 (vídeo de post usa social.videoUpload). (command; contract/social/upload.v1.json) */
       upload: (input: { filename: string; contentType: string; targetBucket?: "onlyfit-media" | "onlyfit-thumbnails" | "onlyfit-avatar" | "onlyfit-stories" | "onlyfit-private"; contentLength: number; requestId?: string; tenantId?: string; docKind?: string }) => invoke('worker', '/media/upload-url', { filename: input.filename, content_type: input.contentType, target_bucket: input.targetBucket, content_length: input.contentLength, request_id: input.requestId, tenant_id: input.tenantId, doc_kind: input.docKind }) as Promise<MediaUpload>,
       /** Confirma no R2 tamanho e MIME do upload direto antes de liberar o arquivo para publicação. (command; contract/social/upload_complete.v1.json) */
@@ -2614,9 +2773,9 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       videoUpload: (input: { filename: string; contentType: "video/mp4" | "video/webm" | "video/quicktime" | "video/x-m4v" | "video/ogg"; contentLength: number; audioMode: "preserve" | "remove" | "absent" }) => invoke('worker', '/media/video-upload', { filename: input.filename, content_type: input.contentType, content_length: input.contentLength, audio_mode: input.audioMode }) as Promise<VideoUpload>,
     },
     interaction: {
-      /** Curtir, comentar, responder, excluir ou denunciar. (command; contract/social/interaction_act.v1.json) */
-      act: (input: { targetId: string; action: "like" | "unlike" | "comment" | "reply" | "delete" | "report"; data?: Record<string, unknown> }) => call('interaction_act_v1', { p_target_id: input.targetId, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
-      /** Thread única para comentários de qualquer conteúdo. (query; contract/social/interaction_thread.v1.json) */
+      /** Reage, comenta, responde, edita, exclui ou denuncia. (command; contract/social/interaction_act.v1.json) */
+      act: (input: { targetId: string; action: "like" | "unlike" | "dislike" | "undislike" | "comment" | "reply" | "edit" | "delete" | "report"; data?: Record<string, unknown> }) => call('interaction_act_v1', { p_target_id: input.targetId, p_action: input.action, p_data: input.data }) as Promise<SocialPost>,
+      /** Thread única e paginada para comentários de qualquer conteúdo. (query; contract/social/interaction_thread.v1.json) */
       thread: (input: { targetId: string; cursor?: string; limit?: number }) => call('interaction_thread_v1', { p_target_id: input.targetId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<InteractionThread>,
     },
     staff: {

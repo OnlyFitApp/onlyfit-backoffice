@@ -223,6 +223,7 @@ export type ApiErrorCode =
   | 'social.invalid_offer'
   | 'social.invalid_post'
   | 'social.invalid_relation'
+  | 'social.invalid_scope'
   | 'social.invalid_sport'
   | 'social.invalid_state'
   | 'social.invalid_story'
@@ -2592,7 +2593,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Cria ou edita uma publicação idempotente e vincula somente mídias prontas do autor. (command; contract/social/post_save.v1.json) */
       postSave: (input: { post: SocialPostInput }) => call('social_post_save_v1', { p_post: input.post }) as Promise<SocialPostSaved>,
       /** Perfil público, publicações e stories ativos. (query; contract/social/profile.v1.json) */
-      profile: (input: { username: string; cursor?: string; limit?: number }) => call('social_profile_v1', { p_username: input.username, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialProfile>,
+      profile: (input: { username: string; cursor?: string; limit?: number; scope?: "all" | "free" | "paid" | "owned" }) => call('social_profile_v1', { p_username: input.username, p_cursor: input.cursor, p_limit: input.limit, p_scope: input.scope }) as Promise<SocialProfile>,
       /** Stories ativos e visíveis agrupáveis por autor. (query; contract/social/stories.v1.json) */
       stories: (input: { authorId?: string; cursor?: string; limit?: number } = {}) => call('social_stories_v1', { p_author_id: input.authorId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialStories>,
       /** Registra visualização ou muda o estado do story. (command; contract/social/story_act.v1.json) */

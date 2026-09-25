@@ -653,6 +653,8 @@ export interface ChallengeSaveInput {
   publishing?: "admins" | "team" | "members";
   starts_at: string;
   ends_at: string;
+  publish?: boolean;
+  accept_prize_responsibility?: boolean;
   config: Record<string, unknown>;
 }
 
@@ -2050,6 +2052,7 @@ export interface SocialGroupCard {
   version: number;
   members: number;
   my_membership: Record<string, unknown> | null;
+  creator?: SocialProfileReadCard;
 }
 
 export interface SocialImageOverlay {
@@ -2819,7 +2822,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Abre uma edição de desafio e o progresso congelável do participante. (query; contract/social/challenge.v1.json) */
       challenge: (input: { id: string }) => call('social_challenge_v1', { p_id: input.id }) as Promise<SocialChallenge>,
       /** Publica pelo criador e administra participação, encerramento ou cancelamento. (command; contract/social/challenge_act.v1.json) */
-      challengeAct: (input: { id: string; action: "publish" | "join" | "leave" | "approve" | "reject" | "cancel" | "end"; targetId?: string; data?: Record<string, unknown> }) => call('social_challenge_act_v1', { p_id: input.id, p_action: input.action, p_target_id: input.targetId, p_data: input.data }) as Promise<SocialChallengeAfterAction>,
+      challengeAct: (input: { id: string; action: "publish" | "join" | "leave" | "approve" | "reject" | "ban" | "cancel" | "end"; targetId?: string; data?: Record<string, unknown> }) => call('social_challenge_act_v1', { p_id: input.id, p_action: input.action, p_target_id: input.targetId, p_data: input.data }) as Promise<SocialChallengeAfterAction>,
       /** Salva desafio avulso gratuito/pago ou desafio nativo de comunidade. (command; contract/social/challenge_save.v1.json) */
       challengeSave: (input: { challenge: ChallengeSaveInput }) => call('social_challenge_save_v1', { p_challenge: input.challenge }) as Promise<SocialChallengeSaved>,
       /** Lista desafios gratuitos ou pagos com acesso e progresso atuais. (query; contract/social/challenges.v1.json) */

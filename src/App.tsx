@@ -907,7 +907,7 @@ function FeedDistributionPage() {
               <div className="feed-command-head">
                 <div>
                   <span>Ordenação</span>
-                  <h2>Mais recentes por origem</h2>
+                  <h2>Prioridade dentro de cada origem</h2>
                 </div>
               </div>
               <div className="feed-kpis">
@@ -936,7 +936,7 @@ function FeedDistributionPage() {
                   <span>Posições de descoberta</span>
                   <input type="number" min="1" max="100" step="1" value={discovery} disabled={!canEdit}
                     onChange={(event) => setDraft({ followed, discovery: event.target.value })} />
-                  <small>Profissionais e embaixadores públicos, principais ou associados.</small>
+                  <small>Principal, Associado, Profissional e demais elegíveis; os mais recentes primeiro dentro de cada nível.</small>
                 </label>
               </div>
             </section>

@@ -7,12 +7,14 @@ const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf
 test('configura a proporção do feed somente pelo contrato tipado do Core', () => {
   const source = read('src/lib/feedSettings.ts');
   const generated = read('src/api/core.gen.ts');
+  const app = read('src/App.tsx');
 
   assert.match(source, /coreApi\.staff\.feedSettings\(\)/);
   assert.match(source, /coreApi\.staff\.feedSettingsSave/);
   assert.match(source, /expectedVersion: input\.expectedVersion/);
   assert.match(generated, /staff_feed_settings_v1/);
   assert.match(generated, /staff_feed_settings_save_v1/);
+  assert.match(app, /Principal, Associado, Profissional e demais elegíveis/);
   assert.doesNotMatch(source, /control_get_feed_algorithm_settings|control_update_feed_distribution_v1|\.from\(/);
 });
 

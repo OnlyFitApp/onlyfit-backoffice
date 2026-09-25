@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -p tsconfig.app.json --noEmit && vite build",
+    "core:sync-sdk": "node scripts/sync-core-sdk.mjs",
+    "core:check-sdk": "node scripts/sync-core-sdk.mjs --check",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "node --test tests/*.test.mjs"

@@ -9,20 +9,12 @@ export type EdgeTransport = (fn: 'worker' | 'auth', path: string, body: Record<s
 
 /** Códigos de erro estáveis; o app traduz cada um para uma chave de i18n. */
 export type ApiErrorCode =
-  | 'AUDIO_TRACK_PRESENT'
-  | 'COVER_STORAGE_UNAVAILABLE'
-  | 'INVALID_COVER_DIMENSIONS'
-  | 'INVALID_COVER_JPEG'
-  | 'INVALID_VIDEO_CONTRACT'
-  | 'INVALID_VIDEO_SIZE'
-  | 'OGG_SILENT_ATTESTATION_UNSUPPORTED'
-  | 'QUARANTINE_OBJECT_CONTRACT_MISMATCH'
-  | 'VIDEO_STORAGE_UNAVAILABLE'
   | 'auth.access_pending'
   | 'auth.invalid_token'
   | 'auth.required'
   | 'commerce.acceptances_required'
   | 'commerce.access_required'
+  | 'commerce.buyer_incomplete'
   | 'commerce.content_not_found'
   | 'commerce.forbidden'
   | 'commerce.idempotency_conflict'
@@ -38,16 +30,17 @@ export type ApiErrorCode =
   | 'commerce.invalid_payout'
   | 'commerce.invalid_progress'
   | 'commerce.invalid_purchase_action'
+  | 'commerce.invalid_return_url'
   | 'commerce.offer_changed'
   | 'commerce.offer_locked'
   | 'commerce.offer_not_found'
   | 'commerce.offer_type_unavailable'
   | 'commerce.offer_unavailable'
   | 'commerce.order_changed'
+  | 'commerce.provider_invalid_response'
   | 'commerce.provider_not_configured'
   | 'commerce.purchase_changed'
   | 'commerce.purchase_not_found'
-  | 'cover_preparation_unavailable'
   | 'health.answers_incomplete'
   | 'health.assistant_limit'
   | 'health.assistant_unavailable'
@@ -109,26 +102,36 @@ export type ApiErrorCode =
   | 'interaction.invalid_comment'
   | 'interaction.target_not_found'
   | 'internal.error'
-  | 'invalid_cover_contract'
-  | 'invalid_cover_size'
+  | 'media.audio_track_present'
   | 'media.cover_busy'
   | 'media.cover_expired'
   | 'media.cover_not_found'
+  | 'media.cover_preparation_unavailable'
   | 'media.cover_selection_conflict'
+  | 'media.cover_storage_unavailable'
   | 'media.file_too_large'
   | 'media.filename_required'
   | 'media.invalid_bucket'
   | 'media.invalid_completion'
+  | 'media.invalid_cover_contract'
+  | 'media.invalid_cover_dimensions'
+  | 'media.invalid_cover_jpeg'
+  | 'media.invalid_cover_size'
   | 'media.invalid_finalization'
   | 'media.invalid_upload'
+  | 'media.invalid_video_contract'
+  | 'media.invalid_video_size'
   | 'media.mime_not_allowed'
   | 'media.object_mismatch'
+  | 'media.ogg_silent_attestation_unsupported'
+  | 'media.quarantine_contract_mismatch'
   | 'media.rate_limited'
   | 'media.storage_unavailable'
   | 'media.upload_busy'
   | 'media.upload_expired'
   | 'media.upload_not_found'
   | 'media.video_requires_quarantine'
+  | 'media.video_storage_unavailable'
   | 'nutrition.diet_not_editable'
   | 'nutrition.diet_not_found'
   | 'nutrition.food_not_found'
@@ -663,8 +666,29 @@ export interface CommerceCardAction {
 }
 
 export interface CommerceCheckoutResult {
-  purchase: Record<string, unknown>;
-  checkout_url: string | null;
+  purchase_id: string;
+  offer_id: string;
+  status: "pending" | "confirmed" | "failed" | "cancelled" | "refunded";
+  channel: "free" | "app_store" | "google_play" | "stripe_card" | "asaas_pix";
+  amount: number;
+  currency: string;
+  offer_name: string;
+  billing_type: "one_time" | "recurring" | "free";
+  billing_interval: string | null;
+  provider_reference: string | null;
+  contract_id: string | null;
+  confirmed_at: string | null;
+  created_at: string;
+  payment_kind: "free" | "native_store" | "stripe_elements" | "asaas_pix";
+  payment_channel: string | null;
+  client_secret: string | null;
+  publishable_key: string | null;
+  return_url: string | null;
+  payment_reference: string | null;
+  pix_payload: string | null;
+  pix_qr_code_base64: string | null;
+  invoice_url: string | null;
+  expires_at: string | null;
 }
 
 export interface CommerceContent {
@@ -710,11 +734,11 @@ export interface CommerceOffer {
   name: string;
   description?: string;
   image_url?: string | null;
-  status: string;
+  status: "draft" | "ready" | "published" | "paused" | "archived";
   price: number;
   currency: string;
-  billing_type: string;
-  billing_interval?: string | null;
+  billing_type: "free" | "one_time" | "recurring";
+  billing_interval?: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
   settings: Record<string, unknown>;
   target: Record<string, unknown>;
   data_access_scope?: string[];
@@ -745,7 +769,7 @@ export interface CommerceOfferSaveInput {
 
 export interface CommerceOffers {
   can_edit: boolean;
-  items: Record<string, unknown>[];
+  items: CommerceOffer[];
 }
 
 export interface CommerceOrderAction {
@@ -1271,6 +1295,12 @@ export interface ImportedActivityInput {
   steps_done?: Record<string, unknown>;
 }
 
+export interface InteractionLikers {
+  items: SocialProfileReadCard[];
+  total: number;
+  next_cursor: number | null;
+}
+
 export interface InteractionThread {
   target: SocialPost;
   items: SocialPost[];
@@ -1441,6 +1471,9 @@ export interface OfferType {
   icon: string | null;
   billing_type: "one_time" | "recurring" | "free";
   billing_interval: string | null;
+  allowed_billing_intervals?: ("week" | "month" | "2month" | "quarter" | "semester" | "year")[];
+  minimum_price?: number;
+  minimum_monthly_price?: number;
   max_per_business: number | null;
   unique_per_owner_profile: boolean;
   requires_affinity_group: boolean;
@@ -1845,12 +1878,12 @@ export interface SocialChallengeSaved {
 }
 
 export interface SocialChallenges {
-  items: Record<string, unknown>[];
+  items: SocialGroupCard[];
   next_cursor: string | null;
 }
 
 export interface SocialCommunities {
-  items: Record<string, unknown>[];
+  items: SocialGroupCard[];
   next_cursor: string | null;
 }
 
@@ -1946,6 +1979,28 @@ export interface SocialFeed {
   items: SocialPost[];
   stories: SocialPost[];
   next_cursor: string | null;
+}
+
+export interface SocialGroupCard {
+  id: string;
+  kind: "community" | "challenge";
+  creator_id: string;
+  business_id?: string | null;
+  community_id?: string | null;
+  offer_id?: string | null;
+  status: string;
+  name: string;
+  description: string;
+  image_url?: string | null;
+  visibility: string;
+  access_mode: string;
+  publishing: string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  config: Record<string, unknown>;
+  version: number;
+  members: number;
+  my_membership: Record<string, unknown> | null;
 }
 
 export interface SocialImageOverlay {
@@ -2105,6 +2160,7 @@ export interface SocialNotificationActor {
 
 export interface SocialNotificationData {
   message_id?: string | null;
+  contract_id?: string | null;
   scheduled_id?: string | null;
   scope?: string | null;
   from_date?: string | null;
@@ -2573,8 +2629,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       adBook: (input: { booking: CommerceAdBookingInput }) => call('commerce_ad_book_v1', { p_booking: input.booking }) as Promise<CommerceAdBooking>,
       /** Agenda remoção segura de um meio de pagamento tokenizado. (command; contract/commerce/card_act.v1.json) */
       cardAct: (input: { action: "remove"; paymentMethodReference: string }) => call('commerce_card_act_v1', { p_action: input.action, p_payment_method_reference: input.paymentMethodReference }) as Promise<CommerceCardAction>,
-      /** Congela a oferta e inicia ou confirma um checkout idempotente. (command; contract/commerce/checkout.v1.json) */
-      checkout: (input: { offerId: string; channel: "free" | "stripe_card"; idempotencyKey: string; acceptances: CommerceAcceptance[] }) => invoke('worker', '/commerce/checkout', { offer_id: input.offerId, channel: input.channel, idempotency_key: input.idempotencyKey, acceptances: input.acceptances }) as Promise<CommerceCheckoutResult>,
+      /** Congela a oferta e inicia o canal permitido: loja nativa para digital no app, Stripe Elements no desktop ou Pix/Asaas para pagamento externo elegível. (command; contract/commerce/checkout.v1.json) */
+      checkout: (input: { offerId: string; channel: "free" | "app_store" | "google_play" | "stripe_card" | "asaas_pix"; idempotencyKey: string; acceptances: CommerceAcceptance[]; returnUrl?: string }) => invoke('worker', '/commerce/checkout', { offer_id: input.offerId, channel: input.channel, idempotency_key: input.idempotencyKey, acceptances: input.acceptances, return_url: input.returnUrl }) as Promise<CommerceCheckoutResult>,
       /** Entrega conteúdo comprado e seu progresso. (query; contract/commerce/content.v1.json) */
       content: (input: { purchaseId: string }) => call('commerce_content_v1', { p_purchase_id: input.purchaseId }) as Promise<CommerceContent>,
       /** Lista ofertas publicadas de todos os tipos configurados. (query; contract/commerce/market.v1.json) */
@@ -2588,9 +2644,9 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Lê uma oferta pública ou administrada. (query; contract/commerce/offer.v1.json) */
       offer: (input: { offerId: string }) => call('commerce_offer_v1', { p_offer_id: input.offerId }) as Promise<CommerceOffer>,
       /** Publica, pausa, retoma ou arquiva uma oferta. (command; contract/commerce/offer_act.v1.json) */
-      offerAct: (input: { offerId: string; action: "ready" | "publish" | "pause" | "resume" | "archive"; expectedVersion: number }) => call('commerce_offer_act_v1', { p_offer_id: input.offerId, p_action: input.action, p_expected_version: input.expectedVersion }) as Promise<Record<string, unknown>>,
+      offerAct: (input: { offerId: string; action: "ready" | "publish" | "pause" | "resume" | "archive"; expectedVersion: number }) => call('commerce_offer_act_v1', { p_offer_id: input.offerId, p_action: input.action, p_expected_version: input.expectedVersion }) as Promise<CommerceOffer>,
       /** Cria ou altera qualquer oferta segundo seu tipo configurado. (command; contract/commerce/offer_save.v1.json) */
-      offerSave: (input: { offer: CommerceOfferSaveInput }) => call('commerce_offer_save_v1', { p_offer: input.offer }) as Promise<Record<string, unknown>>,
+      offerSave: (input: { offer: CommerceOfferSaveInput }) => call('commerce_offer_save_v1', { p_offer: input.offer }) as Promise<CommerceOffer>,
       /** Lista ofertas geridas por um negócio. (query; contract/commerce/offers.v1.json) */
       offers: (input: { businessId: string; status?: string | null }) => call('commerce_offers_v1', { p_business_id: input.businessId, p_status: input.status }) as Promise<CommerceOffers>,
       /** Avança a separação e entrega de pedido físico. (command; contract/commerce/order_act.v1.json) */
@@ -2775,6 +2831,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
     interaction: {
       /** Reage, comenta, responde, edita, exclui ou denuncia. (command; contract/social/interaction_act.v1.json) */
       act: (input: { targetId: string; action: "like" | "unlike" | "dislike" | "undislike" | "comment" | "reply" | "edit" | "delete" | "report"; data?: Record<string, unknown> }) => call('interaction_act_v1', { p_target_id: input.targetId, p_action: input.action, p_data: input.data }) as Promise<SocialPost>,
+      /** Lista paginada de perfis que curtiram um conteúdo visível. (query; contract/social/interaction_likers.v1.json) */
+      likers: (input: { targetId: string; cursor?: number; limit?: number }) => call('interaction_likers_v1', { p_target_id: input.targetId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<InteractionLikers>,
       /** Thread única e paginada para comentários de qualquer conteúdo. (query; contract/social/interaction_thread.v1.json) */
       thread: (input: { targetId: string; cursor?: string; limit?: number }) => call('interaction_thread_v1', { p_target_id: input.targetId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<InteractionThread>,
     },

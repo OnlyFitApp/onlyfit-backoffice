@@ -19,6 +19,7 @@ test('edits every product, scenario and beneficiary role', () => {
   ]) assert.match(page, new RegExp(label));
   assert.match(page, /Publicar percentuais/);
   assert.match(page, /Comparação com v/);
+  assert.match(page, /primeira versão começa com 75% para o profissional/i);
 });
 
 test('integrates existing iOS settings without calling Apple', () => {

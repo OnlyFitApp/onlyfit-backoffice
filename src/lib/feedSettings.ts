@@ -1,48 +1,35 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
 
-type FeedDistributionSettings = {
-  slots_followed: number;
-  slots_discovery: number;
-  updated_at: string;
+export type FeedDistributionSettings = {
+  followed: number;
+  discovery: number;
+  version: number;
 };
 
 export type FeedDistributionInput = {
   slotsFollowed: number;
   slotsDiscovery: number;
-  expectedUpdatedAt: string;
+  expectedVersion: number;
 };
 
-function parseSettings(value: unknown): FeedDistributionSettings {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('Configuração do feed indisponível.');
-  }
-  const row = value as Record<string, unknown>;
-  const slotsFollowed = Number(row.slots_followed);
-  const slotsDiscovery = Number(row.slots_discovery);
-  if (!Number.isInteger(slotsFollowed) || slotsFollowed < 1
-    || !Number.isInteger(slotsDiscovery) || slotsDiscovery < 1
-    || typeof row.updated_at !== 'string') {
-    throw new Error('A configuração de distribuição do feed é inválida.');
-  }
+export async function getFeedDistributionSettings(): Promise<FeedDistributionSettings> {
+  const settings = await coreApi.staff.feedSettings();
   return {
-    slots_followed: slotsFollowed,
-    slots_discovery: slotsDiscovery,
-    updated_at: row.updated_at,
+    followed: settings.followed_slots,
+    discovery: settings.discovery_slots,
+    version: settings.version,
   };
 }
 
-export async function getFeedDistributionSettings(): Promise<FeedDistributionSettings> {
-  const { data, error } = await api.staff.rpc('control_get_feed_algorithm_settings');
-  if (error) throw error;
-  return parseSettings(data);
-}
-
 export async function updateFeedDistributionSettings(input: FeedDistributionInput): Promise<FeedDistributionSettings> {
-  const { data, error } = await api.staff.rpc('control_update_feed_distribution_v1', {
-    p_slots_followed: input.slotsFollowed,
-    p_slots_discovery: input.slotsDiscovery,
-    p_expected_updated_at: input.expectedUpdatedAt,
+  const settings = await coreApi.staff.feedSettingsSave({
+    followedSlots: input.slotsFollowed,
+    discoverySlots: input.slotsDiscovery,
+    expectedVersion: input.expectedVersion,
   });
-  if (error) throw error;
-  return parseSettings(data);
+  return {
+    followed: settings.followed_slots,
+    discovery: settings.discovery_slots,
+    version: settings.version,
+  };
 }

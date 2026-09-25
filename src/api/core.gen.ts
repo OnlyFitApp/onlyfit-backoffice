@@ -9,6 +9,15 @@ export type EdgeTransport = (fn: 'worker' | 'auth', path: string, body: Record<s
 
 /** Códigos de erro estáveis; o app traduz cada um para uma chave de i18n. */
 export type ApiErrorCode =
+  | 'AUDIO_TRACK_PRESENT'
+  | 'COVER_STORAGE_UNAVAILABLE'
+  | 'INVALID_COVER_DIMENSIONS'
+  | 'INVALID_COVER_JPEG'
+  | 'INVALID_VIDEO_CONTRACT'
+  | 'INVALID_VIDEO_SIZE'
+  | 'OGG_SILENT_ATTESTATION_UNSUPPORTED'
+  | 'QUARANTINE_OBJECT_CONTRACT_MISMATCH'
+  | 'VIDEO_STORAGE_UNAVAILABLE'
   | 'auth.access_pending'
   | 'auth.invalid_token'
   | 'auth.required'
@@ -38,6 +47,7 @@ export type ApiErrorCode =
   | 'commerce.provider_not_configured'
   | 'commerce.purchase_changed'
   | 'commerce.purchase_not_found'
+  | 'cover_preparation_unavailable'
   | 'health.answers_incomplete'
   | 'health.assistant_limit'
   | 'health.assistant_unavailable'
@@ -96,6 +106,26 @@ export type ApiErrorCode =
   | 'interaction.invalid_comment'
   | 'interaction.target_not_found'
   | 'internal.error'
+  | 'invalid_cover_contract'
+  | 'invalid_cover_size'
+  | 'media.cover_busy'
+  | 'media.cover_expired'
+  | 'media.cover_not_found'
+  | 'media.cover_selection_conflict'
+  | 'media.file_too_large'
+  | 'media.filename_required'
+  | 'media.invalid_bucket'
+  | 'media.invalid_completion'
+  | 'media.invalid_finalization'
+  | 'media.invalid_upload'
+  | 'media.mime_not_allowed'
+  | 'media.object_mismatch'
+  | 'media.rate_limited'
+  | 'media.storage_unavailable'
+  | 'media.upload_busy'
+  | 'media.upload_expired'
+  | 'media.upload_not_found'
+  | 'media.video_requires_quarantine'
   | 'nutrition.diet_not_editable'
   | 'nutrition.diet_not_found'
   | 'nutrition.food_not_found'
@@ -175,16 +205,17 @@ export type ApiErrorCode =
   | 'social.access_immutable'
   | 'social.access_required'
   | 'social.adult_required'
-  | 'social.audio_attestation_required'
   | 'social.blocked'
-  | 'social.file_not_found'
   | 'social.forbidden'
   | 'social.group_not_found'
   | 'social.idempotency_required'
   | 'social.invalid_action'
   | 'social.invalid_challenge'
   | 'social.invalid_community'
+  | 'social.invalid_composition'
   | 'social.invalid_container'
+  | 'social.invalid_cover'
+  | 'social.invalid_cursor'
   | 'social.invalid_group'
   | 'social.invalid_hosted_challenge'
   | 'social.invalid_media'
@@ -192,9 +223,13 @@ export type ApiErrorCode =
   | 'social.invalid_offer'
   | 'social.invalid_post'
   | 'social.invalid_relation'
+  | 'social.invalid_sport'
   | 'social.invalid_state'
   | 'social.invalid_story'
   | 'social.invalid_tab'
+  | 'social.invalid_tag'
+  | 'social.media_not_owned'
+  | 'social.media_not_ready'
   | 'social.message_not_found'
   | 'social.message_rate_limit'
   | 'social.paid_offer_required'
@@ -203,14 +238,13 @@ export type ApiErrorCode =
   | 'social.profile_not_found'
   | 'social.story_expired'
   | 'social.story_too_long'
-  | 'social.upload_failed'
-  | 'social.upload_incomplete'
   | 'staff.account_not_found'
   | 'staff.catalog_changed'
   | 'staff.catalog_confirmation_required'
   | 'staff.catalog_in_use'
   | 'staff.catalog_item_not_found'
   | 'staff.catalog_name_taken'
+  | 'staff.feed_settings_requires_typed_operation'
   | 'staff.forbidden'
   | 'staff.invalid_action'
   | 'staff.invalid_catalog'
@@ -218,6 +252,7 @@ export type ApiErrorCode =
   | 'staff.invalid_catalog_item'
   | 'staff.invalid_catalog_key'
   | 'staff.invalid_dashboard'
+  | 'staff.invalid_feed_settings'
   | 'staff.invalid_filter'
   | 'staff.invalid_mail'
   | 'staff.invalid_queue_action'
@@ -851,6 +886,22 @@ export interface ConsultancyParty {
   avatar_url: string | null;
 }
 
+export interface CoverPrepared {
+  upload_id: string;
+  file_id: string;
+  public_url: string;
+  ready: boolean;
+}
+
+export interface CoverUpload {
+  uploadId: string;
+  uploadUrl: string;
+  uploadHeaders: Record<string, unknown>;
+  contentType: string;
+  contentLength: number;
+  expiresIn: number;
+}
+
 export interface DeletedActivityInput {
   provider: "apple_health" | "health_connect";
   external_id: string;
@@ -1290,6 +1341,25 @@ export interface MealPhotoInput {
   path: string;
   mime: string;
   bytes: number;
+}
+
+export interface MediaUpload {
+  fileId: string | null;
+  uploadUrl: string;
+  publicUrl: string;
+  objectKey: string;
+  bucket: string;
+  uploaded: boolean;
+  contentType: string;
+  requestId: string;
+  uploadHeaders?: Record<string, unknown>;
+  expiresIn?: number;
+}
+
+export interface MediaUploadCompleted {
+  fileId: string;
+  publicUrl: string;
+  ready: boolean;
 }
 
 export interface NotDoneReason {
@@ -1856,9 +1926,26 @@ export interface SocialExplore {
 }
 
 export interface SocialFeed {
-  items: Record<string, unknown>[];
-  stories: Record<string, unknown>[];
+  items: SocialPost[];
+  stories: SocialPost[];
   next_cursor: string | null;
+}
+
+export interface SocialImageOverlay {
+  file_id: string;
+  url: string;
+  x: number;
+  y: number;
+  size: number;
+  rotation: number;
+}
+
+export interface SocialImageOverlayInput {
+  file_id: string;
+  x: number;
+  y: number;
+  size: number;
+  rotation: number;
 }
 
 export interface SocialInbox {
@@ -1867,31 +1954,215 @@ export interface SocialInbox {
   unread_count: number;
 }
 
-export interface SocialMediaUpload {
+export interface SocialMedia {
   file_id: string;
-  status: "pending" | "ready" | "processing";
-  url: string | null;
-  audio_attested: boolean;
+  kind: "image" | "video";
+  url: string;
+  cover_file_id?: string | null;
+  thumbnail_url?: string | null;
+  stream_status?: string | null;
+  hls_url?: string | null;
+  duration_seconds?: number | null;
+  aspect_ratio?: number | null;
+  audio_mode?: "preserve" | "remove" | "absent" | null;
+  framing?: SocialMediaFraming | null;
+  text_overlays: SocialTextOverlay[];
+  image_overlay?: SocialImageOverlay | null;
+  user_tags: SocialUserTag[];
 }
 
-export interface SocialMediaUploadInput {
-  action: "prepare" | "complete";
-  id: string | null;
-  mime: string | null;
-  bytes: number | null;
-  audio_attested: boolean;
+export interface SocialMediaFraming {
+  fit: "contain" | "cover";
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+  version: number;
+  intent: "automatic" | "authored";
+}
+
+export interface SocialMediaFramingInput {
+  fit: "contain" | "cover";
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+  version: number;
+  intent: "automatic" | "authored";
+}
+
+export interface SocialMediaInput {
+  file_id: string;
+  kind: "image" | "video";
+  cover_file_id?: string | null;
+  duration_seconds?: number | null;
+  aspect_ratio?: number | null;
+  audio_mode?: "preserve" | "remove" | "absent" | null;
+  framing?: SocialMediaFramingInput | null;
+  text_overlays: SocialTextOverlayInput[];
+  image_overlay?: SocialImageOverlayInput | null;
+  user_tags: SocialUserTagInput[];
+}
+
+export interface SocialNetworkIdentity {
+  classification: "professional" | "associate" | "ambassador";
+  badge_label?: string | null;
+  affinity_group_key?: string | null;
+  headline?: string | null;
+  public_visible: boolean;
+}
+
+export interface SocialPost {
+  id: string;
+  kind: "post" | "story";
+  author: SocialProfileReadCard;
+  parent_id?: string | null;
+  container_type?: string | null;
+  container_id?: string | null;
+  recipient_id?: string | null;
+  expires_at?: string | null;
+  status: string;
+  visibility: string;
+  body: string;
+  content?: Record<string, unknown>;
+  media: SocialMedia[];
+  sports: string[];
+  location?: string | null;
+  offer_id?: string | null;
+  affinity?: string | null;
+  comments_enabled: boolean;
+  like_count: number;
+  comment_count: number;
+  view_count: number;
+  liked: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SocialPostInput {
+  id?: string | null;
+  idempotency_key?: string | null;
+  status?: "draft" | "published";
+  visibility: "public" | "followers" | "members" | "paid";
+  body: string;
+  media: SocialMediaInput[];
+  sports: string[];
+  location?: string | null;
+  offer_id?: string | null;
+  affinity?: string | null;
+  comments_enabled: boolean;
+  container_type?: "community" | "challenge" | null;
+  container_id?: string | null;
+}
+
+export interface SocialPostLookup {
+  found: boolean;
+  id?: string | null;
+}
+
+export interface SocialPostSaved {
+  id: string;
+  kind: "post";
+  author: SocialProfileCard;
+  parent_id?: string | null;
+  container_type?: string | null;
+  container_id?: string | null;
+  recipient_id?: string | null;
+  expires_at?: string | null;
+  status: string;
+  visibility: string;
+  body: string;
+  content?: Record<string, unknown>;
+  media: SocialMedia[];
+  sports: string[];
+  location?: string | null;
+  offer_id?: string | null;
+  affinity?: string | null;
+  comments_enabled: boolean;
+  like_count: number;
+  comment_count: number;
+  view_count: number;
+  liked: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SocialProfile {
-  profile: Record<string, unknown>;
-  posts: Record<string, unknown>[];
-  stories: Record<string, unknown>[];
+  profile: SocialProfileReadCard;
+  posts: SocialPost[];
+  stories: SocialPost[];
   next_cursor: string | null;
+}
+
+export interface SocialProfileCard {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url?: string | null;
+  bio?: string | null;
+  is_professional: boolean;
+  following: boolean;
+  followed_by: boolean;
+  network_identity?: SocialNetworkIdentity | null;
+}
+
+export interface SocialProfileReadCard {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url?: string | null;
+  bio?: string | null;
+  is_professional: boolean;
+  following: boolean;
+  followed_by: boolean;
+  network_identity?: SocialNetworkIdentity | null;
 }
 
 export interface SocialStories {
   items: Record<string, unknown>[];
   next_cursor: string | null;
+}
+
+export interface SocialTextOverlay {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  font: "modern" | "strong" | "classic" | "typewriter";
+  color: number;
+  background: "none" | "translucent" | "solid";
+  background_color?: number | null;
+  background_opacity?: number | null;
+  align: "left" | "right" | "center" | "justify" | "start" | "end";
+  size: number;
+  rotation: number;
+}
+
+export interface SocialTextOverlayInput {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  font: "modern" | "strong" | "classic" | "typewriter";
+  color: number;
+  background: "none" | "translucent" | "solid";
+  background_color?: number | null;
+  background_opacity?: number | null;
+  align: "left" | "right" | "center" | "justify" | "start" | "end";
+  size: number;
+  rotation: number;
+}
+
+export interface SocialUserTag {
+  user_id: string;
+  username: string;
+  display_name: string;
+  x: number;
+  y: number;
+}
+
+export interface SocialUserTagInput {
+  user_id: string;
+  x: number;
+  y: number;
 }
 
 export interface Sport {
@@ -1930,6 +2201,12 @@ export interface StaffDashboard {
   to: string;
   metrics: Record<string, unknown>[];
   totals: Record<string, unknown>;
+}
+
+export interface StaffFeedSettings {
+  followed_slots: number;
+  discovery_slots: number;
+  version: number;
 }
 
 export interface StaffMail {
@@ -2036,6 +2313,31 @@ export interface TrainingProgramSaveInput {
 export interface UnlinkedActivity {
   id: string;
   activity_type: string | null;
+}
+
+export interface UploadFailureRecorded {
+  ok: boolean;
+}
+
+export interface VideoFinalized {
+  fileId: string;
+  publicUrl: string;
+  objectKey: string;
+  contentType: string;
+  audioMode: string;
+  hasAudio: boolean;
+  container: "iso-bmff" | "webm" | "ogg";
+  attested: boolean;
+}
+
+export interface VideoUpload {
+  uploadId: string;
+  uploadUrl: string;
+  contentType: string;
+  contentLength: number;
+  audioMode: string;
+  uploadHeaders: Record<string, unknown>;
+  expiresIn: number;
 }
 
 export interface Workout {
@@ -2267,10 +2569,14 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       communitySave: (input: { community: Record<string, unknown> }) => call('social_community_save_v1', { p_community: input.community }) as Promise<SocialCommunitySaved>,
       /** Mensagens privadas com uma pessoa. (query; contract/social/conversation.v1.json) */
       conversation: (input: { peerId: string; cursor?: string; limit?: number }) => call('social_conversation_v1', { p_peer_id: input.peerId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialConversation>,
+      /** Inspeciona a capa em quarentena e a publica no bucket de miniaturas; a escolha (quadro ou galeria) fica imutável. (command; contract/social/cover_prepare.v1.json) */
+      coverPrepare: (input: { uploadId: string; source: "frame" | "gallery"; frameTimeSeconds?: number }) => invoke('worker', '/media/cover-prepare', { upload_id: input.uploadId, source: input.source, frame_time_seconds: input.frameTimeSeconds }) as Promise<CoverPrepared>,
+      /** Abre a quarentena de uma capa JPEG escolhida pelo autor. (command; contract/social/cover_upload.v1.json) */
+      coverUpload: (input: { contentLength: number }) => invoke('worker', '/media/cover-upload', { content_length: input.contentLength }) as Promise<CoverUpload>,
       /** Explora conteúdo de criadores e busca pessoas. (query; contract/social/explore.v1.json) */
       explore: (input: { search?: string; affinity?: string; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
       /** Feed por cursor, com seguidos e descoberta sem duplicação. (query; contract/social/feed.v1.json) */
-      feed: (input: { affinity?: string; cursor?: string; limit?: number } = {}) => call('social_feed_v1', { p_affinity: input.affinity, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialFeed>,
+      feed: (input: { sports?: string[]; cursor?: string; limit?: number } = {}) => call('social_feed_v1', { p_sports: input.sports, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialFeed>,
       /** Segue, deixa de seguir, bloqueia ou desbloqueia. (command; contract/social/follow_act.v1.json) */
       followAct: (input: { accountId: string; action: "follow" | "unfollow" | "block" | "unblock" }) => call('social_follow_act_v1', { p_account_id: input.accountId, p_action: input.action }) as Promise<Record<string, unknown>>,
       /** Central de conversas ou notificações. (query; contract/social/inbox.v1.json) */
@@ -2280,9 +2586,11 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Marca notificações sem confundir badge com leitura. (command; contract/social/notification_act.v1.json) */
       notificationAct: (input: { ids?: string[]; action?: "markRead" | "markAllRead" | "clearBadge" } = {}) => call('social_notification_act_v1', { p_ids: input.ids, p_action: input.action }) as Promise<Record<string, unknown>>,
       /** Abre publicação visível com interação atual. (query; contract/social/post.v1.json) */
-      post: (input: { id: string }) => call('social_post_v1', { p_id: input.id }) as Promise<Record<string, unknown>>,
-      /** Cria ou edita publicação idempotente. (command; contract/social/post_save.v1.json) */
-      postSave: (input: { post: Record<string, unknown> }) => call('social_post_save_v1', { p_post: input.post }) as Promise<Record<string, unknown>>,
+      post: (input: { id: string }) => call('social_post_v1', { p_id: input.id }) as Promise<SocialPost>,
+      /** Localiza uma publicação própria pela chave idempotente antes de repetir uploads. (query; contract/social/post_lookup.v1.json) */
+      postLookup: (input: { idempotencyKey: string }) => call('social_post_lookup_v1', { p_idempotency_key: input.idempotencyKey }) as Promise<SocialPostLookup>,
+      /** Cria ou edita uma publicação idempotente e vincula somente mídias prontas do autor. (command; contract/social/post_save.v1.json) */
+      postSave: (input: { post: SocialPostInput }) => call('social_post_save_v1', { p_post: input.post }) as Promise<SocialPostSaved>,
       /** Perfil público, publicações e stories ativos. (query; contract/social/profile.v1.json) */
       profile: (input: { username: string; cursor?: string; limit?: number }) => call('social_profile_v1', { p_username: input.username, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialProfile>,
       /** Stories ativos e visíveis agrupáveis por autor. (query; contract/social/stories.v1.json) */
@@ -2291,8 +2599,16 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       storyAct: (input: { ids: string[]; action: "view" | "toggleComments" | "convertToPost" | "delete"; data?: Record<string, unknown> }) => call('social_story_act_v1', { p_ids: input.ids, p_action: input.action, p_data: input.data }) as Promise<Record<string, unknown>>,
       /** Publica story por 24 horas. (command; contract/social/story_save.v1.json) */
       storySave: (input: { story: Record<string, unknown> }) => call('social_story_save_v1', { p_story: input.story }) as Promise<Record<string, unknown>>,
-      /** Prepara e confirma upload assinado de foto ou vídeo. (command; contract/social/upload.v1.json) */
-      upload: (input: { file: SocialMediaUploadInput }) => invoke('worker', '/social/upload', { file: input.file }) as Promise<SocialMediaUpload>,
+      /** URL assinada para enviar foto, áudio, miniatura, avatar ou mídia de story direto ao R2 (vídeo de post usa social.videoUpload). (command; contract/social/upload.v1.json) */
+      upload: (input: { filename: string; contentType: string; targetBucket?: "onlyfit-media" | "onlyfit-thumbnails" | "onlyfit-avatar" | "onlyfit-stories" | "onlyfit-private"; contentLength: number; requestId?: string; tenantId?: string; docKind?: string }) => invoke('worker', '/media/upload-url', { filename: input.filename, content_type: input.contentType, target_bucket: input.targetBucket, content_length: input.contentLength, request_id: input.requestId, tenant_id: input.tenantId, doc_kind: input.docKind }) as Promise<MediaUpload>,
+      /** Confirma no R2 tamanho e MIME do upload direto antes de liberar o arquivo para publicação. (command; contract/social/upload_complete.v1.json) */
+      uploadComplete: (input: { fileId: string }) => invoke('worker', '/media/upload-complete', { file_id: input.fileId }) as Promise<MediaUploadCompleted>,
+      /** Relata uma falha de envio de mídia sem URL nem dado pessoal (telemetria). (command; contract/social/upload_failure.v1.json) */
+      uploadFailure: (input: { uploadId?: string; stage: string; providerCode?: string; httpStatus?: number }) => invoke('worker', '/media/upload-failure', { upload_id: input.uploadId, stage: input.stage, provider_code: input.providerCode, http_status: input.httpStatus }) as Promise<UploadFailureRecorded>,
+      /** Inspeciona o vídeo em quarentena (trilhas de áudio), publica no bucket de mídia e agenda o Cloudflare Stream. Repetir devolve o mesmo resultado. (command; contract/social/video_finalize.v1.json) */
+      videoFinalize: (input: { uploadId: string }) => invoke('worker', '/media/video-finalize', { upload_id: input.uploadId }) as Promise<VideoFinalized>,
+      /** Abre a quarentena de um vídeo de post e devolve a URL assinada para enviar o arquivo. (command; contract/social/video_upload.v1.json) */
+      videoUpload: (input: { filename: string; contentType: "video/mp4" | "video/webm" | "video/quicktime" | "video/x-m4v" | "video/ogg"; contentLength: number; audioMode: "preserve" | "remove" | "absent" }) => invoke('worker', '/media/video-upload', { filename: input.filename, content_type: input.contentType, content_length: input.contentLength, audio_mode: input.audioMode }) as Promise<VideoUpload>,
     },
     interaction: {
       /** Curtir, comentar, responder, excluir ou denunciar. (command; contract/social/interaction_act.v1.json) */
@@ -2317,6 +2633,10 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       catalogSave: (input: { kind: string; item: Record<string, unknown> }) => call('staff_catalog_save_v1', { p_kind: input.kind, p_item: input.item }) as Promise<Record<string, unknown>>,
       /** Indicadores internos por seção e período. (query; contract/staff/dashboard.v1.json) */
       dashboard: (input: { section?: "overview" | "acquisition" | "activation" | "engagement" | "retention" | "network" | "business" | "accounts"; from?: string; to?: string } = {}) => call('staff_dashboard_v1', { p_section: input.section, p_from: input.from, p_to: input.to }) as Promise<StaffDashboard>,
+      /** Lê a proporção versionada entre seguidos e descoberta do feed. (query; contract/staff/feed_settings.v1.json) */
+      feedSettings: () => call('staff_feed_settings_v1', {}) as Promise<StaffFeedSettings>,
+      /** Atualiza a proporção do feed com concorrência otimista. (command; contract/staff/feed_settings_save.v1.json) */
+      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion }) as Promise<StaffFeedSettings>,
       /** Caixas e conversas administrativas. (query; contract/staff/mail.v1.json) */
       mail: (input: { mailbox?: string; search?: string; status?: string; cursor?: string; limit?: number } = {}) => call('staff_mail_v1', { p_mailbox: input.mailbox, p_search: input.search, p_status: input.status, p_cursor: input.cursor, p_limit: input.limit }) as Promise<StaffMail>,
       /** Enfileira envio, resposta ou encerra conversa. (command; contract/staff/mail_act.v1.json) */
@@ -2327,7 +2647,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       queueAct: (input: { id: string; action: "approve" | "reject" | "resolve" | "removeContent" | "markPaid"; reason: string }) => call('staff_queue_act_v1', { p_id: input.id, p_action: input.action, p_reason: input.reason }) as Promise<Record<string, unknown>>,
       /** Configurações internas versionadas. (query; contract/staff/settings.v1.json) */
       settings: (input: { subject?: string } = {}) => call('staff_settings_v1', { p_subject: input.subject }) as Promise<StaffSettings>,
-      /** Salva configuração com versão lida. (command; contract/staff/settings_save.v1.json) */
+      /** Salva configuração genérica com versão lida; configurações com contrato próprio usam sua operação tipada. (command; contract/staff/settings_save.v1.json) */
       settingsSave: (input: { subject: string; values: Record<string, unknown>; expectedVersion?: number }) => call('staff_settings_save_v1', { p_subject: input.subject, p_values: input.values, p_expected_version: input.expectedVersion }) as Promise<StaffSetting>,
     },
     help: {

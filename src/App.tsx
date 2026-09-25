@@ -245,6 +245,10 @@ const billingIntervalOptions: ReadonlyArray<{ value: BillingInterval; label: str
   { value: 'year', label: 'Anual' },
 ];
 
+const consultancyBillingIntervals = new Set<BillingInterval>([
+  'month', '2month', 'quarter', 'semester', 'year',
+]);
+
 const offerDeliveryOptions: ReadonlyArray<{ value: OfferDelivery; label: string }> = [
   { value: 'club', label: 'Clube de conteúdo' },
   { value: 'consultancy', label: 'Consultoria' },
@@ -487,16 +491,26 @@ function OfferingTypeBillingRow({
   const [requiresCategory, setRequiresCategory] = useState(item.requires_product_category);
   const [billingType, setBillingType] = useState<BillingType>(item.billing_type);
   const [billingInterval, setBillingInterval] = useState<BillingInterval | null>(item.billing_interval);
+  const [allowedBillingIntervals, setAllowedBillingIntervals] = useState<BillingInterval[]>(item.allowed_billing_intervals);
   const [minimumPriceInput, setMinimumPriceInput] = useState(() => formatPriceInput(item.minimum_price));
+  const [minimumMonthlyPriceInput, setMinimumMonthlyPriceInput] = useState(() =>
+    formatPriceInput(item.minimum_monthly_price ?? item.minimum_price));
   const [feePercentInput, setFeePercentInput] = useState(() => formatPriceInput(item.platform_fee_percent));
   const [feeFixedInput, setFeeFixedInput] = useState(() => formatPriceInput(item.platform_fee_fixed));
   const [message, setMessage] = useState('');
 
   const isRecurring = billingType === 'recurring';
+  const isConsultancy = delivery === 'consultancy';
+  const availableIntervals = billingIntervalOptions.filter(
+    (option) => !isConsultancy || consultancyBillingIntervals.has(option.value),
+  );
 
   const parsedMinimumPrice = parseCurrencyInput(minimumPriceInput);
   const minimumPrice = parsedMinimumPrice;
   const isMinimumPriceInvalid = minimumPrice === null || minimumPrice < 0;
+  const minimumMonthlyPrice = parseCurrencyInput(minimumMonthlyPriceInput);
+  const isMinimumMonthlyPriceInvalid = isConsultancy &&
+    (minimumMonthlyPrice === null || minimumMonthlyPrice < 0);
 
   const parsedFeePercent = parseCurrencyInput(feePercentInput);
   const feePercent = parsedFeePercent;
@@ -513,16 +527,55 @@ function OfferingTypeBillingRow({
     uniquePerOwner !== item.unique_per_owner_profile || requiresAffinity !== item.requires_affinity_group ||
     requiresCategory !== item.requires_product_category || billingType !== item.billing_type ||
     billingInterval !== item.billing_interval ||
+    allowedBillingIntervals.join(',') !== item.allowed_billing_intervals.join(',') ||
     Math.round((minimumPrice ?? -1) * 100) !== Math.round(item.minimum_price * 100) ||
+    Math.round((minimumMonthlyPrice ?? -1) * 100) !== Math.round((item.minimum_monthly_price ?? item.minimum_price) * 100) ||
     Math.round((feePercent ?? -1) * 100) !== Math.round(item.platform_fee_percent * 100) ||
     Math.round((feeFixed ?? -1) * 100) !== Math.round(item.platform_fee_fixed * 100);
 
-  const hasInvalid = isMinimumPriceInvalid || isFeePercentInvalid || isFeeFixedInvalid;
+  const hasInvalid = isMinimumPriceInvalid || isMinimumMonthlyPriceInvalid || isFeePercentInvalid || isFeeFixedInvalid ||
+    (isRecurring && allowedBillingIntervals.length === 0);
   const nextInterval = billingType === 'recurring' ? billingInterval ?? 'month' : null;
   const cadence = billingType === 'recurring'
     ? billingIntervalLabel(nextInterval ?? 'month')
     : billingTypeLabel(billingType);
   const feePreview = `${formatPriceInput(feePercent ?? 0)}%${(feeFixed ?? 0) > 0 ? ` + ${formatCurrencyExact(feeFixed ?? 0)}` : ''}`;
+
+  const selectDelivery = (next: OfferDelivery) => {
+    setDelivery(next);
+    if (next !== 'consultancy') return;
+    const intervals = allowedBillingIntervals.filter((interval) => consultancyBillingIntervals.has(interval));
+    setAllowedBillingIntervals(intervals.length > 0 ? intervals : ['month']);
+    if (!billingInterval || !consultancyBillingIntervals.has(billingInterval)) setBillingInterval('month');
+    setBillingType('recurring');
+  };
+
+  const selectBillingType = (next: BillingType) => {
+    setBillingType(next);
+    if (next !== 'recurring') setBillingInterval(null);
+    if (next === 'recurring' && !billingInterval) {
+      setBillingInterval('month');
+      setAllowedBillingIntervals(['month']);
+    }
+    if (next === 'free') {
+      setMinimumPriceInput('0,00');
+      setFeePercentInput('0,00');
+      setFeeFixedInput('0,00');
+    }
+  };
+
+  const selectBillingInterval = (interval: BillingInterval) => {
+    setBillingInterval(interval);
+    setAllowedBillingIntervals((current) => current.includes(interval) ? current : [...current, interval]);
+  };
+
+  const toggleBillingInterval = (interval: BillingInterval, checked: boolean) => {
+    setAllowedBillingIntervals((current) => checked
+      ? [...current, interval].sort((left, right) =>
+        billingIntervalOptions.findIndex((candidate) => candidate.value === left) -
+        billingIntervalOptions.findIndex((candidate) => candidate.value === right))
+      : current.filter((currentInterval) => currentInterval !== interval));
+  };
 
   const reset = () => {
     setLabel(item.label);
@@ -536,7 +589,9 @@ function OfferingTypeBillingRow({
     setRequiresCategory(item.requires_product_category);
     setBillingType(item.billing_type);
     setBillingInterval(item.billing_interval);
+    setAllowedBillingIntervals(item.allowed_billing_intervals);
     setMinimumPriceInput(formatPriceInput(item.minimum_price));
+    setMinimumMonthlyPriceInput(formatPriceInput(item.minimum_monthly_price ?? item.minimum_price));
     setFeePercentInput(formatPriceInput(item.platform_fee_percent));
     setFeeFixedInput(formatPriceInput(item.platform_fee_fixed));
     setMessage('');
@@ -546,6 +601,10 @@ function OfferingTypeBillingRow({
     setMessage('');
     if (minimumPrice === null || isMinimumPriceInvalid) {
       setMessage('Informe um valor mínimo válido.');
+      return;
+    }
+    if (isMinimumMonthlyPriceInvalid || (isRecurring && allowedBillingIntervals.length === 0)) {
+      setMessage('Informe o mínimo mensal e ao menos uma recorrência permitida.');
       return;
     }
     if (feePercent === null || isFeePercentInvalid) {
@@ -573,7 +632,9 @@ function OfferingTypeBillingRow({
         delivery,
         billing_type: billingType,
         billing_interval: nextInterval,
+        allowed_billing_intervals: billingType === 'recurring' ? allowedBillingIntervals : [],
         minimum_price: minimumPrice,
+        minimum_monthly_price: isConsultancy ? minimumMonthlyPrice : null,
         platform_fee_percent: feePercent,
         platform_fee_fixed: feeFixed,
         max_per_business: parsedMax,
@@ -592,7 +653,9 @@ function OfferingTypeBillingRow({
           setMaxPerBusiness(result.max_per_business?.toString() ?? '');
           setBillingType(result.billing_type);
           setBillingInterval(result.billing_interval);
+          setAllowedBillingIntervals(result.allowed_billing_intervals);
           setMinimumPriceInput(formatPriceInput(result.minimum_price));
+          setMinimumMonthlyPriceInput(formatPriceInput(result.minimum_monthly_price ?? result.minimum_price));
           setFeePercentInput(formatPriceInput(result.platform_fee_percent));
           setFeeFixedInput(formatPriceInput(result.platform_fee_fixed));
           setMessage('Configuração salva.');
@@ -628,7 +691,7 @@ function OfferingTypeBillingRow({
         <strong>{cadence}</strong>
       </div>
       <div className="offering-rule-value numeric" data-label="Preço mínimo">
-        <strong>{item.configured ? formatCurrencyExact(minimumPrice ?? 0) : 'Não configurado'}</strong>
+        <strong>{item.configured ? formatCurrencyExact(isConsultancy ? minimumMonthlyPrice ?? 0 : minimumPrice ?? 0) : 'Não configurado'}</strong>
       </div>
       <div className="offering-rule-value numeric" data-label="Taxa OnlyFit">
         <strong>{item.configured ? feePreview : 'Não configurada'}</strong>
@@ -675,7 +738,11 @@ function OfferingTypeBillingRow({
             </label>
             <label>
               <span>Capacidade de entrega</span>
-              <select value={delivery} disabled={!canEdit || item.active_offers_count > 0} onChange={(event) => setDelivery(event.target.value as OfferDelivery)}>
+              <select
+                value={delivery}
+                disabled={!canEdit || item.active_offers_count > 0}
+                onChange={(event) => selectDelivery(event.target.value as OfferDelivery)}
+              >
                 {offerDeliveryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
@@ -700,17 +767,7 @@ function OfferingTypeBillingRow({
             <select
               value={billingType}
               disabled={!canEdit}
-              onChange={(event) => {
-                const next = event.target.value as BillingType;
-                setBillingType(next);
-                if (next !== 'recurring') setBillingInterval(null);
-                if (next === 'recurring' && !billingInterval) setBillingInterval('month');
-                if (next === 'free') {
-                  setMinimumPriceInput('0,00');
-                  setFeePercentInput('0,00');
-                  setFeeFixedInput('0,00');
-                }
-              }}
+              onChange={(event) => selectBillingType(event.target.value as BillingType)}
             >
               {billingTypeOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -723,33 +780,39 @@ function OfferingTypeBillingRow({
             <select
               value={billingInterval ?? 'month'}
               disabled={!canEdit || !isRecurring}
-              onChange={(event) => setBillingInterval(event.target.value as BillingInterval)}
+              onChange={(event) => selectBillingInterval(event.target.value as BillingInterval)}
             >
-              {billingIntervalOptions.map((option) => (
+              {availableIntervals.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
           </label>
 
           <label>
-            <span>Mínimo</span>
+            <span>{isConsultancy ? 'Mínimo mensal' : 'Mínimo'}</span>
             <span className="offering-input-unit">
               <span>R$</span>
               <input
-                value={minimumPriceInput}
+                value={isConsultancy ? minimumMonthlyPriceInput : minimumPriceInput}
                 disabled={!canEdit}
                 inputMode="decimal"
-                aria-invalid={isMinimumPriceInvalid}
-                aria-label="Preço mínimo em reais"
+                aria-invalid={isConsultancy ? isMinimumMonthlyPriceInvalid : isMinimumPriceInvalid}
+                aria-label={isConsultancy ? 'Preço mínimo mensal em reais' : 'Preço mínimo em reais'}
                 onBlur={() => {
-                  if (minimumPrice !== null) setMinimumPriceInput(formatPriceInput(minimumPrice));
+                  if (isConsultancy && minimumMonthlyPrice !== null) {
+                    setMinimumMonthlyPriceInput(formatPriceInput(minimumMonthlyPrice));
+                  } else if (minimumPrice !== null) {
+                    setMinimumPriceInput(formatPriceInput(minimumPrice));
+                  }
                 }}
                 onChange={(event) => {
-                  setMinimumPriceInput(event.target.value.replace(/[^\d.,]/g, ''));
+                  const value = event.target.value.replace(/[^\d.,]/g, '');
+                  if (isConsultancy) setMinimumMonthlyPriceInput(value);
+                  else setMinimumPriceInput(value);
                 }}
               />
             </span>
-            {isMinimumPriceInvalid && <small>Informe um valor válido.</small>}
+            {(isConsultancy ? isMinimumMonthlyPriceInvalid : isMinimumPriceInvalid) && <small>Informe um valor válido.</small>}
           </label>
 
           <label>
@@ -794,6 +857,22 @@ function OfferingTypeBillingRow({
             {isFeeFixedInvalid && <small>Informe um valor válido.</small>}
           </label>
         </div>
+
+          {isRecurring && (
+            <div className="offering-badges" role="group" aria-label="Recorrências permitidas">
+              {availableIntervals.map((option) => (
+                  <label key={option.value}>
+                    <input
+                      type="checkbox"
+                      checked={allowedBillingIntervals.includes(option.value)}
+                      disabled={!canEdit || billingInterval === option.value}
+                      onChange={(event) => toggleBillingInterval(option.value, event.target.checked)}
+                    />
+                    {option.label}
+                  </label>
+                ))}
+            </div>
+          )}
 
           {!item.active && !item.configured && (
             <div className="offering-impact-note" role="note">
@@ -982,8 +1061,9 @@ function NewOfferingTypeForm({ onDone }: { onDone: (key: string) => void }) {
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('');
   const [delivery, setDelivery] = useState<OfferDelivery>('consultancy');
-  const [billingType, setBillingType] = useState<BillingType>('one_time');
+  const [billingType, setBillingType] = useState<BillingType>('recurring');
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('month');
+  const [allowedBillingIntervals, setAllowedBillingIntervals] = useState<BillingInterval[]>(['month']);
   const [minimum, setMinimum] = useState('0,00');
   const [feePercent, setFeePercent] = useState('0,00');
   const [feeFixed, setFeeFixed] = useState('0,00');
@@ -993,6 +1073,43 @@ function NewOfferingTypeForm({ onDone }: { onDone: (key: string) => void }) {
   const [requiresAffinity, setRequiresAffinity] = useState(false);
   const [requiresCategory, setRequiresCategory] = useState(false);
   const [message, setMessage] = useState('');
+  const availableIntervals = billingIntervalOptions.filter(
+    (option) => delivery !== 'consultancy' || consultancyBillingIntervals.has(option.value),
+  );
+
+  const selectDelivery = (next: OfferDelivery) => {
+    setDelivery(next);
+    if (next !== 'consultancy') return;
+    setBillingType('recurring');
+    setBillingInterval('month');
+    setAllowedBillingIntervals((current) => {
+      const filtered = current.filter((interval) => consultancyBillingIntervals.has(interval));
+      return filtered.length > 0 ? filtered : ['month'];
+    });
+  };
+
+  const selectBillingType = (next: BillingType) => {
+    setBillingType(next);
+    if (next === 'recurring' && allowedBillingIntervals.length === 0) {
+      setAllowedBillingIntervals([billingInterval]);
+    }
+    if (next === 'free') {
+      setMinimum('0,00');
+      setFeePercent('0,00');
+      setFeeFixed('0,00');
+    }
+  };
+
+  const selectBillingInterval = (interval: BillingInterval) => {
+    setBillingInterval(interval);
+    setAllowedBillingIntervals((current) => current.includes(interval) ? current : [...current, interval]);
+  };
+
+  const toggleBillingInterval = (interval: BillingInterval, checked: boolean) => {
+    setAllowedBillingIntervals((current) => checked
+      ? [...current, interval]
+      : current.filter((currentInterval) => currentInterval !== interval));
+  };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1005,6 +1122,7 @@ function NewOfferingTypeForm({ onDone }: { onDone: (key: string) => void }) {
     if (!/^[a-z0-9_]{2,40}$/.test(key) || label.trim().length < 2 || minimumValue === null
       || feePercentValue === null || feePercentValue < 0 || feePercentValue > 100
       || feeFixedValue === null || minimumValue < 0 || feeFixedValue < 0
+      || (billingType === 'recurring' && allowedBillingIntervals.length === 0)
       || !Number.isInteger(positionValue) || positionValue < 0
       || (maxValue !== null && (!Number.isInteger(maxValue) || maxValue < 1))) {
       setMessage('Revise os campos obrigatórios e os limites informados.');
@@ -1019,7 +1137,9 @@ function NewOfferingTypeForm({ onDone }: { onDone: (key: string) => void }) {
       delivery,
       billing_type: billingType,
       billing_interval: billingType === 'recurring' ? billingInterval : null,
+      allowed_billing_intervals: billingType === 'recurring' ? allowedBillingIntervals : [],
       minimum_price: minimumValue,
+      minimum_monthly_price: delivery === 'consultancy' ? minimumValue : null,
       platform_fee_percent: feePercentValue,
       platform_fee_fixed: feeFixedValue,
       max_per_business: maxValue,
@@ -1041,17 +1161,31 @@ function NewOfferingTypeForm({ onDone }: { onDone: (key: string) => void }) {
         <label><span>Nome</span><input required minLength={2} maxLength={80} value={label} onChange={(event) => setLabel(event.target.value)} /></label>
         <label><span>Ícone</span><input maxLength={60} value={icon} onChange={(event) => setIcon(event.target.value)} /></label>
         <label><span>Ordem</span><input type="number" min="0" step="1" value={position} onChange={(event) => setPosition(event.target.value)} /></label>
-        <label><span>Entrega</span><select value={delivery} onChange={(event) => setDelivery(event.target.value as OfferDelivery)}>{offerDeliveryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label><span>Entrega</span><select value={delivery} onChange={(event) => selectDelivery(event.target.value as OfferDelivery)}>{offerDeliveryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
         <label><span>Máximo por negócio</span><input type="number" min="1" step="1" placeholder="Sem limite" value={maxPerBusiness} onChange={(event) => setMaxPerBusiness(event.target.value)} /></label>
       </div>
       <label className="ambassador-field"><span>Descrição</span><textarea maxLength={500} value={description} onChange={(event) => setDescription(event.target.value)} /></label>
       <div className="billing-controls">
-        <label><span>Cobrança</span><select value={billingType} onChange={(event) => { const next = event.target.value as BillingType; setBillingType(next); if (next === 'free') { setMinimum('0,00'); setFeePercent('0,00'); setFeeFixed('0,00'); } }}>{billingTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-        <label><span>Intervalo</span><select disabled={billingType !== 'recurring'} value={billingInterval} onChange={(event) => setBillingInterval(event.target.value as BillingInterval)}>{billingIntervalOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-        <label><span>Preço mínimo</span><input inputMode="decimal" value={minimum} onChange={(event) => setMinimum(event.target.value.replace(/[^\d.,]/g, ''))} /></label>
+        <label><span>Cobrança</span><select value={billingType} disabled={delivery === 'consultancy'} onChange={(event) => selectBillingType(event.target.value as BillingType)}>{billingTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label><span>Intervalo padrão</span><select disabled={billingType !== 'recurring'} value={billingInterval} onChange={(event) => selectBillingInterval(event.target.value as BillingInterval)}>{availableIntervals.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label><span>{delivery === 'consultancy' ? 'Preço mínimo mensal' : 'Preço mínimo'}</span><input inputMode="decimal" value={minimum} onChange={(event) => setMinimum(event.target.value.replace(/[^\d.,]/g, ''))} /></label>
         <label><span>Taxa %</span><input inputMode="decimal" value={feePercent} onChange={(event) => setFeePercent(event.target.value.replace(/[^\d.,]/g, ''))} /></label>
         <label><span>Taxa fixa</span><input inputMode="decimal" value={feeFixed} onChange={(event) => setFeeFixed(event.target.value.replace(/[^\d.,]/g, ''))} /></label>
       </div>
+      {billingType === 'recurring' && (
+        <div className="offering-badges" role="group" aria-label="Recorrências permitidas">
+          {availableIntervals.map((option) => (
+              <label key={option.value}>
+                <input
+                  type="checkbox"
+                  checked={allowedBillingIntervals.includes(option.value)}
+                  disabled={billingInterval === option.value}
+                  onChange={(event) => toggleBillingInterval(option.value, event.target.checked)}
+                /> {option.label}
+              </label>
+            ))}
+        </div>
+      )}
       <div className="offering-badges">
         <label><input type="checkbox" checked={uniquePerOwner} onChange={(event) => setUniquePerOwner(event.target.checked)} /> Única por perfil proprietário</label>
         <label><input type="checkbox" checked={requiresAffinity} onChange={(event) => setRequiresAffinity(event.target.checked)} /> Exige grupo de afinidade</label>

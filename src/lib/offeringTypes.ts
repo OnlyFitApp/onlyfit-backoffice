@@ -14,7 +14,9 @@ export interface StaffOfferTypeSaveInput {
   delivery: OfferDelivery;
   billing_type: BillingType;
   billing_interval: BillingInterval | null;
+  allowed_billing_intervals: BillingInterval[];
   minimum_price: number;
+  minimum_monthly_price: number | null;
   platform_fee_percent: number;
   platform_fee_fixed: number;
   max_per_business: number | null;
@@ -66,7 +68,12 @@ function toOfferingType(raw: unknown): OfferingTypeBilling {
     delivery: String(value.delivery ?? '') as OfferDelivery,
     billing_type: String(value.billing_type ?? '') as BillingType,
     billing_interval: typeof value.billing_interval === 'string' ? value.billing_interval as BillingInterval : null,
+    allowed_billing_intervals: Array.isArray(value.allowed_billing_intervals)
+      ? value.allowed_billing_intervals.filter((interval): interval is BillingInterval =>
+        typeof interval === 'string' && ['week', 'month', '2month', 'quarter', 'semester', 'year'].includes(interval))
+      : typeof value.billing_interval === 'string' ? [value.billing_interval as BillingInterval] : [],
     minimum_price: Number(value.minimum_price ?? 0),
+    minimum_monthly_price: value.minimum_monthly_price == null ? null : Number(value.minimum_monthly_price),
     platform_fee_percent: Number(value.platform_fee_percent ?? 0),
     platform_fee_fixed: Number(value.platform_fee_fixed ?? 0),
     max_per_business: value.max_per_business == null ? null : Number(value.max_per_business),

@@ -2588,6 +2588,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       notificationAct: (input: { ids?: string[]; action?: "markRead" | "markAllRead" | "clearBadge" } = {}) => call('social_notification_act_v1', { p_ids: input.ids, p_action: input.action }) as Promise<Record<string, unknown>>,
       /** Abre publicação visível com interação atual. (query; contract/social/post.v1.json) */
       post: (input: { id: string }) => call('social_post_v1', { p_id: input.id }) as Promise<SocialPost>,
+      /** Edita campos isolados, troca a capa ou remove uma publicação própria. (command; contract/social/post_act.v1.json) */
+      postAct: (input: { id: string; action: "updateCaption" | "setCommentsEnabled" | "setCover" | "delete"; data?: Record<string, unknown> }) => call('social_post_act_v1', { p_id: input.id, p_action: input.action, p_data: input.data }) as Promise<SocialPost>,
       /** Localiza uma publicação própria pela chave idempotente antes de repetir uploads. (query; contract/social/post_lookup.v1.json) */
       postLookup: (input: { idempotencyKey: string }) => call('social_post_lookup_v1', { p_idempotency_key: input.idempotencyKey }) as Promise<SocialPostLookup>,
       /** Cria ou edita uma publicação idempotente e vincula somente mídias prontas do autor. (command; contract/social/post_save.v1.json) */

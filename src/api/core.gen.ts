@@ -217,6 +217,7 @@ export type ApiErrorCode =
   | 'social.idempotency_required'
   | 'social.invalid_action'
   | 'social.invalid_challenge'
+  | 'social.invalid_classification'
   | 'social.invalid_community'
   | 'social.invalid_composition'
   | 'social.invalid_container'
@@ -229,7 +230,9 @@ export type ApiErrorCode =
   | 'social.invalid_message'
   | 'social.invalid_offer'
   | 'social.invalid_post'
+  | 'social.invalid_posts'
   | 'social.invalid_relation'
+  | 'social.invalid_report'
   | 'social.invalid_scope'
   | 'social.invalid_search'
   | 'social.invalid_sport'
@@ -2229,6 +2232,12 @@ export interface SocialNotificationIntent {
   member_id?: string | null;
 }
 
+export interface SocialPeople {
+  items: SocialProfileReadCard[];
+  total: number;
+  next_cursor: string | null;
+}
+
 export interface SocialPost {
   id: string;
   kind: "post" | "story" | "comment";
@@ -2251,8 +2260,10 @@ export interface SocialPost {
   like_count: number;
   comment_count: number;
   view_count: number;
+  save_count: number;
   viewed?: boolean | null;
   liked: boolean;
+  saved: boolean;
   my_reaction: "like" | "dislike" | null;
   created_at: string;
   updated_at: string;
@@ -2301,10 +2312,16 @@ export interface SocialPostSaved {
   like_count: number;
   comment_count: number;
   view_count: number;
+  save_count: number;
   liked: boolean;
+  saved: boolean;
   my_reaction: "like" | "dislike" | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SocialPosts {
+  items: SocialPost[];
 }
 
 export interface SocialProfile {
@@ -2312,6 +2329,16 @@ export interface SocialProfile {
   posts: SocialPost[];
   stories: SocialPost[];
   next_cursor: string | null;
+}
+
+export interface SocialProfileActionData {
+  reason?: "spam" | "harassment" | "hate" | "nudity" | "violence" | "fraud" | "other" | null;
+  description?: string | null;
+}
+
+export interface SocialProfileActionResult {
+  account_id: string;
+  reported: boolean;
 }
 
 export interface SocialProfileCard {
@@ -2323,6 +2350,11 @@ export interface SocialProfileCard {
   is_professional: boolean;
   following: boolean;
   followed_by: boolean;
+  subscribed: boolean;
+  follower_count: number;
+  following_count: number;
+  subscriber_count: number;
+  post_count: number;
   network_identity?: SocialNetworkIdentity | null;
 }
 
@@ -2335,6 +2367,11 @@ export interface SocialProfileReadCard {
   is_professional: boolean;
   following: boolean;
   followed_by: boolean;
+  subscribed: boolean;
+  follower_count: number;
+  following_count: number;
+  subscriber_count: number;
+  post_count: number;
   network_identity?: SocialNetworkIdentity | null;
 }
 
@@ -2841,8 +2878,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       coverPrepare: (input: { uploadId: string; source: "frame" | "gallery"; frameTimeSeconds?: number }) => invoke('worker', '/media/cover-prepare', { upload_id: input.uploadId, source: input.source, frame_time_seconds: input.frameTimeSeconds }) as Promise<CoverPrepared>,
       /** Abre a quarentena de uma capa JPEG escolhida pelo autor. (command; contract/social/cover_upload.v1.json) */
       coverUpload: (input: { contentLength: number }) => invoke('worker', '/media/cover-upload', { content_length: input.contentLength }) as Promise<CoverUpload>,
-      /** Explora conteúdo de criadores e busca pessoas. (query; contract/social/explore.v1.json) */
-      explore: (input: { search?: string; affinity?: string; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
+      /** Explora conteúdo de criadores e busca pessoas com filtros canônicos. (query; contract/social/explore.v1.json) */
+      explore: (input: { search?: string; affinity?: string; classifications?: ("professional" | "associate" | "ambassador")[]; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_classifications: input.classifications, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
       /** Feed por cursor, com seguidos e descoberta sem duplicação. (query; contract/social/feed.v1.json) */
       feed: (input: { affinities?: string[]; cursor?: string; limit?: number; containerType?: "community" | "challenge"; containerId?: string } = {}) => call('social_feed_v1', { p_affinities: input.affinities, p_cursor: input.cursor, p_limit: input.limit, p_container_type: input.containerType, p_container_id: input.containerId }) as Promise<SocialFeed>,
       /** Segue, deixa de seguir, bloqueia ou desbloqueia e devolve o estado final. (command; contract/social/follow_act.v1.json) */
@@ -2853,16 +2890,24 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       messageAct: (input: { recipientIds: string[]; action: "send" | "share" | "markRead" | "delete"; data?: SocialMessageActionData }) => call('social_message_act_v1', { p_recipient_ids: input.recipientIds, p_action: input.action, p_data: input.data }) as Promise<SocialMessageActionResult>,
       /** Marca visualização ou leitura sem misturar as duas semânticas. (command; contract/social/notification_act.v1.json) */
       notificationAct: (input: { ids?: string[]; action?: "markRead" | "markAllRead" | "clearBadge" } = {}) => call('social_notification_act_v1', { p_ids: input.ids, p_action: input.action }) as Promise<SocialInbox>,
+      /** Lista descoberta, seguidores, perfis seguidos ou embaixadores com paginação determinística. (query; contract/social/people.v1.json) */
+      people: (input: { scope?: "discover" | "followers" | "following" | "ambassadors"; accountId?: string; search?: string; affinity?: string; classifications?: ("professional" | "associate" | "ambassador")[]; cursor?: string; limit?: number } = {}) => call('social_people_v1', { p_scope: input.scope, p_account_id: input.accountId, p_search: input.search, p_affinity: input.affinity, p_classifications: input.classifications, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialPeople>,
       /** Abre publicação visível com interação atual. (query; contract/social/post.v1.json) */
       post: (input: { id: string }) => call('social_post_v1', { p_id: input.id }) as Promise<SocialPost>,
       /** Edita campos isolados, troca a capa ou remove uma publicação própria. (command; contract/social/post_act.v1.json) */
       postAct: (input: { id: string; action: "updateCaption" | "setCommentsEnabled" | "setCover" | "delete"; data?: Record<string, unknown> }) => call('social_post_act_v1', { p_id: input.id, p_action: input.action, p_data: input.data }) as Promise<SocialPost>,
+      /** Salva, remove dos salvos ou registra visualização de uma publicação de forma idempotente. (command; contract/social/post_event_act.v1.json) */
+      postEventAct: (input: { id: string; action: "save" | "unsave" | "view" }) => call('social_post_event_act_v1', { p_id: input.id, p_action: input.action }) as Promise<SocialPost>,
       /** Localiza uma publicação ou story próprio pela chave idempotente antes de repetir uploads. (query; contract/social/post_lookup.v1.json) */
       postLookup: (input: { idempotencyKey: string; kind?: "post" | "story" }) => call('social_post_lookup_v1', { p_idempotency_key: input.idempotencyKey, p_kind: input.kind }) as Promise<SocialPostLookup>,
       /** Cria ou edita uma publicação idempotente e vincula somente mídias prontas do autor. (command; contract/social/post_save.v1.json) */
       postSave: (input: { post: SocialPostInput }) => call('social_post_save_v1', { p_post: input.post }) as Promise<SocialPostSaved>,
+      /** Lê um conjunto ordenado de publicações visíveis sem acesso direto às tabelas. (query; contract/social/posts.v1.json) */
+      posts: (input: { ids: string[] }) => call('social_posts_v1', { p_ids: input.ids }) as Promise<SocialPosts>,
       /** Perfil público, publicações e stories ativos. (query; contract/social/profile.v1.json) */
       profile: (input: { username: string; cursor?: string; limit?: number; scope?: "all" | "free" | "paid" | "owned" }) => call('social_profile_v1', { p_username: input.username, p_cursor: input.cursor, p_limit: input.limit, p_scope: input.scope }) as Promise<SocialProfile>,
+      /** Executa uma ação moderável sobre um perfil público. (command; contract/social/profile_act.v1.json) */
+      profileAct: (input: { accountId: string; action: "report"; data?: SocialProfileActionData }) => call('social_profile_act_v1', { p_account_id: input.accountId, p_action: input.action, p_data: input.data }) as Promise<SocialProfileActionResult>,
       /** Stories ativos e visíveis em ordem de exibição. (query; contract/social/stories.v1.json) */
       stories: (input: { authorId?: string; cursor?: string; limit?: number } = {}) => call('social_stories_v1', { p_author_id: input.authorId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialStories>,
       /** Registra visualizações ou altera um story de modo idempotente. (command; contract/social/story_act.v1.json) */

@@ -21,12 +21,17 @@ test('expõe criação, configuração completa e ciclo sem apagar catálogo', (
   for (const field of [
     'Capacidade de entrega',
     'Preço mínimo',
+    'Preço mínimo mensal',
     'Taxa fixa',
     'Máximo por negócio',
     'Exige grupo de afinidade',
     'Exige categoria de produto',
   ]) assert.match(app, new RegExp(field));
   assert.match(app, /Novo tipo/);
+  assert.match(app, /Recorrências permitidas/);
+  assert.match(app, /consultancyBillingIntervals/);
+  assert.match(app, /minimum_monthly_price/);
+  assert.match(app, /allowed_billing_intervals/);
   assert.match(app, /item\.active \? 'Desativar' : 'Ativar'/);
   assert.match(app, /snapshot\?\.canEdit/);
   assert.doesNotMatch(app, /deleteOfferingType|Excluir tipo/);

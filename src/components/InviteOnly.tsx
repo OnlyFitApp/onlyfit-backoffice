@@ -107,7 +107,8 @@ function InvitesTab({ canEdit }: { canEdit: boolean }) {
 
   const toggle = (next: boolean) => {
     setFeedback(null);
-    toggleMutation.mutate(next, {
+    if (!settings) return;
+    toggleMutation.mutate({ enabled: next, expectedVersion: settings.version }, {
       onSuccess: (result) =>
         setFeedback({
           type: 'success',
@@ -145,8 +146,8 @@ function InvitesTab({ canEdit }: { canEdit: boolean }) {
             setPage(0);
             sendInviteMutation.mutate(result.added, {
               onSuccess: (sendResult) => {
-                if (sendResult.sent.length) parts.push('e-mail de convite enviado');
-                else if (sendResult.failed.length) parts.push('o e-mail de convite falhou ao enviar, use "Reenviar convite"');
+                if (sendResult.queued.length) parts.push('e-mail de convite enfileirado');
+                else parts.push('o endereço já não precisava de convite');
                 setFeedback({ type: 'success', text: parts.join(' · ') });
               },
               onError: () => {
@@ -189,9 +190,9 @@ function InvitesTab({ canEdit }: { canEdit: boolean }) {
       onSuccess: (result) => {
         setResendingEmail(null);
         setFeedback({
-          type: result.sent.length > 0 ? 'success' : 'error',
-          text: result.sent.length > 0
-            ? `Convite reenviado para ${email}.`
+          type: result.queued.length > 0 ? 'success' : 'error',
+          text: result.queued.length > 0
+            ? `Convite para ${email} entrou na fila de envio.`
             : `Não foi possível reenviar o convite para ${email}.`,
         });
       },
@@ -446,10 +447,10 @@ function WaitlistTab({ canEdit }: { canEdit: boolean }) {
       onSuccess: (result) => {
         setReleasingId(null);
         setFeedback({
-          type: result.emailSent ? 'success' : 'error',
-          text: result.emailSent
-            ? `Acesso liberado. ${entryName(entry)} recebeu o e-mail de boas-vindas em ${entry.email}.`
-            : `Acesso liberado, mas o e-mail para ${entry.email} não saiu. Tente reenviar em instantes.`,
+          type: result.email_queued ? 'success' : 'error',
+          text: result.email_queued
+            ? `Acesso liberado. O aviso para ${entry.email} entrou na fila de envio.`
+            : `Acesso liberado, mas o aviso para ${entry.email} não foi enfileirado.`,
         });
       },
       onError: (error) => {

@@ -12,7 +12,7 @@ import {
 import { useCurrentStaffRole } from '../hooks/useStaffManagement';
 import { useCompanyVerifications, useReviewCompanyVerification } from '../hooks/useCompanyVerification';
 import {
-  formatCnpj,
+  formatCompanyDocumentLast4,
   type CompanyVerification,
   type CompanyVerificationStatus,
 } from '../lib/companyVerification';
@@ -121,7 +121,7 @@ export function CompanyVerificationPage() {
               </div>
 
               <dl className="company-verification-details">
-                <div><dt>CNPJ</dt><dd>{formatCnpj(company.cnpj)}</dd></div>
+                <div><dt>CNPJ</dt><dd>{formatCompanyDocumentLast4(company.company_document_last4)}</dd></div>
                 <div><dt>Nicho</dt><dd>{company.market_niche_label ?? company.market_niche ?? '—'}</dd></div>
                 <div><dt>Site</dt><dd>{company.website_url
                   ? <a href={company.website_url} target="_blank" rel="noreferrer noopener">

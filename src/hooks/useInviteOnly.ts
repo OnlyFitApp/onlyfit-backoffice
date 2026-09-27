@@ -25,7 +25,8 @@ export function useInviteSettings(enabled: boolean) {
 export function useSetInviteOnlyEnabled() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (value: boolean) => setInviteOnlyEnabled(value),
+    mutationFn: ({ enabled, expectedVersion }: { enabled: boolean; expectedVersion: number }) =>
+      setInviteOnlyEnabled(enabled, expectedVersion),
     onSuccess: (settings) => {
       queryClient.setQueryData(settingsKey, settings);
     },

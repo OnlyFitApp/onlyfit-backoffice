@@ -1,136 +1,53 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffAccount, StaffAccountSummary } from '../api/core.gen';
 
 export type StaffRole = 'super_admin' | 'admin' | 'operator';
+export type PlatformStaffMember = StaffAccountSummary;
 
-export type PlatformStaffMember = {
-  user_id: string;
-  role: StaffRole;
-  created_at: string;
-  created_by: string | null;
-  email: string | null;
-  full_name: string | null;
-  username: string | null;
-};
-
-type CreatePlatformStaffInput = {
-  email: string;
-  fullName: string;
-  password: string;
-  role: StaffRole;
-};
-
-type CreatePlatformStaffResult = {
-  accountStatus: 'existing' | 'created';
-  staffStatus: 'created' | 'already_staff';
-  staff: PlatformStaffMember;
-};
-
-type UpdatePlatformStaffInput = {
-  userId: string;
-  email: string;
-  fullName: string;
-  password: string;
-  role: StaffRole;
-};
-
-type UpdatePlatformStaffResult = {
-  staff: PlatformStaffMember;
-};
-
-type RemovePlatformStaffResult = {
-  userId: string;
-};
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-}
-
-function parseStaffMember(value: unknown): PlatformStaffMember {
-  const row = asRecord(value);
-  return {
-    user_id: String(row.user_id ?? row.id ?? ''),
-    role: String(row.role ?? 'operator') as StaffRole,
-    created_at: String(row.created_at ?? ''),
-    created_by: typeof row.created_by === 'string' ? row.created_by : null,
-    email: typeof row.email === 'string' ? row.email : null,
-    full_name: typeof row.full_name === 'string' ? row.full_name : null,
-    username: typeof row.username === 'string' ? row.username : null,
-  };
-}
-
-async function throwFunctionError(error: unknown): Promise<never> {
-  const context = (error as { context?: Response }).context;
-  if (context) {
-    try {
-      const body = asRecord(await context.json());
-      if (body.error) throw new Error(String(body.error));
-    } catch (contextError) {
-      if (contextError instanceof Error && contextError.message !== 'Unexpected end of JSON input') {
-        throw contextError;
-      }
-    }
+export async function fetchCurrentStaffRole(userId: string): Promise<StaffRole | null> {
+  try {
+    return (await coreApi.staff.account({ id: userId })).account.staff_role;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('staff.forbidden')) return null;
+    throw error;
   }
-  throw error;
-}
-
-export async function fetchCurrentStaffRole(): Promise<StaffRole | null> {
-  const { data, error } = await api.staff.rpc('platform_current_staff_role');
-  if (error) throw error;
-  return typeof data === 'string' ? data as StaffRole : null;
 }
 
 export async function fetchPlatformStaff(): Promise<PlatformStaffMember[]> {
-  const { data, error } = await api.staff.rpc('control_list_platform_staff');
-  if (error) throw error;
-  return Array.isArray(data) ? data.map(parseStaffMember) : [];
+  const items: PlatformStaffMember[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await coreApi.staff.accounts({ filter: 'staff', cursor, limit: 50 });
+    items.push(...page.items);
+    cursor = page.next_cursor ?? undefined;
+  } while (cursor);
+  return items;
 }
 
-export async function createPlatformStaff(input: CreatePlatformStaffInput): Promise<CreatePlatformStaffResult> {
-  const { data, error } = await api.staff.functions.invoke('control-platform-staff', {
-    body: {
-      email: input.email.trim().toLowerCase(),
-      full_name: input.fullName.trim(),
-      password: input.password,
+export async function setPlatformStaffRole(input: {
+  userId: string;
+  role: StaffRole;
+}): Promise<StaffAccount> {
+  const current = await coreApi.staff.account({ id: input.userId });
+  return coreApi.staff.accountAct({
+    id: input.userId,
+    command: {
+      action: 'setStaffRole',
       role: input.role,
+      expected_role: current.account.staff_role,
+      idempotency_key: crypto.randomUUID(),
     },
   });
-  if (error) return throwFunctionError(error);
-
-  const result = asRecord(data);
-  if (result.error) throw new Error(String(result.error));
-  return {
-    accountStatus: result.account_status === 'created' ? 'created' : 'existing',
-    staffStatus: result.staff_status === 'already_staff' ? 'already_staff' : 'created',
-    staff: parseStaffMember(result.staff),
-  };
 }
 
-export async function updatePlatformStaff(input: UpdatePlatformStaffInput): Promise<UpdatePlatformStaffResult> {
-  const { data, error } = await api.staff.functions.invoke('control-platform-staff', {
-    method: 'PATCH',
-    body: {
-      user_id: input.userId,
-      email: input.email.trim().toLowerCase(),
-      full_name: input.fullName.trim(),
-      password: input.password,
-      role: input.role,
+export async function removePlatformStaff(userId: string): Promise<StaffAccount> {
+  const current = await coreApi.staff.account({ id: userId });
+  return coreApi.staff.accountAct({
+    id: userId,
+    command: {
+      action: 'removeFromStaff',
+      expected_role: current.account.staff_role,
+      idempotency_key: crypto.randomUUID(),
     },
   });
-  if (error) return throwFunctionError(error);
-
-  const result = asRecord(data);
-  if (result.error) throw new Error(String(result.error));
-  return { staff: parseStaffMember(result.staff) };
-}
-
-export async function removePlatformStaff(userId: string): Promise<RemovePlatformStaffResult> {
-  const { data, error } = await api.staff.functions.invoke('control-platform-staff', {
-    method: 'DELETE',
-    body: { user_id: userId },
-  });
-  if (error) return throwFunctionError(error);
-
-  const result = asRecord(data);
-  if (result.error) throw new Error(String(result.error));
-  return { userId: String(result.user_id ?? userId) };
 }

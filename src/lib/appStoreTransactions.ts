@@ -1,31 +1,24 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffAppStoreTransaction } from '../api/core.gen';
 
-export type AppleEnvironment = 'Production' | 'Sandbox';
-export type AppleAccessStatus = 'active' | 'expired' | 'revoked';
-type AppleTransaction = {
-  id: string; transaction_id: string; original_transaction_id: string; product_id: string;
-  offering_id: string; offering_name: string | null; organization_id: string | null; organization_name: string | null;
-  buyer_profile_id: string; buyer_name: string; professional_profile_id: string | null; professional_name: string;
-  environment: AppleEnvironment; status: AppleAccessStatus; has_access: boolean;
-  purchase_date: string; expires_date: string | null; revoked_at: string | null;
-  gross_value: number | null; currency: string | null; payment_transaction_id: string | null;
-  provider_fee: number | null; platform_commission: number | null; professional_net: number | null;
-  settlement_status: string | null;
-};
-type AppleTransactionsPage = { total: number; limit: number; offset: number; items: AppleTransaction[] };
+export type AppleEnvironment = StaffAppStoreTransaction['environment'];
+export type AppleAccessStatus = StaffAppStoreTransaction['status'];
+export type AppleTransaction = StaffAppStoreTransaction;
+export type AppleTransactionsPage = Awaited<ReturnType<typeof coreApi.staff.appStoreTransactions>>;
 
-export async function listAppStoreTransactions(filters: {
-  environment: AppleEnvironment; search: string; status: AppleAccessStatus | ''; page: number;
+export function listAppStoreTransactions(filters: {
+  environment: AppleEnvironment;
+  search: string;
+  status: AppleAccessStatus | '';
+  page: number;
 }): Promise<AppleTransactionsPage> {
-  const { data, error } = await api.staff.rpc('control_list_app_store_transactions', {
-    p_environment: filters.environment, p_search: filters.search.trim() || null,
-    p_status: filters.status || null, p_limit: 25, p_offset: filters.page * 25,
+  return coreApi.staff.appStoreTransactions({
+    environment: filters.environment,
+    search: filters.search.trim() || null,
+    status: filters.status || null,
+    limit: 25,
+    offset: filters.page * 25,
   });
-  if (error) throw new Error('Não foi possível carregar as compras Apple.');
-  if (!data || !Array.isArray(data.items) || !Number.isFinite(data.total)) {
-    throw new Error('Resposta inválida ao consultar as compras Apple.');
-  }
-  return data as AppleTransactionsPage;
 }
 
 export function appleMoney(value: number | null, currency: string | null): string {

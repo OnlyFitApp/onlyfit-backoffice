@@ -1,6 +1,5 @@
 import { createClient, processLock, type SupabaseClient } from '@supabase/supabase-js';
 import { createApi } from './core.gen';
-import { supabase } from '../lib/supabase';
 
 const productionCoreUrl = 'https://rjwyfhfwhpwesfpdddkr.supabase.co';
 const productionCorePublishableKey = 'sb_publishable_lHf07wq2Z84Tt5csq2SNpA_k8KpeqQG';
@@ -38,13 +37,8 @@ export function requireCoreClient(): SupabaseClient {
 
 export async function requireCoreSession(): Promise<SupabaseClient> {
   const client = requireCoreClient();
-  const [{ data: legacy }, { data: core }] = await Promise.all([
-    supabase.auth.getSession(),
-    client.auth.getSession(),
-  ]);
-  if (!legacy.session?.user.id || legacy.session.user.id !== core.session?.user.id) {
-    throw new Error('As sessões do legado e do OnlyFit Core não identificam a mesma conta.');
-  }
+  const { data, error } = await client.auth.getSession();
+  if (error || !data.session?.user.id) throw new Error('auth.required');
   return client;
 }
 
@@ -63,33 +57,12 @@ export const coreApi = createApi(
   },
 );
 
-export async function signInBoth(email: string, password: string): Promise<void> {
+export async function signIn(email: string, password: string): Promise<void> {
   const client = requireCoreClient();
-  try {
-    // The Core session must exist before the legacy client emits SIGNED_IN.
-    // This keeps the application closed until both projects agree on identity.
-    const { data: core, error: coreError } = await client.auth.signInWithPassword({ email, password });
-    if (coreError) throw coreError;
-    const { data: legacy, error: legacyError } = await supabase.auth.signInWithPassword({ email, password });
-    if (legacyError) throw legacyError;
-    if (!legacy.session?.user.id || legacy.session.user.id !== core.session?.user.id) {
-      throw new Error('O OnlyFit Core autenticou uma conta diferente.');
-    }
-  } catch (error) {
-    await Promise.allSettled([
-      supabase.auth.signOut({ scope: 'local' }),
-      client.auth.signOut({ scope: 'local' }),
-    ]);
-    throw error;
-  }
+  const { error } = await client.auth.signInWithPassword({ email, password });
+  if (error) throw new Error('identity.invalid_credentials');
 }
 
-export async function coreSessionMatches(userId: string): Promise<boolean> {
-  const client = requireCoreClient();
-  const { data } = await client.auth.getSession();
-  return data.session?.user.id === userId;
-}
-
-export async function signOutCore(): Promise<void> {
+export async function signOut(): Promise<void> {
   if (coreClient) await coreClient.auth.signOut({ scope: 'local' });
 }

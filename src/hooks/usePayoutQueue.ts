@@ -9,6 +9,7 @@ import {
   recordManualPayout,
   rejectPayout,
   reversePaidPayout,
+  type PayoutRequest,
 } from '../lib/payouts';
 
 export function usePayoutQueueDays(enabled: boolean) {
@@ -69,7 +70,7 @@ export function useCreatePayoutBatch() {
 export function useRejectPayout() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { payoutId: string; reason: string }) => rejectPayout(input.payoutId, input.reason),
+    mutationFn: (input: { payout: PayoutRequest; reason: string }) => rejectPayout(input.payout, input.reason),
     onSuccess: () => invalidatePayoutQueries(queryClient),
   });
 }
@@ -77,7 +78,7 @@ export function useRejectPayout() {
 export function useFailManualPayout() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { payoutId: string; reason: string }) => failManualPayout(input.payoutId, input.reason),
+    mutationFn: (input: { payout: PayoutRequest; reason: string }) => failManualPayout(input.payout, input.reason),
     onSuccess: () => invalidatePayoutQueries(queryClient),
   });
 }
@@ -85,7 +86,7 @@ export function useFailManualPayout() {
 export function useReversePaidPayout() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { payoutId: string; reason: string }) => reversePaidPayout(input.payoutId, input.reason),
+    mutationFn: (input: { payout: PayoutRequest; reason: string }) => reversePaidPayout(input.payout, input.reason),
     onSuccess: () => invalidatePayoutQueries(queryClient),
   });
 }

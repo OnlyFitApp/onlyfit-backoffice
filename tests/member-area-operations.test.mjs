@@ -9,27 +9,21 @@ const api = readFileSync(new URL('../src/lib/memberAreaOperations.ts', import.me
 test('exposes one operational member-area destination in the backoffice', () => {
   assert.match(app, /id: 'member-area-operations', label: 'Área de membros'/);
   assert.match(app, /activeSection === 'member-area-operations'/);
-  assert.match(page, /label: 'Acessos'/);
-  assert.match(page, /label: 'Denúncias'/);
-  assert.match(page, /label: 'Histórico'/);
+  assert.match(page, /> Acessos</);
+  assert.match(page, /> Denúncias</);
+  assert.match(page, /> Histórico</);
 });
 
-test('uses only staff RPC contracts', () => {
-  for (const rpc of [
-    'control_list_member_area_accesses_v1',
-    'control_suspend_member_area_access_v1',
-    'control_list_course_comment_reports_v1',
-    'control_moderate_course_comment_report_v1',
-    'control_list_member_area_audit_v1',
-  ]) assert.match(api, new RegExp(rpc));
+test('uses only typed Core staff contracts', () => {
+  for (const operation of ['memberAccesses', 'memberAccessAct', 'courseCommentReports', 'courseCommentReportAct', 'memberAreaAudit']) assert.match(api, new RegExp(`coreApi\\.staff\\.${operation}`));
   assert.doesNotMatch(api, /service_role|VITE_.*SECRET|payment_transactions/);
 });
 
 test('keeps high-impact actions role gated and justified', () => {
   assert.match(page, /role === 'admin' \|\| role === 'super_admin'/);
-  assert.match(page, /reason\.trim\(\)\.length >= 5/);
+  assert.match(page, /reason\.trim\(\)\.length < 5/);
   assert.match(page, /crypto\.randomUUID\(\)/);
-  assert.match(page, /A compra e o histórico financeiro não serão alterados/);
+  assert.match(page, /A compra e o ciclo financeiro serão preservados/);
 });
 
 test('does not add authoring or financial controls', () => {

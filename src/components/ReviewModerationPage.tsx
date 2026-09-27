@@ -11,7 +11,8 @@ const filters: Array<{ value: ReviewReportStatus; label: string }> = [
   { value: 'hidden', label: 'Ocultadas' },
 ];
 const reasonLabels: Record<ReviewReport['reason'], string> = {
-  spam: 'Spam', abuse: 'Abuso', fraud: 'Fraude', privacy: 'Privacidade', other: 'Outro',
+  spam: 'Spam', abuse: 'Abuso', fraud: 'Fraude', privacy: 'Privacidade',
+  misinformation: 'Informação falsa', other: 'Outro',
 };
 
 function dateLabel(value: string) {

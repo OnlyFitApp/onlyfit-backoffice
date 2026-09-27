@@ -1,4 +1,6 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffFightTechniqueItem } from '../api/core.gen';
+import { catalogKeyFromLabel } from './catalogKey';
 
 export type CombatTechnique = {
   id: string;
@@ -6,8 +8,8 @@ export type CombatTechnique = {
   nameEn: string;
   nameEs: string;
   descriptionPtbr: string;
-  techniqueType: 'attack' | 'defense';
-  distance: 'long' | 'mid' | 'close' | 'clinch' | 'ground';
+  techniqueType: StaffFightTechniqueItem['data']['technique_type'];
+  distance: StaffFightTechniqueItem['data']['distance'];
   disciplines: string[];
   videoUrl: string;
   thumbUrl: string;
@@ -27,77 +29,96 @@ export type CombatTechniqueFilters = {
   offset: number;
 };
 
-const record = (value: unknown): Record<string, unknown> =>
-  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-
-function parseTechnique(value: unknown): CombatTechnique {
-  const row = record(value);
+function technique(item: StaffFightTechniqueItem): CombatTechnique {
   return {
-    id: String(row.id ?? ''),
-    namePtbr: String(row.name_ptbr ?? ''),
-    nameEn: String(row.name_en ?? ''),
-    nameEs: String(row.name_es ?? ''),
-    descriptionPtbr: String(row.description_ptbr ?? ''),
-    techniqueType: row.technique_type === 'defense' ? 'defense' : 'attack',
-    distance: ['long', 'mid', 'close', 'clinch', 'ground'].includes(String(row.distance))
-      ? row.distance as CombatTechnique['distance']
-      : 'mid',
-    disciplines: Array.isArray(row.disciplines) ? row.disciplines.map(String) : [],
-    videoUrl: String(row.video_url ?? ''),
-    thumbUrl: String(row.thumb_url ?? ''),
-    active: Boolean(row.active),
-    inUseCount: Number(row.in_use_count) || 0,
+    id: item.key,
+    namePtbr: item.data.label,
+    nameEn: item.data.name_en ?? '',
+    nameEs: item.data.name_es ?? '',
+    descriptionPtbr: item.data.description_ptbr ?? '',
+    techniqueType: item.data.technique_type,
+    distance: item.data.distance,
+    disciplines: item.data.disciplines,
+    videoUrl: item.data.video_url ?? '',
+    thumbUrl: item.data.thumb_url ?? '',
+    active: item.active,
+    inUseCount: item.impact.total_links,
   };
+}
+
+function requireTechnique(item: Awaited<ReturnType<typeof coreApi.staff.catalogSave>>): StaffFightTechniqueItem {
+  if (item.kind !== 'fight_techniques') throw new Error('staff.invalid_catalog_response');
+  return item;
+}
+
+async function techniqueItems(): Promise<StaffFightTechniqueItem[]> {
+  const catalog = await coreApi.staff.catalog({ kind: 'fight_techniques' });
+  return catalog.items.filter((item): item is StaffFightTechniqueItem => item.kind === 'fight_techniques');
 }
 
 export async function listCombatTechniques(filters: CombatTechniqueFilters) {
-  const { data, error } = await api.staff.rpc('control_list_combat_techniques', {
-    p_search: filters.search.trim() || null,
-    p_active: filters.active,
-    p_discipline: filters.discipline,
-    p_technique_type: filters.techniqueType,
-    p_distance: filters.distance,
-    p_limit: filters.limit,
-    p_offset: filters.offset,
-  });
-  if (error) throw error;
-  const payload = record(data);
-  return {
-    items: Array.isArray(payload.items) ? payload.items.map(parseTechnique) : [],
-    total: Number(payload.total) || 0,
-  };
+  const query = filters.search.trim().toLocaleLowerCase('pt-BR');
+  const all = (await techniqueItems())
+    .map(technique)
+    .filter((item) =>
+      (filters.active == null || item.active === filters.active)
+      && (!filters.discipline || item.disciplines.includes(filters.discipline))
+      && (!filters.techniqueType || item.techniqueType === filters.techniqueType)
+      && (!filters.distance || item.distance === filters.distance)
+      && (!query || `${item.namePtbr} ${item.nameEn} ${item.nameEs}`.toLocaleLowerCase('pt-BR').includes(query))
+    );
+  return { items: all.slice(filters.offset, filters.offset + filters.limit), total: all.length };
 }
 
 export async function upsertCombatTechnique(input: CombatTechniqueInput): Promise<string> {
-  const { data, error } = await api.staff.rpc('control_upsert_combat_technique', {
-    p_entry: {
-      id: input.id || null,
-      name_ptbr: input.namePtbr.trim(),
-      name_en: input.nameEn.trim() || null,
-      name_es: input.nameEs.trim() || null,
-      description_ptbr: input.descriptionPtbr.trim() || null,
-      technique_type: input.techniqueType,
-      distance: input.distance,
-      disciplines: input.disciplines,
-      video_url: input.videoUrl.trim() || null,
-      thumb_url: input.thumbUrl.trim() || null,
-      active: input.active,
+  const current = input.id
+    ? (await techniqueItems()).find((item) => item.key === input.id)
+    : undefined;
+  const saved = requireTechnique(await coreApi.staff.catalogSave({
+    item: {
+      kind: 'fight_techniques',
+      key: input.id || catalogKeyFromLabel(input.namePtbr),
+      label: input.namePtbr.trim(),
+      public: current?.public ?? true,
+      position: current?.position ?? 0,
+      expected_version: current?.version,
+      data: {
+        name_en: input.nameEn.trim() || null,
+        name_es: input.nameEs.trim() || null,
+        description_ptbr: input.descriptionPtbr.trim() || null,
+        technique_type: input.techniqueType,
+        distance: input.distance,
+        disciplines: input.disciplines,
+        video_url: input.videoUrl.trim() || null,
+        thumb_url: input.thumbUrl.trim() || null,
+      },
     },
-  });
-  if (error) throw error;
-  return String(record(data).id ?? input.id);
+  }));
+  if (saved.active !== input.active) {
+    const changed = input.active
+      ? await coreApi.staff.catalogActivate({ kind: 'fight_techniques', key: saved.key, expectedVersion: saved.version })
+      : await coreApi.staff.catalogDeactivate({
+        kind: 'fight_techniques', key: saved.key, expectedVersion: saved.version, confirmation: saved.data.label,
+      });
+    requireTechnique(changed);
+  }
+  return saved.key;
 }
 
 export async function setCombatTechniqueActive(input: { id: string; active: boolean }): Promise<void> {
-  const { error } = await api.staff.rpc('control_set_combat_technique_active', {
-    p_id: input.id,
-    p_active: input.active,
-  });
-  if (error) throw error;
+  const current = (await techniqueItems()).find((item) => item.key === input.id);
+  if (!current) throw new Error('staff.catalog_item_not_found');
+  if (current.active === input.active) return;
+  const changed = input.active
+    ? await coreApi.staff.catalogActivate({ kind: 'fight_techniques', key: input.id, expectedVersion: current.version })
+    : await coreApi.staff.catalogDeactivate({
+      kind: 'fight_techniques', key: input.id, expectedVersion: current.version, confirmation: current.data.label,
+    });
+  requireTechnique(changed);
 }
 
 export function combatTechniqueErrorMessage(error: unknown): string {
-  const message = (error as { message?: string })?.message ?? '';
+  const message = error instanceof Error ? error.message : '';
   if (message.includes('invalid_combat_technique_name')) return 'Informe um nome em português com até 120 caracteres.';
   if (message.includes('invalid_combat_technique_description')) return 'A descrição pode ter até 4.000 caracteres.';
   if (message.includes('invalid_combat_disciplines')) return 'Selecione ao menos uma disciplina válida.';

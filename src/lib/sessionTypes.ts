@@ -1,16 +1,6 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffSessionTypeItem } from '../api/core.gen';
 
-/**
- * O vocabulário de sessão de treino (F5.b da jornada de templates).
- *
- * Leve, longão, tiros, sweet spot, brick, metcon, push/pull/legs: era constante
- * no portal e array em cada builder, então tipo novo — ou esporte novo — exigia
- * release. Agora é `public.sport_session_types`, mantida por aqui.
- *
- * `sports` vazio significa **aparece em todo esporte**, que é como descanso e
- * mobilidade funcionam nos builders. Não existe exclusão: a chave fica gravada
- * nas sessões já montadas, e desativar tira só da escolha de sessão nova.
- */
 export type SessionType = {
   key: string;
   label: string;
@@ -19,7 +9,6 @@ export type SessionType = {
   sortOrder: number;
   active: boolean;
   inUseCount: number;
-  updatedAt: string | null;
 };
 
 export type SessionTypeInput = {
@@ -31,58 +20,72 @@ export type SessionTypeInput = {
   active: boolean;
 };
 
-function record(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function parse(value: unknown): SessionType {
-  const row = record(value);
+function sessionType(item: StaffSessionTypeItem): SessionType {
   return {
-    key: String(row.key ?? ''),
-    label: String(row.label ?? ''),
-    iconKey: String(row.icon_key ?? ''),
-    sports: Array.isArray(row.sports) ? row.sports.map((sport) => String(sport)) : [],
-    sortOrder: Number(row.sort_order) || 0,
-    active: Boolean(row.active),
-    inUseCount: Number(row.in_use_count) || 0,
-    updatedAt: typeof row.updated_at === 'string' ? row.updated_at : null,
+    key: item.key,
+    label: item.data.label,
+    iconKey: item.data.icon_key,
+    sports: item.data.sports,
+    sortOrder: item.position,
+    active: item.active,
+    inUseCount: item.impact.total_links,
   };
 }
 
+function requireSessionType(item: Awaited<ReturnType<typeof coreApi.staff.catalogSave>>): StaffSessionTypeItem {
+  if (item.kind !== 'session_types') throw new Error('staff.invalid_catalog_response');
+  return item;
+}
+
+async function sessionTypeItems(): Promise<StaffSessionTypeItem[]> {
+  const catalog = await coreApi.staff.catalog({ kind: 'session_types' });
+  return catalog.items.filter((item): item is StaffSessionTypeItem => item.kind === 'session_types');
+}
+
 export async function listSessionTypes(): Promise<SessionType[]> {
-  const { data, error } = await api.staff.rpc('control_list_session_types');
-  if (error) throw error;
-  return Array.isArray(data) ? data.map(parse) : [];
+  return (await sessionTypeItems()).map(sessionType);
 }
 
 export async function upsertSessionType(input: SessionTypeInput): Promise<string> {
-  const { data, error } = await api.staff.rpc('control_upsert_session_type', {
-    p_key: input.key.trim().toLowerCase(),
-    p_label: input.label.trim(),
-    p_icon_key: input.iconKey.trim(),
-    p_sports: input.sports,
-    p_sort_order: input.sortOrder,
-    p_active: input.active,
-  });
-  if (error) throw error;
-  return String(record(data).key ?? input.key);
+  const key = input.key.trim().toLowerCase();
+  const current = (await sessionTypeItems()).find((item) => item.key === key);
+  const saved = requireSessionType(await coreApi.staff.catalogSave({
+    item: {
+      kind: 'session_types',
+      key,
+      label: input.label.trim(),
+      public: current?.public ?? true,
+      position: input.sortOrder,
+      expected_version: current?.version,
+      data: { icon_key: input.iconKey.trim(), sports: input.sports },
+    },
+  }));
+  if (saved.active !== input.active) {
+    const changed = input.active
+      ? await coreApi.staff.catalogActivate({ kind: 'session_types', key, expectedVersion: saved.version })
+      : await coreApi.staff.catalogDeactivate({
+        kind: 'session_types', key, expectedVersion: saved.version, confirmation: saved.data.label,
+      });
+    requireSessionType(changed);
+  }
+  return saved.key;
 }
 
 export async function setSessionTypeActive(input: { key: string; active: boolean }): Promise<void> {
-  const { error } = await api.staff.rpc('control_set_session_type_active', {
-    p_key: input.key,
-    p_active: input.active,
-  });
-  if (error) throw error;
+  const current = (await sessionTypeItems()).find((item) => item.key === input.key);
+  if (!current) throw new Error('staff.catalog_item_not_found');
+  if (current.active === input.active) return;
+  const changed = input.active
+    ? await coreApi.staff.catalogActivate({ kind: 'session_types', key: input.key, expectedVersion: current.version })
+    : await coreApi.staff.catalogDeactivate({
+      kind: 'session_types', key: input.key, expectedVersion: current.version, confirmation: current.data.label,
+    });
+  requireSessionType(changed);
 }
 
 export function sessionTypeErrorMessage(error: unknown): string {
-  const code = (error as { message?: string })?.message ?? '';
-  if (code.includes('invalid_session_type_key')) {
-    return 'A chave aceita só letras minúsculas, números e _, começando por letra.';
-  }
+  const code = error instanceof Error ? error.message : '';
+  if (code.includes('invalid_session_type_key')) return 'A chave aceita só letras minúsculas, números e _, começando por letra.';
   if (code.includes('invalid_session_type_label')) return 'O rótulo é obrigatório e vai até 60 caracteres.';
   if (code.includes('invalid_session_type_icon')) return 'Escolha um ícone.';
   if (code.includes('too_many_sports')) return 'São no máximo 20 esportes por tipo.';

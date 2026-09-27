@@ -4,7 +4,7 @@ Front end web do backoffice interno da OnlyFit, voltado para operação, gestão
 
 ## Stack
 
-Vite · React 18 · TypeScript · Supabase · TanStack Query · Lucide · CSS por tokens.
+Vite · React 18 · TypeScript · OnlyFit Core SDK · TanStack Query · Lucide · CSS por tokens.
 
 ## Rodar
 
@@ -15,16 +15,17 @@ npm run build
 npm run lint
 ```
 
-Crie `.env` a partir de `.env.example`. Só use chaves públicas (`anon`) no cliente.
+Crie `.env` a partir de `.env.example` e configure somente a URL e a chave
+publicável do OnlyFit Core. Nunca use segredo administrativo no cliente.
 
 ## Regras
 
-1. RLS e RPCs de staff (`platform_is_staff`) são a fonte real de autorização.
+1. Os contratos `coreApi.staff` e a autorização do Core são a fonte real de acesso.
 2. Nenhum segredo no cliente.
 3. O design herda o sistema canônico do produto: Inter, tokens semânticos, superfícies grafite, azul/teal oficiais e profundidade tonal.
 4. O backoffice é operacional: densidade, leitura rápida, estados claros e navegação previsível valem mais do que efeito visual.
-5. Backend, migrations e edge functions vivem em `../onlyfit-supabase`.
-6. Migrations e Edge Functions são implantadas pelo GitHub Actions do `onlyfit-supabase` após merge na `main`. Não execute deploy de backend a partir deste app.
+5. Backend, contratos e migrations vivem em `../onlyfit-core`.
+6. Sincronize o SDK com `npm run core:sync-sdk`; nunca edite `core.gen.ts` à mão.
 
 ## Antes de dar por pronto
 

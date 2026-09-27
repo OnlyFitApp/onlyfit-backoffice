@@ -2,7 +2,6 @@ import { Dumbbell, RefreshCw, Save, ShieldCheck } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { useCurrentStaffRole } from '../hooks/useStaffManagement';
 import { useTrainingQuotaSettings, useUpdateTrainingQuotaSettings } from '../hooks/useTrainingQuotaSettings';
-import { formatDateTime } from '../lib/format';
 import { trainingQuotaErrorMessage } from '../lib/trainingQuotaSettings';
 
 export function TrainingQuotaSettingsPage() {
@@ -25,7 +24,7 @@ export function TrainingQuotaSettingsPage() {
     update.mutate(
       {
         freePersonalWorkoutLimit: parsedLimit,
-        expectedUpdatedAt: settings.data.updatedAt,
+        expectedVersion: settings.data.version,
       },
       {
         onSuccess: () => {
@@ -106,7 +105,7 @@ export function TrainingQuotaSettingsPage() {
               <span>
                 <ShieldCheck size={16} />
                 Aplicado pelo servidor
-                {settings.data.updatedAt ? ` · atualizado em ${formatDateTime(new Date(settings.data.updatedAt))}` : ''}
+                {` · versão ${settings.data.version}`}
               </span>
               {canEdit ? (
                 <button className="button primary" type="submit" disabled={!valid || !dirty || update.isPending}>

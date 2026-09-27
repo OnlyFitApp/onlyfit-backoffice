@@ -1,60 +1,34 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffReconciliationRun, StaffTreasuryMovement } from '../api/core.gen';
 
-type ReconciliationRun = {
-  id: string;
-  provider: string;
-  period_start: string;
-  period_end: string;
-  status: 'open' | 'completed' | 'failed';
-  exception_count: number;
-  created_at: string;
-  completed_at: string | null;
-};
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-}
-
-function numberFrom(value: unknown): number {
-  return typeof value === 'number' ? value : Number(value) || 0;
-}
+export type ReconciliationRun = StaffReconciliationRun;
+export type ReconciliationProvider = 'stripe' | 'asaas';
 
 export async function listFinancialReconciliationRuns(): Promise<ReconciliationRun[]> {
-  const { data, error } = await api.staff.rpc('control_list_financial_reconciliation', { p_run_id: null });
-  if (error) throw error;
-  const runs = asRecord(data).runs;
-  if (!Array.isArray(runs)) return [];
-  return runs.map((value) => {
-    const row = asRecord(value);
-    return {
-      id: String(row.id ?? ''),
-      provider: String(row.provider ?? 'asaas'),
-      period_start: String(row.period_start ?? ''),
-      period_end: String(row.period_end ?? ''),
-      status: row.status === 'completed' || row.status === 'failed' ? row.status : 'open',
-      exception_count: numberFrom(row.exception_count),
-      created_at: String(row.created_at ?? ''),
-      completed_at: typeof row.completed_at === 'string' ? row.completed_at : null,
-    };
+  const page = await coreApi.staff.reconciliationRuns({ limit: 100, offset: 0 });
+  return page.items;
+}
+
+export function runFinancialReconciliation(input: {
+  provider: ReconciliationProvider;
+  from: string;
+  to: string;
+}): Promise<ReconciliationRun> {
+  return coreApi.staff.reconciliationStart({
+    ...input,
+    idempotencyKey: crypto.randomUUID(),
   });
 }
 
-export async function runFinancialReconciliation(input: { from: string; to: string }) {
-  const { data, error } = await api.comercio.functions.invoke('financial-reconcile', { body: input });
-  if (error) throw error;
-  return asRecord(data);
-}
-
-export async function recordTreasuryMovement(input: {
+export function recordTreasuryMovement(input: {
   direction: 'invest' | 'redeem';
   amount: number;
+  currency: string;
   reference: string;
-}) {
-  const { error } = await api.staff.rpc('control_record_treasury_movement', {
-    p_direction: input.direction,
-    p_amount: input.amount,
-    p_reference: input.reference,
-    p_note: null,
+}): Promise<StaffTreasuryMovement> {
+  return coreApi.staff.treasuryMovement({
+    ...input,
+    note: null,
+    idempotencyKey: crypto.randomUUID(),
   });
-  if (error) throw error;
 }

@@ -50,8 +50,9 @@ export function FirstContactPage() {
       setFeedback({ type: 'error', text: 'Os prazos são em horas inteiras.' });
       return;
     }
+    if (!settings) return;
     saveMutation.mutate(
-      { reminderHours: reminder, alertHours: alert },
+      { reminderHours: reminder, alertHours: alert, expectedVersion: settings.version },
       {
         onSuccess: (result) => {
           // Volta a espelhar o banco: o rascunho cumpriu o papel.
@@ -78,7 +79,7 @@ export function FirstContactPage() {
     return (
       <div className="inline-alert danger" role="alert">
         <AlertTriangle size={18} />
-        Não foi possível carregar os prazos de primeiro contato. Verifique se a migration do G11 foi aplicada.
+        Não foi possível carregar os prazos de primeiro contato.
       </div>
     );
   }

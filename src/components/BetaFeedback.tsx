@@ -102,7 +102,7 @@ export function BetaFeedbackPage() {
                   </span>
                   <span className="beta-description">{item.description}</span>
                   <span className="beta-context">
-                    {item.screenshot_path && <><Image size={13} /> Captura</>}
+                    {item.has_screenshot && <><Image size={13} /> Captura</>}
                     {item.platform} {item.app_version ? `· v${item.app_version} (${item.build_number ?? '—'})` : ''}
                     {item.route ? `· ${item.route}` : ''}
                   </span>
@@ -135,12 +135,12 @@ function FeedbackDetail({ item, onClose }: { item: BetaFeedbackItem; onClose: ()
   const [status, setStatus] = useState(item.status);
   const [notes, setNotes] = useState(item.internal_notes ?? '');
   const [saved, setSaved] = useState(false);
-  const screenshot = useFeedbackScreenshot(item.screenshot_path, true);
+  const screenshot = useFeedbackScreenshot(item.has_screenshot ? item.id : null, true);
   const update = useUpdateBetaFeedback();
 
   const save = () => {
     setSaved(false);
-    update.mutate({ id: item.id, status, internalNotes: notes }, { onSuccess: () => setSaved(true) });
+    update.mutate({ id: item.id, status, internalNotes: notes, expectedVersion: item.version }, { onSuccess: () => setSaved(true) });
   };
 
   return (
@@ -155,7 +155,7 @@ function FeedbackDetail({ item, onClose }: { item: BetaFeedbackItem; onClose: ()
         </div>
 
         <div className="beta-drawer-scroll">
-          {item.screenshot_path && (
+          {item.has_screenshot && (
             <div className="beta-screenshot">
               {screenshot.isLoading && <RefreshCw className="spin" size={22} />}
               {screenshot.isError && <span>Não foi possível abrir a captura.</span>}

@@ -12,9 +12,10 @@ test('exposes the personal-workout quota in the platform library navigation', ()
 });
 
 test('uses only staff RPCs and sends an optimistic concurrency version', () => {
-  assert.match(data, /api\.staff\.rpc\('control_get_personal_workout_quota_settings_v1'/);
-  assert.match(data, /api\.staff\.rpc\('control_update_personal_workout_quota_settings_v1'/);
-  assert.match(data, /p_expected_updated_at: input\.expectedUpdatedAt/);
+  assert.match(data, /coreApi\.staff\.trainingQuota\(\)/);
+  assert.match(data, /coreApi\.staff\.trainingQuotaSave/);
+  assert.match(data, /expectedVersion: input\.expectedVersion/);
+  assert.doesNotMatch(data, /control_(?:get|update)_personal_workout_quota/);
   assert.doesNotMatch(data, /\.from\(/);
 });
 

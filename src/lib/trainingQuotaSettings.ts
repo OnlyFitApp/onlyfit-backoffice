@@ -1,55 +1,41 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
 
 export type TrainingQuotaSettings = {
   freePersonalWorkoutLimit: number;
   clubPersonalWorkoutLimit: number;
-  updatedAt: string;
+  version: number;
 };
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : {};
-}
-
-function positiveInteger(value: unknown): number {
-  const parsed = typeof value === 'number' ? value : Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
-}
-
-function parseSettings(value: unknown): TrainingQuotaSettings {
-  const row = asRecord(value);
-  return {
-    freePersonalWorkoutLimit: positiveInteger(row.free_personal_workout_limit),
-    clubPersonalWorkoutLimit: positiveInteger(row.club_personal_workout_limit),
-    updatedAt: typeof row.updated_at === 'string' ? row.updated_at : '',
-  };
-}
-
 export async function getTrainingQuotaSettings(): Promise<TrainingQuotaSettings> {
-  const { data, error } = await api.staff.rpc('control_get_personal_workout_quota_settings_v1');
-  if (error) throw error;
-  return parseSettings(data);
+  const value = await coreApi.staff.trainingQuota();
+  return {
+    freePersonalWorkoutLimit: value.free_personal_workout_limit,
+    clubPersonalWorkoutLimit: value.club_personal_workout_limit,
+    version: value.version,
+  };
 }
 
 export async function updateTrainingQuotaSettings(input: {
   freePersonalWorkoutLimit: number;
-  expectedUpdatedAt: string;
+  expectedVersion: number;
 }): Promise<TrainingQuotaSettings> {
-  const { data, error } = await api.staff.rpc('control_update_personal_workout_quota_settings_v1', {
-    p_free_personal_workout_limit: input.freePersonalWorkoutLimit,
-    p_expected_updated_at: input.expectedUpdatedAt,
+  const value = await coreApi.staff.trainingQuotaSave({
+    freePersonalWorkoutLimit: input.freePersonalWorkoutLimit,
+    expectedVersion: input.expectedVersion,
   });
-  if (error) throw error;
-  return parseSettings(data);
+  return {
+    freePersonalWorkoutLimit: value.free_personal_workout_limit,
+    clubPersonalWorkoutLimit: value.club_personal_workout_limit,
+    version: value.version,
+  };
 }
 
 export function trainingQuotaErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error ?? '');
-  if (message.includes('invalid_free_personal_workout_limit')) {
+  if (message.includes('staff.invalid_training_quota')) {
     return 'Informe um limite entre 1 e 10.000 treinos.';
   }
-  if (message.includes('training_settings_changed')) {
+  if (message.includes('staff.training_quota_changed')) {
     return 'Outra pessoa alterou esta configuração. Atualize a página e tente novamente.';
   }
   if (message.includes('forbidden')) {

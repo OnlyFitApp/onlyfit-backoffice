@@ -7,11 +7,11 @@ Esta é a primeira instrução operacional para qualquer agente. Quando o usuár
 Leia primeiro `../CLAUDE.md` e depois `CLAUDE.md` deste repositório.
 Leia também [`SECURITY-SCALABILITY.md`](SECURITY-SCALABILITY.md) antes de qualquer mudança.
 
-Este app é o portal web interno da equipe de gestão OnlyFit. Ele consome o mesmo Supabase de produção via chave `anon` e respeita RLS/RPCs de staff. Nunca coloque `service_role` ou segredo no cliente.
+Este app é o portal web interno da equipe de gestão OnlyFit. Ele consome o OnlyFit Core pelo SDK gerado e pela chave publicável. Nunca coloque segredo administrativo no cliente nem crie acesso direto a tabelas, RPCs ou Storage.
 
 Se o pedido incluir PR, merge ou deploy, siga o fluxo obrigatório do workspace: branch a partir da `main`, commit, push, PR para `main` e merge do PR. Nunca commite direto na `main`.
 
-Migrations e Edge Functions pertencem ao `onlyfit-supabase` e são implantadas pelo GitHub Actions daquele repositório. Não execute deploy de backend a partir deste app.
+Backend, contratos e migrations pertencem ao `onlyfit-core`. Não execute deploy de backend a partir deste app e nunca edite `src/api/core.gen.ts` à mão.
 
 ## Arquitetura por domínios
 

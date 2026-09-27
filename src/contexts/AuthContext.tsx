@@ -1,7 +1,6 @@
 import type { Session, User } from '@supabase/supabase-js';
 import { useEffect, useMemo, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { coreSessionMatches, signOutCore } from '../api/core';
+import { requireCoreClient, signOut } from '../api/core';
 import { AuthContext } from './auth-context';
 
 export type AuthContextValue = {
@@ -17,28 +16,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let alive = true;
-    let validation = 0;
+    const client = requireCoreClient();
 
-    const acceptSession = async (nextSession: Session | null) => {
-      const attempt = ++validation;
-      try {
-        if (nextSession && !await coreSessionMatches(nextSession.user.id)) {
-          throw new Error('dual_session_mismatch');
-        }
-        if (alive && attempt === validation) setSession(nextSession);
-      } catch {
-        await Promise.allSettled([supabase.auth.signOut({ scope: 'local' }), signOutCore()]);
-        if (alive && attempt === validation) setSession(null);
-      }
+    const acceptSession = (nextSession: Session | null) => {
+      if (alive) setSession(nextSession);
       if (alive) setIsLoading(false);
     };
 
-    supabase.auth.getSession()
-      .then(({ data }) => acceptSession(data.session))
-      .catch(() => acceptSession(null));
+    client.auth.getSession()
+      .then(({ data }) => acceptSession(data.session), () => acceptSession(null));
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      void acceptSession(nextSession);
+    const { data: listener } = client.auth.onAuthStateChange((_event, nextSession) => {
+      acceptSession(nextSession);
     });
 
     return () => {
@@ -52,9 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session,
       user: session?.user ?? null,
       isLoading,
-      signOut: async () => {
-        await Promise.allSettled([supabase.auth.signOut(), signOutCore()]);
-      },
+      signOut,
     }),
     [isLoading, session],
   );

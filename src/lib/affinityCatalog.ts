@@ -1,14 +1,13 @@
 /**
  * Catálogo de ícones e cores que um grupo de afinidade pode assumir.
  *
- * As quatro pontas precisam concordar com esta lista:
- *  - `control_create_affinity_group` / `control_update_affinity_group` (onlyfit-supabase)
- *    rejeitam qualquer valor fora dela;
+ * Os contratos do OnlyFit Core e os clientes precisam concordar com esta lista.
+ * O Core rejeita valores que não pertençam ao catálogo canônico;
  *  - `ICON_BY_NAME` e o `safelist` do Tailwind no `onlyfit-desktop` decidem se o
  *    ícone e o gradiente escolhidos aqui realmente aparecem para o usuário final;
  *  - `lib/src/core/data/affinity_groups.dart` faz o mesmo no `onlyfit-flutter-mobile`.
  *
- * Ampliar o catálogo é mudança de código nas quatro, nunca só aqui. Os testes
+ * Ampliar o catálogo exige atualizar o contrato e os clientes, nunca só aqui. Os testes
  * `feedSports.test.ts` (desktop) e `affinity_groups_test.dart` (Flutter) falham
  * quando um app fica para trás.
  */

@@ -1,7 +1,6 @@
 import {
   Activity,
   AlertTriangle,
-  BarChart3,
   BadgeCheck,
   BookOpen,
   CheckCircle2,
@@ -36,7 +35,6 @@ import {
   Tags,
   Ticket,
   TrendingUp,
-  UserPlus,
   Users,
   UsersRound,
   WalletCards,
@@ -45,9 +43,10 @@ import {
 import { FormEvent, lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useAuth } from './contexts/useAuth';
 import { formatCurrencyExact, formatDateTime, formatNumber } from './lib/format';
-import { PayoutQueuePanel, TransactionsPanel, ProviderIntegrationPanel, FinancialReconciliationPanel, FinancialReportsPanel } from './components/FinancePanels';
+import { PayoutQueuePanel, TransactionsPanel, FinancialReconciliationPanel, FinancialReportsPanel } from './components/FinancePanels';
+import { PaymentProviderPanel } from './components/PaymentProviderPanel';
 import { normalizeEmail } from './lib/auth';
-import { signInBoth } from './api/core';
+import { signIn } from './api/core';
 import {
   useOfferingTypeBilling,
   useOfferingTypesAdmin,
@@ -59,11 +58,10 @@ import { usePlatformPaymentSettings, useUpdatePlatformPaymentSettings } from './
 import { usePlatformStaff } from './hooks/usePlatformStaff';
 import { useFeedDistributionSettings, useUpdateFeedDistributionSettings } from './hooks/useFeedDistribution';
 import {
-  useCreatePlatformStaff,
   useCurrentStaffRole,
   useRemovePlatformStaff,
+  useSetPlatformStaffRole,
   useStaffList,
-  useUpdatePlatformStaff,
 } from './hooks/useStaffManagement';
 import type { PlatformStaffMember, StaffRole } from './lib/staff';
 import {
@@ -75,15 +73,15 @@ import {
   type OfferDelivery,
   type OfferingTypeBilling,
 } from './lib/offeringTypes';
-import type { OfferingCatalogFilters, OfferingCatalogItem, OfferingCatalogSource, OfferingCatalogStatus } from './lib/offeringCatalog';
-import { offeringMonetization } from './lib/offeringMonetization';
+import type { OfferingCatalogFilters, OfferingCatalogItem, OfferingCatalogStatus } from './lib/offeringCatalog';
+import { nativeStoreMonetization } from './lib/offeringMonetization';
 import { MfaGate } from './components/MfaGate';
 import { CredentialResetDialog } from './components/CredentialResetDialog';
 import type { CredentialResetAction } from './lib/credentialReset';
 import { UsersDirectoryPage } from './components/UsersDirectory';
 import { FirstContactPage } from './components/FirstContact';
 import { InviteOnlyPage } from './components/InviteOnly';
-import { AppStoreProductDialog } from './components/AppStoreProductDialog';
+import { NativeStoreProductsDialog } from './components/NativeStoreProductsDialog';
 import { BetaFeedbackPage } from './components/BetaFeedback';
 import { EmailCenterPage } from './components/EmailCenter';
 import { MarketSettingsPage } from './components/MarketSettingsPage';
@@ -259,7 +257,22 @@ const offerDeliveryOptions: ReadonlyArray<{ value: OfferDelivery; label: string 
   { value: 'challenge', label: 'Desafio' },
   { value: 'community', label: 'Comunidade' },
   { value: 'platform_membership', label: 'Assinatura da plataforma' },
+  { value: 'advertising', label: 'Publicidade' },
 ];
+
+function requiredOption<T extends string>(
+  options: ReadonlyArray<{ value: T }>,
+  value: string,
+  error: string,
+): T {
+  const option = options.find((candidate) => candidate.value === value);
+  if (!option) throw new Error(error);
+  return option.value;
+}
+
+const offerDelivery = (value: string) => requiredOption(offerDeliveryOptions, value, 'staff.unsupported_delivery');
+const offerBillingType = (value: string) => requiredOption(billingTypeOptions, value, 'staff.invalid_billing');
+const offerBillingInterval = (value: string) => requiredOption(billingIntervalOptions, value, 'staff.invalid_billing');
 
 const settlementWeekdayOptions: ReadonlyArray<{ value: number; label: string }> = [
   { value: 1, label: 'Seg' },
@@ -291,10 +304,6 @@ function formatPriceInput(value: number): string {
   });
 }
 
-function staffRoleLabel(role: StaffRole): string {
-  return staffRoleOptions.find((option) => option.value === role)?.label ?? role;
-}
-
 function AppLogo({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <div className="brand">
@@ -322,7 +331,7 @@ function LoginPage() {
 
     try {
       const normalizedEmail = normalizeEmail(email);
-      await signInBoth(normalizedEmail, password);
+      await signIn(normalizedEmail, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível entrar.');
     } finally {
@@ -667,7 +676,12 @@ function OfferingTypeBillingRow({
 
   const changeActive = () => {
     setMessage('');
-    activeMutation.mutate({ key: item.key, active: !item.active, expectedVersion: item.version }, {
+    activeMutation.mutate({
+      key: item.key,
+      active: !item.active,
+      expectedVersion: item.version,
+      confirmation: item.label,
+    }, {
       onSuccess: (result) => setMessage(result.active ? 'Tipo ativado.' : 'Tipo desativado.'),
       onError: (error) => setMessage(offeringTypeErrorMessage(error)),
     });
@@ -741,7 +755,7 @@ function OfferingTypeBillingRow({
               <select
                 value={delivery}
                 disabled={!canEdit || item.active_offers_count > 0}
-                onChange={(event) => selectDelivery(event.target.value as OfferDelivery)}
+                onChange={(event) => selectDelivery(offerDelivery(event.target.value))}
               >
                 {offerDeliveryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
@@ -767,7 +781,7 @@ function OfferingTypeBillingRow({
             <select
               value={billingType}
               disabled={!canEdit}
-              onChange={(event) => selectBillingType(event.target.value as BillingType)}
+              onChange={(event) => selectBillingType(offerBillingType(event.target.value))}
             >
               {billingTypeOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -780,7 +794,7 @@ function OfferingTypeBillingRow({
             <select
               value={billingInterval ?? 'month'}
               disabled={!canEdit || !isRecurring}
-              onChange={(event) => selectBillingInterval(event.target.value as BillingInterval)}
+              onChange={(event) => selectBillingInterval(offerBillingInterval(event.target.value))}
             >
               {availableIntervals.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -1161,13 +1175,13 @@ function NewOfferingTypeForm({ onDone }: { onDone: (key: string) => void }) {
         <label><span>Nome</span><input required minLength={2} maxLength={80} value={label} onChange={(event) => setLabel(event.target.value)} /></label>
         <label><span>Ícone</span><input maxLength={60} value={icon} onChange={(event) => setIcon(event.target.value)} /></label>
         <label><span>Ordem</span><input type="number" min="0" step="1" value={position} onChange={(event) => setPosition(event.target.value)} /></label>
-        <label><span>Entrega</span><select value={delivery} onChange={(event) => selectDelivery(event.target.value as OfferDelivery)}>{offerDeliveryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label><span>Entrega</span><select value={delivery} onChange={(event) => selectDelivery(offerDelivery(event.target.value))}>{offerDeliveryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
         <label><span>Máximo por negócio</span><input type="number" min="1" step="1" placeholder="Sem limite" value={maxPerBusiness} onChange={(event) => setMaxPerBusiness(event.target.value)} /></label>
       </div>
       <label className="ambassador-field"><span>Descrição</span><textarea maxLength={500} value={description} onChange={(event) => setDescription(event.target.value)} /></label>
       <div className="billing-controls">
-        <label><span>Cobrança</span><select value={billingType} disabled={delivery === 'consultancy'} onChange={(event) => selectBillingType(event.target.value as BillingType)}>{billingTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-        <label><span>Intervalo padrão</span><select disabled={billingType !== 'recurring'} value={billingInterval} onChange={(event) => selectBillingInterval(event.target.value as BillingInterval)}>{availableIntervals.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label><span>Cobrança</span><select value={billingType} disabled={delivery === 'consultancy'} onChange={(event) => selectBillingType(offerBillingType(event.target.value))}>{billingTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label><span>Intervalo padrão</span><select disabled={billingType !== 'recurring'} value={billingInterval} onChange={(event) => selectBillingInterval(offerBillingInterval(event.target.value))}>{availableIntervals.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
         <label><span>{delivery === 'consultancy' ? 'Preço mínimo mensal' : 'Preço mínimo'}</span><input inputMode="decimal" value={minimum} onChange={(event) => setMinimum(event.target.value.replace(/[^\d.,]/g, ''))} /></label>
         <label><span>Taxa %</span><input inputMode="decimal" value={feePercent} onChange={(event) => setFeePercent(event.target.value.replace(/[^\d.,]/g, ''))} /></label>
         <label><span>Taxa fixa</span><input inputMode="decimal" value={feeFixed} onChange={(event) => setFeeFixed(event.target.value.replace(/[^\d.,]/g, ''))} /></label>
@@ -1599,19 +1613,6 @@ function financialStatusLabel(value: string): string {
   }
 }
 
-function sourceLabel(source: OfferingCatalogSource): string {
-  return source === 'business_offering' ? 'Contrato financeiro' : 'Oferta';
-}
-
-function feeRuleText(item: OfferingCatalogItem): string {
-  if (item.billing_type === 'free') return 'Gratuita';
-  if (item.fee_percent_snapshot == null || item.fee_fixed_snapshot == null) return 'Sem snapshot';
-  const percent = `${item.fee_percent_snapshot.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
-  return item.fee_fixed_snapshot > 0
-    ? `${percent} + ${formatCurrencyExact(item.fee_fixed_snapshot)}`
-    : percent;
-}
-
 function OfferingCatalogPage() {
   const { data: currentRole } = useCurrentStaffRole();
   const canEdit = currentRole === 'super_admin' || currentRole === 'admin';
@@ -1619,12 +1620,11 @@ function OfferingCatalogPage() {
   const [offeringType, setOfferingType] = useState('');
   const [status, setStatus] = useState<OfferingCatalogStatus | ''>('');
   const [page, setPage] = useState(0);
-  const [appleItem, setAppleItem] = useState<OfferingCatalogItem | null>(null);
+  const [nativeStoreItem, setNativeStoreItem] = useState<OfferingCatalogItem | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const pageSize = 50;
   const filters = useMemo<OfferingCatalogFilters>(
     () => ({
-      source: 'business_offering',
       offeringType: offeringType || null,
       status: status || null,
       limit: pageSize,
@@ -1636,7 +1636,7 @@ function OfferingCatalogPage() {
   const items = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
   const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
-  const readyCount = items.filter((item) => item.financial_status === 'ready').length;
+  const readyCount = items.filter((item) => item.readiness === 'ready').length;
   const attentionCount = items.length - readyCount;
 
   return (
@@ -1671,11 +1671,6 @@ function OfferingCatalogPage() {
             <div><span>Pendências</span><AlertTriangle size={18} /></div>
             <strong>{formatNumber(attentionCount)}</strong>
             <p>Exigem correção antes de venda real</p>
-          </article>
-          <article className="report-metric">
-            <div><span>GMV da página</span><BarChart3 size={18} /></div>
-            <strong>{formatCurrencyExact(items.reduce((sum, item) => sum + item.gross_revenue, 0))}</strong>
-            <p>{formatCurrencyExact(items.reduce((sum, item) => sum + item.platform_commission, 0))} OnlyFit</p>
           </article>
         </div>
 
@@ -1733,60 +1728,44 @@ function OfferingCatalogPage() {
                   <thead>
                     <tr>
                       <th>Oferta</th>
-                      <th>Origem</th>
                       <th>Negócio</th>
                       <th>Preço base</th>
                       <th>Compra no iPhone</th>
-                      <th>Regra</th>
-                      <th>Vendas</th>
-                      <th>Comissão</th>
-                      <th>Liquidação</th>
                       <th>Status</th>
                       <th>Ação</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item) => (
-                      <tr key={`${item.source}-${item.catalog_item_id}`}>
+                      <tr key={item.id}>
                         <td>
                           <strong>{item.name}</strong>
-                          <span>{item.offering_type_name} {item.owner_username ? `· @${item.owner_username}` : ''}</span>
+                          <span>{item.type_name ?? item.type}</span>
                         </td>
-                        <td>{sourceLabel(item.source)}</td>
-                        <td>{item.organization_name ?? item.organization_slug ?? '—'}</td>
+                        <td>{item.business_name}</td>
                         <td>{item.billing_type === 'free' ? 'Grátis' : formatCurrencyExact(item.price)}</td>
                         <td>
-                          <strong>{item.ios_price == null ? '—' : formatCurrencyExact(item.ios_price)}</strong>
-                          <span title={offeringMonetization(item).reason}>{offeringMonetization(item).label}</span>
-                          {item.ios_pricing_version != null ? <span>regra v{item.ios_pricing_version}</span> : null}
-                        </td>
-                        <td>{feeRuleText(item)}</td>
-                        <td>{formatNumber(item.transactions_count)} · {formatCurrencyExact(item.gross_revenue)}</td>
-                        <td>{formatCurrencyExact(item.platform_commission)}</td>
-                        <td>
-                          <strong>{formatCurrencyExact(item.pending_settlement_value)}</strong>
-                          <span>{formatCurrencyExact(item.settled_value)} liquidado</span>
+                          <strong>{item.native_products.length > 0 ? formatCurrencyExact(item.price) : '—'}</strong>
+                          <span title={nativeStoreMonetization(item).reason}>{nativeStoreMonetization(item).label}</span>
                         </td>
                         <td>
                           <span className={`role-badge role-${item.status}`}>{offeringStatusLabel(item.status)}</span>
-                          <span>{financialStatusLabel(item.financial_status)}</span>
+                          <span>{financialStatusLabel(item.readiness)}</span>
                         </td>
                         <td>
                           <div className="header-actions">
-                            {item.business_offering_id
-                              && offeringMonetization(item).canPrepare ? (
+                            {nativeStoreMonetization(item).canPrepare ? (
                                 <button
                                   className="button secondary compact"
                                   type="button"
                                   disabled={!canEdit}
-                                  onClick={() => setAppleItem(item)}
+                                  onClick={() => setNativeStoreItem(item)}
                                 >
-                                  Apple {item.app_store_product_status === 'ready' ? '✓' : ''}
+                                  Lojas {item.native_products.filter(product => product.status === 'ready').length}/2
                                 </button>
                               ) : null}
-                            {item.business_offering_id
-                              && !['premium_content', 'standalone_workout', 'standalone_diet', 'courses'].includes(item.offering_type ?? '')
-                              ? <span>{item.business_offering_id.slice(0, 8)}</span>
+                            {!['premium_content', 'standalone_workout', 'standalone_diet', 'courses'].includes(item.type)
+                              ? <span>{item.id.slice(0, 8)}</span>
                               : null}
                           </div>
                         </td>
@@ -1804,13 +1783,13 @@ function OfferingCatalogPage() {
           )}
         </section>
       </section>
-      {appleItem && (
-        <AppStoreProductDialog
-          item={appleItem}
-          onCancel={() => setAppleItem(null)}
+      {nativeStoreItem && (
+        <NativeStoreProductsDialog
+          item={nativeStoreItem}
+          onCancel={() => setNativeStoreItem(null)}
           onSaved={() => {
-            setAppleItem(null);
-            setMessage({ type: 'success', text: 'Produto Apple atualizado.' });
+            setNativeStoreItem(null);
+            setMessage({ type: 'success', text: 'Produto da loja atualizado.' });
           }}
         />
       )}
@@ -1867,7 +1846,7 @@ function FinancePage() {
         {financeTab === 'payouts' ? <PayoutQueuePanel canEdit={canEdit} /> : null}
         {financeTab === 'reconciliation' ? <FinancialReconciliationPanel canEdit={canEdit} /> : null}
         {financeTab === 'transactions' ? <TransactionsPanel /> : null}
-        {financeTab === 'provider' ? <ProviderIntegrationPanel canEdit={canEdit} /> : null}
+        {financeTab === 'provider' ? <PaymentProviderPanel canEdit={canEdit} /> : null}
       </section>
     </>
   );
@@ -1875,17 +1854,10 @@ function FinancePage() {
 
 function staffErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  if (message.includes('weak_password')) {
-    return 'Use uma senha com pelo menos 8 caracteres, maiúscula, minúscula, número e caractere especial.';
-  }
-  if (message.includes('full_name_required')) return 'Informe o nome completo.';
-  if (message.includes('invalid_email')) return 'Informe um e-mail válido.';
-  if (message.includes('email_already_exists')) return 'Este e-mail já pertence a outra conta da plataforma.';
-  if (message.includes('last_super_admin')) return 'O último superadministrador não pode perder esse nível de acesso.';
-  if (message.includes('cannot_remove_self')) return 'Você não pode remover o próprio acesso interno.';
-  if (message.includes('staff_not_found')) return 'Este acesso interno não existe mais. Atualize a lista.';
-  if (message.includes('forbidden')) return 'Somente superadministradores podem gerenciar a equipe.';
-  return 'Não foi possível salvar o usuário. Verifique os dados e tente novamente.';
+  if (message.includes('staff.account_not_found')) return 'Esta conta não existe mais. Atualize a lista.';
+  if (message.includes('staff.invalid_role')) return 'Nível interno inválido.';
+  if (message.includes('staff.forbidden')) return 'Somente superadministradores podem gerenciar a equipe.';
+  return 'Não foi possível alterar o acesso interno. Atualize a página e tente novamente.';
 }
 
 function UsersPage() {
@@ -1893,97 +1865,28 @@ function UsersPage() {
   const { data: currentRole, isLoading: roleLoading } = useCurrentStaffRole();
   const canManage = currentRole === 'super_admin';
   const { data: staff = [], isLoading, isError, refetch, isFetching } = useStaffList(canManage);
-  const createMutation = useCreatePlatformStaff();
-  const updateMutation = useUpdatePlatformStaff();
+  const roleMutation = useSetPlatformStaffRole();
   const removeMutation = useRemovePlatformStaff();
   const [resetTarget, setResetTarget] = useState<{ member: PlatformStaffMember; action: CredentialResetAction } | null>(null);
   const [removingMember, setRemovingMember] = useState<PlatformStaffMember | null>(null);
-  const [email, setEmail] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<StaffRole>('operator');
-  const [editingMember, setEditingMember] = useState<PlatformStaffMember | null>(null);
-  const [editEmail, setEditEmail] = useState('');
-  const [editFullName, setEditFullName] = useState('');
-  const [editPassword, setEditPassword] = useState('');
-  const [editPasswordConfirmation, setEditPasswordConfirmation] = useState('');
-  const [editRole, setEditRole] = useState<StaffRole>('operator');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const startEditing = (member: PlatformStaffMember) => {
-    setEditingMember(member);
-    setEditEmail(member.email ?? '');
-    setEditFullName(member.full_name ?? member.username ?? '');
-    setEditPassword('');
-    setEditPasswordConfirmation('');
-    setEditRole(member.role);
+  const changeRole = (member: PlatformStaffMember, role: StaffRole) => {
     setMessage(null);
-  };
-
-  const stopEditing = () => {
-    setEditingMember(null);
-    setEditPassword('');
-    setEditPasswordConfirmation('');
-  };
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setMessage(null);
-    createMutation.mutate(
-      { email, fullName, password, role },
-      {
-        onSuccess: (result) => {
-          const accountText = result.staffStatus === 'already_staff'
-            ? 'Este usuário já tinha acesso ao backoffice; nenhum dado foi duplicado ou alterado.'
-            : result.accountStatus === 'existing'
-              ? 'A conta já existia na plataforma e foi vinculada ao backoffice.'
-              : 'A conta foi criada e vinculada ao backoffice.';
-          setMessage({ type: 'success', text: accountText });
-          setEmail('');
-          setFullName('');
-          setPassword('');
-          setRole('operator');
-        },
-        onError: (error) => setMessage({ type: 'error', text: staffErrorMessage(error) }),
-      },
-    );
-  };
-
-  const handleEditSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!editingMember) return;
-    setMessage(null);
-    if (editPassword !== editPasswordConfirmation) {
-      setMessage({ type: 'error', text: 'A confirmação não corresponde à nova senha.' });
-      return;
-    }
-
-    updateMutation.mutate(
-      {
-        userId: editingMember.user_id,
-        email: editEmail,
-        fullName: editFullName,
-        password: editPassword,
-        role: editRole,
-      },
-      {
-        onSuccess: () => {
-          stopEditing();
-          setMessage({ type: 'success', text: 'Dados e acesso do usuário atualizados.' });
-        },
-        onError: (error) => setMessage({ type: 'error', text: staffErrorMessage(error) }),
-      },
-    );
+    roleMutation.mutate({ userId: member.id, role }, {
+      onSuccess: () => setMessage({ type: 'success', text: 'Nível interno atualizado.' }),
+      onError: (error) => setMessage({ type: 'error', text: staffErrorMessage(error) }),
+    });
   };
 
   const removeInternalAccess = () => {
     if (!removingMember) return;
     setMessage(null);
-    removeMutation.mutate(removingMember.user_id, {
+    removeMutation.mutate(removingMember.id, {
       onSuccess: () => {
         setMessage({
           type: 'success',
-          text: `O acesso de ${removingMember.full_name || removingMember.email || 'usuário'} ao backoffice foi removido. A conta da plataforma foi preservada.`,
+          text: `O acesso de ${removingMember.display_name || removingMember.email || 'usuário'} ao backoffice foi removido. A conta da plataforma foi preservada.`,
         });
         setRemovingMember(null);
       },
@@ -2020,143 +1923,19 @@ function UsersPage() {
           </div>
         ) : (
           <>
-            <section className="staff-create-panel" aria-labelledby="staff-create-title">
-              <div className="staff-create-copy">
-                <UserPlus size={20} />
-                <div>
-                  <h2 id="staff-create-title">Incluir funcionário</h2>
-                  <p>Se o e-mail já existir no app, a conta e a senha atuais serão preservadas.</p>
-                </div>
+            <div className="access-panel inline-access" role="status">
+              <div className="status-icon"><Shield size={24} /></div>
+              <div>
+                <h2>Conceder acesso a uma conta existente</h2>
+                <p>Abra o Diretório, localize a conta e escolha o nível interno no detalhe. O backoffice nunca cria login nem recebe senha.</p>
               </div>
-
-              <form className="staff-form" onSubmit={handleSubmit}>
-                <label>
-                  <span>E-mail</span>
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    required
-                  />
-                </label>
-                <label>
-                  <span>Nome completo</span>
-                  <input
-                    type="text"
-                    autoComplete="name"
-                    value={fullName}
-                    onChange={(event) => setFullName(event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Nível de acesso</span>
-                  <select value={role} onChange={(event) => setRole(event.target.value as StaffRole)}>
-                    {staffRoleOptions.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                  <small>{staffRoleOptions.find((option) => option.value === role)?.description}</small>
-                </label>
-                <label>
-                  <span>Senha inicial</span>
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    minLength={8}
-                  />
-                  <small>Obrigatória somente para conta nova. A conta existente nunca terá a senha alterada.</small>
-                </label>
-                <button className="button primary" type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? <RefreshCw className="spin" size={16} /> : <UserPlus size={16} />}
-                  Incluir no backoffice
-                </button>
-              </form>
-
-            </section>
+            </div>
 
             {message && (
               <div className={`inline-alert ${message.type === 'error' ? 'danger' : ''}`} role="status">
                 {message.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
                 {message.text}
               </div>
-            )}
-
-            {editingMember && (
-              <section className="staff-edit-panel" aria-labelledby="staff-edit-title">
-                <div className="staff-create-copy">
-                  <Pencil size={20} />
-                  <div>
-                    <h2 id="staff-edit-title">Editar acesso</h2>
-                    <p>Alterações no e-mail e na senha também atualizam o login da plataforma.</p>
-                  </div>
-                </div>
-
-                <form className="staff-form" onSubmit={handleEditSubmit}>
-                  <label>
-                    <span>E-mail de login</span>
-                    <input
-                      type="email"
-                      autoComplete="email"
-                      value={editEmail}
-                      onChange={(event) => setEditEmail(event.target.value)}
-                      required
-                    />
-                  </label>
-                  <label>
-                    <span>Nome completo</span>
-                    <input
-                      type="text"
-                      autoComplete="name"
-                      value={editFullName}
-                      onChange={(event) => setEditFullName(event.target.value)}
-                      required
-                    />
-                  </label>
-                  <label>
-                    <span>Nível de acesso</span>
-                    <select value={editRole} onChange={(event) => setEditRole(event.target.value as StaffRole)}>
-                      {staffRoleOptions.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
-                    <small>{staffRoleOptions.find((option) => option.value === editRole)?.description}</small>
-                  </label>
-                  <label>
-                    <span>Nova senha</span>
-                    <input
-                      type="password"
-                      autoComplete="new-password"
-                      value={editPassword}
-                      onChange={(event) => setEditPassword(event.target.value)}
-                      minLength={8}
-                    />
-                    <small>Deixe em branco para preservar a senha atual.</small>
-                  </label>
-                  <label>
-                    <span>Confirmar nova senha</span>
-                    <input
-                      type="password"
-                      autoComplete="new-password"
-                      value={editPasswordConfirmation}
-                      onChange={(event) => setEditPasswordConfirmation(event.target.value)}
-                      minLength={8}
-                    />
-                  </label>
-                  <div className="staff-form-actions">
-                    <button className="button primary" type="submit" disabled={updateMutation.isPending}>
-                      {updateMutation.isPending ? <RefreshCw className="spin" size={16} /> : <Save size={16} />}
-                      Salvar alterações
-                    </button>
-                    <button className="button secondary" type="button" onClick={stopEditing} disabled={updateMutation.isPending}>
-                      <X size={16} />
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
-              </section>
             )}
 
             {removingMember && (
@@ -2171,7 +1950,7 @@ function UsersPage() {
                 <div className="staff-form-actions">
                   <button className="button staff-remove-button" type="button" onClick={removeInternalAccess} disabled={removeMutation.isPending}>
                     {removeMutation.isPending ? <RefreshCw className="spin" size={16} /> : <ShieldOff size={16} />}
-                    Remover acesso de {removingMember.full_name || removingMember.email || 'usuário'}
+                    Remover acesso de {removingMember.display_name || removingMember.email || 'usuário'}
                   </button>
                   <button className="button secondary" type="button" onClick={() => setRemovingMember(null)} disabled={removeMutation.isPending}>
                     <X size={16} />
@@ -2209,21 +1988,32 @@ function UsersPage() {
                     </thead>
                     <tbody>
                       {staff.map((member) => (
-                        <tr key={member.user_id}>
+                        <tr key={member.id}>
                           <td>
-                            <strong>{member.full_name || member.username || 'Sem nome'}</strong>
+                            <strong>{member.display_name || member.username || 'Sem nome'}</strong>
                             <span>{member.email || 'E-mail indisponível'}</span>
                           </td>
-                          <td><span className={`role-badge role-${member.role}`}>{staffRoleLabel(member.role)}</span></td>
-                          <td>{formatDateTime(new Date(member.created_at))}</td>
+                          <td>
+                            <select
+                              value={member.staff_role ?? ''}
+                              aria-label={`Nível interno de ${member.display_name || member.email || member.username}`}
+                              disabled={member.id === currentUser?.id || roleMutation.isPending}
+                              onChange={(event) => changeRole(member, event.target.value as StaffRole)}
+                            >
+                              {staffRoleOptions.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>{member.staff_since ? formatDateTime(new Date(member.staff_since)) : '—'}</td>
                           <td className="staff-actions-cell">
-                            {member.user_id !== currentUser?.id && (
+                            {member.id !== currentUser?.id && (
                               <>
                                 <button
                                   className="icon-button table-action"
                                   type="button"
-                                  title={`Enviar link de redefinição de senha para ${member.full_name || member.email || 'usuário'}`}
-                                  aria-label={`Resetar senha de ${member.full_name || member.email || 'usuário'}`}
+                                  title={`Enviar link de redefinição de senha para ${member.display_name || member.email || 'usuário'}`}
+                                  aria-label={`Resetar senha de ${member.display_name || member.email || 'usuário'}`}
                                   onClick={() => setResetTarget({ member, action: 'password' })}
                                 >
                                   <KeyRound size={16} />
@@ -2231,29 +2021,20 @@ function UsersPage() {
                                 <button
                                   className="icon-button table-action"
                                   type="button"
-                                  title={`Resetar autenticador (MFA) de ${member.full_name || member.email || 'usuário'}`}
-                                  aria-label={`Resetar MFA de ${member.full_name || member.email || 'usuário'}`}
+                                  title={`Resetar autenticador (MFA) de ${member.display_name || member.email || 'usuário'}`}
+                                  aria-label={`Resetar MFA de ${member.display_name || member.email || 'usuário'}`}
                                   onClick={() => setResetTarget({ member, action: 'mfa' })}
                                 >
                                   <ShieldOff size={16} />
                                 </button>
                               </>
                             )}
-                            <button
-                              className="icon-button table-action"
-                              type="button"
-                              title={`Editar ${member.full_name || member.email || 'usuário'}`}
-                              aria-label={`Editar ${member.full_name || member.email || 'usuário'}`}
-                              onClick={() => startEditing(member)}
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            {member.user_id !== currentUser?.id && (
+                            {member.id !== currentUser?.id && (
                               <button
                                 className="icon-button table-action staff-remove-control"
                                 type="button"
-                                title={`Remover ${member.full_name || member.email || 'usuário'} do backoffice sem apagar a conta da plataforma`}
-                                aria-label={`Remover ${member.full_name || member.email || 'usuário'} do backoffice`}
+                                title={`Remover ${member.display_name || member.email || 'usuário'} do backoffice sem apagar a conta da plataforma`}
+                                aria-label={`Remover ${member.display_name || member.email || 'usuário'} do backoffice`}
                                 onClick={() => setRemovingMember(member)}
                               >
                                 <ShieldOff size={16} />
@@ -2273,8 +2054,8 @@ function UsersPage() {
 
       {resetTarget && (
         <CredentialResetDialog
-          targetUserId={resetTarget.member.user_id}
-          targetLabel={resetTarget.member.full_name || resetTarget.member.email || 'este usuário'}
+          targetUserId={resetTarget.member.id}
+          targetLabel={resetTarget.member.display_name || resetTarget.member.email || 'este usuário'}
           action={resetTarget.action}
           onCancel={() => setResetTarget(null)}
           onDone={(message) => {

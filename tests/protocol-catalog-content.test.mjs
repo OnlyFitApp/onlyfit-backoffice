@@ -4,24 +4,40 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-test('catalog sends every step to backend validation and preserves an unspecified clock', async () => {
+const translations = (name, instruction = '') => [
+  {locale:'pt-BR',name,category:'Categoria',description:'Descrição completa',instruction},
+  {locale:'pt-PT',name,category:'Categoria',description:'Descrição completa',instruction},
+  {locale:'en',name,category:'Category',description:'Complete description',instruction},
+];
+
+test('catalog sends translated steps to backend validation and preserves an unspecified clock', async () => {
   let sent;
   const exports = {};
   const source = readFileSync(new URL('../src/lib/protocolCatalog.ts', import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, {compilerOptions: {module: ts.ModuleKind.CommonJS}}).outputText;
-  const supabase = {rpc: async (_name, payload) => {
-    sent = payload;
-    return {data: {id: payload.p_id}, error: null};
-  }};
-  runInNewContext(compiled, {exports, require: () => ({supabase, api: new Proxy({}, {get: () => supabase})})});
-  await exports.upsertProtocolCatalogEntry({id:'onlyfit_health_example',name:'Example',category:'Recovery',
-    description:'Source instructions',iconKey:'sun',flow:'generic',structureLocked:true,clinicalNotice:true,
+  const core = {
+    coreApi: {staff: {
+      catalog: async () => ({items: []}),
+      catalogSave: async (payload) => {
+        sent = payload.item;
+        return {kind:'protocol_templates',key:payload.item.key,active:true,version:1};
+      },
+      catalogActivate: async () => undefined,
+      catalogDeactivate: async () => undefined,
+    }},
+  };
+  const icons = {protocolIconKeys:['sun']};
+  runInNewContext(compiled, {exports, require: (id) => id.includes('/api/core') ? core : icons});
+  await exports.upsertProtocolCatalogEntry({id:'example',translations:translations('Example'),
+    iconKey:'sun',flow:'generic',structureLocked:true,clinicalNotice:true,
     featured:false,sortOrder:0,active:true,defaultSteps:[
-      {name:'Named step',instruction:'Complete instruction',time:'',durationMinutes:null},
-      {name:'',instruction:'Must not disappear',time:'08:00',durationMinutes:null},
+      {translations:translations('Named step','Complete instruction'),time:'',durationMinutes:null},
+      {translations:translations('Second step','Must not disappear'),time:'08:00',durationMinutes:null},
     ]});
-  assert.equal(sent.p_default_steps.length,2);
-  assert.equal(sent.p_default_steps[0].instruction,'Complete instruction');
-  assert.equal('time' in sent.p_default_steps[0],false);
-  assert.equal(sent.p_default_steps[1].instruction,'Must not disappear');
+  assert.equal(sent.data.default_steps.length,2);
+  assert.equal(sent.data.default_steps[0].translations[0].instruction,'Complete instruction');
+  assert.equal('time' in sent.data.default_steps[0],true);
+  assert.equal(sent.data.default_steps[0].time,null);
+  assert.equal(sent.data.default_steps[1].translations[2].instruction,'Must not disappear');
+  assert.deepEqual(sent.data.translations.map((item) => item.locale),['pt-BR','pt-PT','en']);
 });

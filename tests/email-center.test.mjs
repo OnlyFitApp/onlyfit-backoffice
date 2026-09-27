@@ -30,7 +30,7 @@ test('responde na conversa existente e envia anexos', () => {
 test('renderiza HTML recebido isolado e baixa anexos por autorização temporária', () => {
   assert.match(page, /sandbox=""/);
   assert.match(page, /referrerPolicy="no-referrer"/);
-  assert.match(api, /control-email-attachment/);
-  assert.match(api, /control_get_email_thread/);
+  assert.match(api, /coreApi\.staff\.emailAttachment/);
+  assert.match(api, /coreApi\.staff\.emailThread/);
   assert.doesNotMatch(api + sendApi, /service_role|SUPABASE_SERVICE_ROLE_KEY|RESEND_API_KEY/);
 });

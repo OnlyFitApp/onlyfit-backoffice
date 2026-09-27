@@ -22,16 +22,15 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
-  // F1: o backend só é chamado por api.<domínio> (src/api).
   {
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/api/**', 'src/lib/supabase.ts'],
+    ignores: ['src/api/core.gen.ts', 'src/api/core.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: "MemberExpression[object.name='supabase'][property.name=/^(from|rpc|channel|functions|storage)$/]",
-          message: 'Chame o backend por api.<domínio> (src/api), não pelo cliente Supabase direto.',
+          message: 'Use coreApi e os contratos gerados; acesso direto ao Supabase é proibido.',
         },
       ],
     },

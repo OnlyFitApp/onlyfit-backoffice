@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, RefreshCw, Search, UsersRound, X } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Search, UsersRound, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { formatDateTime, formatNumber } from '../lib/format';
 import { displayName, formatDocument, type UserListItem, type UserSearchFilters } from '../lib/users';
@@ -31,40 +31,35 @@ function UserRow({ user, onOpen }: { user: UserListItem; onOpen: () => void }) {
         <strong>{user.email ?? '—'}</strong>
         <span>{user.phone ?? 'sem telefone'}</span>
       </td>
-      <td>{user.has_cpf ? formatDocument(user.cpf_last4) : '—'}</td>
+      <td>{formatDocument(user.document_last4)}</td>
       <td>
         <div className="user-badges">
           {user.staff_role && <span className="role-badge role-admin">Equipe</span>}
-          {user.app_lockdown && <span className="role-badge alert">Bloqueado</span>}
           {user.is_professional && <span className="role-badge">Profissional</span>}
-          {user.is_creator && <span className="role-badge">Criador</span>}
-          {!user.is_professional && !user.is_creator && !user.staff_role && <span className="role-badge">Membro</span>}
+          {!user.is_professional && !user.staff_role && <span className="role-badge">Membro</span>}
         </div>
       </td>
       <td>{user.created_at ? formatDateTime(new Date(user.created_at)) : '—'}</td>
-      <td>{user.last_sign_in_at ? formatDateTime(new Date(user.last_sign_in_at)) : 'nunca'}</td>
     </tr>
   );
 }
 
 export function UsersDirectoryPage() {
   const { data: currentRole, isLoading: roleLoading } = useCurrentStaffRole();
-  const canEdit = currentRole === 'super_admin' || currentRole === 'admin';
-  const canDelete = currentRole === 'super_admin';
-
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [flash, setFlash] = useState('');
   const [queryInput, setQueryInput] = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
   const [createdFrom, setCreatedFrom] = useState('');
   const [createdTo, setCreatedTo] = useState('');
   const [page, setPage] = useState(0);
+  const [cursors, setCursors] = useState<Array<string | null>>([null]);
 
   // Busca acompanha a digitação sem disparar uma consulta por tecla.
   useEffect(() => {
     const timer = setTimeout(() => {
       setAppliedQuery(queryInput.trim());
       setPage(0);
+      setCursors([null]);
     }, 350);
     return () => clearTimeout(timer);
   }, [queryInput]);
@@ -73,14 +68,13 @@ export function UsersDirectoryPage() {
     query: appliedQuery || null,
     createdFrom: createdFrom || null,
     createdTo: createdTo || null,
+    cursor: cursors[page] ?? null,
     limit: PAGE_SIZE,
-    offset: page * PAGE_SIZE,
-  }), [appliedQuery, createdFrom, createdTo, page]);
+  }), [appliedQuery, createdFrom, createdTo, cursors, page]);
 
   const query = useUserSearch(filters, !selectedUserId);
   const items = query.data?.items ?? [];
-  const total = query.data?.total ?? 0;
-  const maxPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+  const nextCursor = query.data?.next_cursor ?? null;
   const hasFilters = Boolean(appliedQuery || createdFrom || createdTo);
 
   const clearFilters = () => {
@@ -89,19 +83,15 @@ export function UsersDirectoryPage() {
     setCreatedFrom('');
     setCreatedTo('');
     setPage(0);
+    setCursors([null]);
   };
 
   if (selectedUserId) {
     return (
       <UserDetail
         userId={selectedUserId}
-        canEdit={canEdit}
-        canDelete={canDelete}
+        currentRole={currentRole ?? null}
         onBack={() => setSelectedUserId(null)}
-        onDeleted={(message) => {
-          setSelectedUserId(null);
-          setFlash(message);
-        }}
       />
     );
   }
@@ -112,7 +102,7 @@ export function UsersDirectoryPage() {
         <div>
           <p className="section-label">Base de usuários</p>
           <h1>Usuários</h1>
-          <span>Consulte, altere o cadastro e, quando necessário, exclua a conta e tudo que ela tem na plataforma.</span>
+          <span>Consulte dados operacionais e vínculos canônicos das contas da plataforma.</span>
         </div>
         <div className="header-actions">
           <button className="button secondary" type="button" onClick={() => query.refetch()} disabled={query.isFetching}>
@@ -123,16 +113,6 @@ export function UsersDirectoryPage() {
       </header>
 
       <section className="content">
-        {flash && (
-          <div className="inline-alert" role="status">
-            <CheckCircle2 size={18} />
-            {flash}
-            <button className="icon-button" type="button" aria-label="Fechar aviso" onClick={() => setFlash('')}>
-              <X size={16} />
-            </button>
-          </div>
-        )}
-
         <section className="user-filters" aria-label="Filtros da lista de usuários">
           <div className="search-box user-search">
             <Search size={16} />
@@ -154,7 +134,7 @@ export function UsersDirectoryPage() {
               type="date"
               value={createdFrom}
               max={createdTo || undefined}
-              onChange={(event) => { setCreatedFrom(event.target.value); setPage(0); }}
+              onChange={(event) => { setCreatedFrom(event.target.value); setPage(0); setCursors([null]); }}
             />
           </label>
           <label className="user-date-field">
@@ -163,7 +143,7 @@ export function UsersDirectoryPage() {
               type="date"
               value={createdTo}
               min={createdFrom || undefined}
-              onChange={(event) => { setCreatedTo(event.target.value); setPage(0); }}
+              onChange={(event) => { setCreatedTo(event.target.value); setPage(0); setCursors([null]); }}
             />
           </label>
           {hasFilters && (
@@ -178,10 +158,7 @@ export function UsersDirectoryPage() {
           <div className="section-heading">
             <div>
               <h2 id="user-list-title">Contas na base</h2>
-              <p>
-                {formatNumber(total)} usuário(s){hasFilters ? ' no filtro atual' : ' na plataforma'}
-                {total > 0 ? ` · página ${page + 1} de ${maxPage + 1}` : ''}
-              </p>
+              <p>Página {page + 1}{hasFilters ? ' do filtro atual' : ' da plataforma'}</p>
             </div>
           </div>
 
@@ -211,22 +188,30 @@ export function UsersDirectoryPage() {
                       <th>CPF</th>
                       <th>Perfil</th>
                       <th>Cadastro</th>
-                      <th>Último acesso</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((user) => (
-                      <UserRow key={user.id} user={user} onOpen={() => { setFlash(''); setSelectedUserId(user.id); }} />
+                      <UserRow key={user.id} user={user} onOpen={() => setSelectedUserId(user.id)} />
                     ))}
                   </tbody>
                 </table>
               </div>
               <div className="user-pagination">
-                <span>{formatNumber(total)} resultado(s)</span>
+                <span>{formatNumber(items.length)} conta(s) nesta página</span>
                 <button className="button secondary" type="button" onClick={() => setPage((current) => Math.max(0, current - 1))} disabled={page === 0}>
                   Anterior
                 </button>
-                <button className="button secondary" type="button" onClick={() => setPage((current) => Math.min(maxPage, current + 1))} disabled={page >= maxPage}>
+                <button
+                  className="button secondary"
+                  type="button"
+                  onClick={() => {
+                    if (!nextCursor) return;
+                    setCursors((current) => [...current.slice(0, page + 1), nextCursor]);
+                    setPage((current) => current + 1);
+                  }}
+                  disabled={!nextCursor}
+                >
                   Próxima
                 </button>
               </div>

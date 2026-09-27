@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   listOfferingCatalog,
-  upsertAppStoreProduct,
-  type AppStoreProductInput,
+  listNativeProducts,
+  saveNativeStoreProduct,
+  type NativeStoreProductInput,
   type OfferingCatalogFilters,
 } from '../lib/offeringCatalog';
 
@@ -15,13 +16,22 @@ export function useOfferingCatalog(filters: OfferingCatalogFilters, enabled: boo
   });
 }
 
-export function useUpsertAppStoreProduct() {
+export function useSaveNativeStoreProduct() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: AppStoreProductInput) => upsertAppStoreProduct(input),
+    mutationFn: (input: NativeStoreProductInput) => saveNativeStoreProduct(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['offering-catalog'] });
+      void queryClient.invalidateQueries({ queryKey: ['native-products'] });
     },
+  });
+}
+
+export function useNativeProducts() {
+  return useQuery({
+    queryKey: ['native-products'],
+    queryFn: listNativeProducts,
+    staleTime: 30 * 1000,
   });
 }

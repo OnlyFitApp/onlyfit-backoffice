@@ -1,152 +1,84 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffExercise, StaffExerciseCatalogPage, StaffExerciseMediaReady, TrainingExercise } from '../api/core.gen';
 
-export type ExerciseCatalogEntry = {
-  id: string;
-  source: string;
-  sourceId: string;
-  namePtbr: string;
-  nameEn: string;
-  nameEs: string;
-  instructionsPtbr: string;
-  instructionsEn: string;
-  instructionsEs: string;
-  category: string;
-  equipment: string;
-  primaryMuscles: string[];
-  secondaryMuscles: string[];
-  difficulty: string;
-  force: string;
-  mechanic: string;
-  grips: string[];
-  videoUrl: string;
-  thumbUrl: string;
-  mediaStatus: string;
-  mediaLastError: string;
-  sports: string[];
-  active: boolean;
-  inUseCount: number;
-  updatedAt: string | null;
-};
+export type ExerciseCatalogEntry = StaffExercise;
+export type ExerciseCatalogPage = StaffExerciseCatalogPage;
+export type ExerciseCatalogFilters = Parameters<typeof coreApi.staff.exerciseCatalog>[0];
+export type ExerciseCatalogInput = Parameters<typeof coreApi.staff.exerciseCatalogSave>[0];
 
-export type ExerciseCatalogInput = Omit<
-  ExerciseCatalogEntry,
-  'source' | 'sourceId' | 'mediaStatus' | 'mediaLastError' | 'inUseCount' | 'updatedAt'
->;
-
-export type ExerciseCatalogFilters = {
-  search: string;
-  active: boolean | null;
-  sport: string | null;
-  limit: number;
-  offset: number;
-};
-
-type ExerciseCatalogPage = {
-  items: ExerciseCatalogEntry[];
-  total: number;
-};
-
-function record(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+export function listExerciseCatalog(filters: ExerciseCatalogFilters): Promise<ExerciseCatalogPage> {
+  return coreApi.staff.exerciseCatalog(filters);
 }
 
-function strings(value: unknown): string[] {
-  return Array.isArray(value) ? value.map(String).filter(Boolean) : [];
-}
-
-function parseEntry(value: unknown): ExerciseCatalogEntry {
-  const row = record(value);
-  return {
-    id: String(row.id ?? ''),
-    source: String(row.source ?? ''),
-    sourceId: String(row.source_id ?? ''),
-    namePtbr: String(row.name_ptbr ?? ''),
-    nameEn: String(row.name_en ?? ''),
-    nameEs: String(row.name_es ?? ''),
-    instructionsPtbr: String(row.instructions_ptbr ?? ''),
-    instructionsEn: String(row.instructions_en ?? ''),
-    instructionsEs: String(row.instructions_es ?? ''),
-    category: String(row.category ?? ''),
-    equipment: String(row.equipment ?? ''),
-    primaryMuscles: strings(row.primary_muscles),
-    secondaryMuscles: strings(row.secondary_muscles),
-    difficulty: String(row.difficulty ?? ''),
-    force: String(row.force ?? ''),
-    mechanic: String(row.mechanic ?? ''),
-    grips: strings(row.grips),
-    videoUrl: String(row.video_url ?? ''),
-    thumbUrl: String(row.thumb_url ?? ''),
-    mediaStatus: String(row.media_status ?? ''),
-    mediaLastError: String(row.media_last_error ?? ''),
-    sports: strings(row.sports),
-    active: Boolean(row.active),
-    inUseCount: Number(row.in_use_count) || 0,
-    updatedAt: typeof row.updated_at === 'string' ? row.updated_at : null,
-  };
-}
-
-export async function listExerciseCatalog(filters: ExerciseCatalogFilters): Promise<ExerciseCatalogPage> {
-  const { data, error } = await api.staff.rpc('control_list_exercise_catalog', {
-    p_search: filters.search.trim() || null,
-    p_active: filters.active,
-    p_sport: filters.sport,
-    p_limit: filters.limit,
-    p_offset: filters.offset,
+export function saveExerciseCatalogEntry(
+  input: Omit<ExerciseCatalogInput, 'idempotencyKey'>,
+): Promise<StaffExercise> {
+  return coreApi.staff.exerciseCatalogSave({
+    ...input,
+    idempotencyKey: crypto.randomUUID(),
   });
-  if (error) throw error;
-  const payload = record(data);
-  return {
-    items: Array.isArray(payload.items) ? payload.items.map(parseEntry) : [],
-    total: Number(payload.total) || 0,
-  };
 }
 
-export async function upsertExerciseCatalogEntry(input: ExerciseCatalogInput): Promise<string> {
-  const { data, error } = await api.staff.rpc('control_upsert_exercise_catalog_entry', {
-    p_entry: {
-      id: input.id || null,
-      name_ptbr: input.namePtbr.trim(),
-      name_en: input.nameEn.trim(),
-      name_es: input.nameEs.trim() || null,
-      instructions_ptbr: input.instructionsPtbr.trim() || null,
-      instructions_en: input.instructionsEn.trim() || null,
-      instructions_es: input.instructionsEs.trim() || null,
-      category: input.category.trim() || null,
-      equipment: input.equipment.trim() || null,
-      primary_muscles: input.primaryMuscles,
-      secondary_muscles: input.secondaryMuscles,
-      difficulty: input.difficulty.trim() || null,
-      force: input.force.trim() || null,
-      mechanic: input.mechanic.trim() || null,
-      grips: input.grips,
-      video_url: input.videoUrl.trim() || null,
-      thumb_url: input.thumbUrl.trim() || null,
-      sports: input.sports,
-      active: input.active,
+export function setExerciseCatalogActive(input: {
+  exerciseId: string;
+  active: boolean;
+  expectedVersion: number;
+}): Promise<TrainingExercise> {
+  return coreApi.staff.exerciseCatalogAct({ ...input, idempotencyKey: crypto.randomUUID() });
+}
+
+type ExerciseMediaKind = 'video' | 'thumbnail';
+type ExerciseMediaMime = 'video/mp4' | 'video/webm' | 'video/quicktime' | 'image/jpeg' | 'image/png' | 'image/webp';
+
+function mediaMime(file: File, kind: ExerciseMediaKind): ExerciseMediaMime {
+  if (kind === 'video') {
+    if (file.type === 'video/mp4' || file.type === 'video/webm' || file.type === 'video/quicktime') return file.type;
+    throw new Error('staff.invalid_exercise_video');
+  }
+  if (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp') return file.type;
+  throw new Error('staff.invalid_exercise_thumbnail');
+}
+
+export async function uploadExerciseMedia(file: File, kind: ExerciseMediaKind): Promise<StaffExerciseMediaReady> {
+  if (file.size <= 0) throw new Error('staff.invalid_exercise_media');
+  const pending = await coreApi.staff.exerciseMediaUpload({
+    upload: {
+      action: 'prepare',
+      request_id: crypto.randomUUID(),
+      media_kind: kind,
+      filename: file.name,
+      mime: mediaMime(file, kind),
+      bytes: file.size,
     },
   });
-  if (error) throw error;
-  return String(record(data).id ?? input.id);
-}
-
-export async function setExerciseCatalogActive(input: { id: string; active: boolean }): Promise<void> {
-  const { error } = await api.staff.rpc('control_set_exercise_catalog_active', {
-    p_id: input.id,
-    p_active: input.active,
+  if (pending.status !== 'pending') throw new Error('staff.exercise_media_prepare_invalid');
+  const uploaded = await fetch(pending.upload_url, {
+    method: 'PUT',
+    headers: { 'Content-Type': pending.upload_headers['Content-Type'] },
+    body: file,
   });
-  if (error) throw error;
+  if (!uploaded.ok) throw new Error('staff.exercise_media_upload_failed');
+  const ready = await coreApi.staff.exerciseMediaUpload({
+    upload: {
+      action: 'complete',
+      request_id: pending.file_id,
+      idempotency_key: crypto.randomUUID(),
+    },
+  });
+  if (ready.status !== 'ready' || ready.media_kind !== kind) throw new Error('staff.exercise_media_complete_invalid');
+  return ready;
 }
 
 export function exerciseCatalogErrorMessage(error: unknown): string {
-  const message = (error as { message?: string })?.message ?? '';
-  if (message.includes('invalid_exercise_name')) return 'Preencha os nomes em português e inglês com até 120 caracteres.';
-  if (message.includes('invalid_exercise_instructions')) return 'Cada instrução pode ter até 10.000 caracteres.';
-  if (message.includes('invalid_exercise_media_url')) return 'A mídia precisa usar uma URL HTTPS.';
-  if (message.includes('invalid_exercise_sports')) return 'Selecione Força, CrossFit ou os dois.';
-  if (message.includes('too_many_exercise_tags')) return 'Cada grupo aceita até 20 itens.';
-  if (message.includes('exercise_not_found')) return 'Esse exercício não existe mais.';
-  if (message.includes('staff_role_required')) return 'Seu perfil não tem permissão para alterar a biblioteca.';
+  const code = error instanceof Error ? error.message : '';
+  if (code.includes('staff.invalid_exercise_media')) return 'A mídia não está pronta ou não pertence à biblioteca oficial.';
+  if (code.includes('staff.invalid_exercise_video')) return 'Use vídeo MP4, WebM ou QuickTime.';
+  if (code.includes('staff.invalid_exercise_thumbnail')) return 'Use miniatura JPEG, PNG ou WebP.';
+  if (code.includes('staff.exercise_media_upload_failed')) return 'Não foi possível enviar a mídia. Tente novamente.';
+  if (code.includes('staff.invalid_exercise')) return 'Revise nome, modalidade, idioma e classificação do exercício.';
+  if (code.includes('staff.exercise_not_found')) return 'Esse exercício não existe mais.';
+  if (code.includes('staff.exercise_changed')) return 'O exercício foi alterado por outra pessoa. Atualize a lista antes de continuar.';
+  if (code.includes('staff.forbidden')) return 'Seu perfil não tem permissão para alterar a biblioteca.';
+  if (code.includes('platform.idempotency_conflict')) return 'A operação já foi usada com outro conteúdo. Tente novamente.';
   return 'Não foi possível concluir a operação.';
 }

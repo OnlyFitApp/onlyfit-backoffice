@@ -4,27 +4,25 @@ import {
   listMemberAreaAccesses,
   listMemberAreaAudit,
   moderateCourseCommentReport,
-  suspendMemberAreaAccess,
+  setMemberAreaAccess,
   type AccessStatus,
-  type AuditAction,
-  type PageCursor,
   type ReportStatus,
 } from '../lib/memberAreaOperations';
 
-export function useMemberAreaAccesses(status: AccessStatus, query: string, cursor: PageCursor | null, enabled: boolean) {
+export function useMemberAreaAccesses(status: AccessStatus, query: string, page: number, enabled: boolean) {
   return useQuery({
-    queryKey: ['member-area-operations', 'accesses', status, query, cursor],
-    queryFn: () => listMemberAreaAccesses({ status, query, cursor }),
+    queryKey: ['member-area-operations', 'accesses', status, query, page],
+    queryFn: () => listMemberAreaAccesses({ status, query, offset: page * 40 }),
     placeholderData: keepPreviousData,
     staleTime: 20_000,
     enabled,
   });
 }
 
-export function useSuspendMemberAreaAccess() {
+export function useSetMemberAreaAccess() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: suspendMemberAreaAccess,
+    mutationFn: setMemberAreaAccess,
     onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: ['member-area-operations', 'accesses'] }),
@@ -34,10 +32,10 @@ export function useSuspendMemberAreaAccess() {
   });
 }
 
-export function useCourseCommentReports(status: ReportStatus, cursor: PageCursor | null, enabled: boolean) {
+export function useCourseCommentReports(status: ReportStatus, page: number, enabled: boolean) {
   return useQuery({
-    queryKey: ['member-area-operations', 'reports', status, cursor],
-    queryFn: () => listCourseCommentReports({ status, cursor }),
+    queryKey: ['member-area-operations', 'reports', status, page],
+    queryFn: () => listCourseCommentReports({ status, offset: page * 40 }),
     placeholderData: keepPreviousData,
     staleTime: 20_000,
     enabled,
@@ -57,10 +55,10 @@ export function useModerateCourseCommentReport() {
   });
 }
 
-export function useMemberAreaAudit(action: AuditAction, cursor: PageCursor | null, enabled: boolean) {
+export function useMemberAreaAudit(from: string, to: string, page: number, enabled: boolean) {
   return useQuery({
-    queryKey: ['member-area-operations', 'audit', action, cursor],
-    queryFn: () => listMemberAreaAudit({ action, cursor }),
+    queryKey: ['member-area-operations', 'audit', from, to, page],
+    queryFn: () => listMemberAreaAudit({ from, to, offset: page * 40 }),
     placeholderData: keepPreviousData,
     staleTime: 20_000,
     enabled,

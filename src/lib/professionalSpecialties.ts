@@ -1,18 +1,7 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffProfessionalSpecialtyItem } from '../api/core.gen';
+import { catalogKeyFromLabel } from './catalogKey';
 
-/**
- * G20 — a taxonomia de especialidades profissionais.
- *
- * A lista vivia como constante replicada no app Flutter, aqui no backoffice e
- * num `CASE` dentro do banco. Agora é uma tabela governada por esta página:
- * cadastrar, rotular em português, vincular ao conselho, ativar, desativar e
- * ordenar — sem release de cliente.
- *
- * Desativar **não** derruba o selo de quem já foi validado naquela
- * especialidade (regra 10): a revisão aprovada continua valendo, e o que a
- * desativação faz é tirar a especialidade da escolha de novos profissionais e
- * da barra de filtros do feed.
- */
 export type ProfessionalSpecialty = {
   key: string;
   label: string;
@@ -25,31 +14,32 @@ export type ProfessionalSpecialty = {
   declaredBy: number;
 };
 
-function record(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function parse(value: unknown): ProfessionalSpecialty {
-  const row = record(value);
+function specialty(item: StaffProfessionalSpecialtyItem): ProfessionalSpecialty {
   return {
-    key: String(row.key ?? ''),
-    label: String(row.label ?? ''),
-    council: String(row.council ?? ''),
-    regulated: Boolean(row.regulated),
-    active: Boolean(row.active),
-    sortOrder: Number(row.sort_order) || 0,
-    approvedCredentials: Number(row.approved_credentials) || 0,
-    pendingCredentials: Number(row.pending_credentials) || 0,
-    declaredBy: Number(row.declared_by) || 0,
+    key: item.key,
+    label: item.data.label,
+    council: item.data.council,
+    regulated: item.data.regulated,
+    active: item.active,
+    sortOrder: item.position,
+    approvedCredentials: item.impact.approved_credentials,
+    pendingCredentials: item.impact.pending_credentials,
+    declaredBy: item.impact.accounts,
   };
 }
 
+function requireSpecialty(item: Awaited<ReturnType<typeof coreApi.staff.catalogSave>>): StaffProfessionalSpecialtyItem {
+  if (item.kind !== 'professional_specialties') throw new Error('staff.invalid_catalog_response');
+  return item;
+}
+
+async function specialtyItems(): Promise<StaffProfessionalSpecialtyItem[]> {
+  const catalog = await coreApi.staff.catalog({ kind: 'professional_specialties' });
+  return catalog.items.filter((item): item is StaffProfessionalSpecialtyItem => item.kind === 'professional_specialties');
+}
+
 export async function listProfessionalSpecialties(): Promise<ProfessionalSpecialty[]> {
-  const { data, error } = await api.staff.rpc('control_list_professional_specialties');
-  if (error) throw error;
-  return Array.isArray(data) ? data.map(parse) : [];
+  return (await specialtyItems()).map(specialty);
 }
 
 export async function createProfessionalSpecialty(input: {
@@ -57,13 +47,20 @@ export async function createProfessionalSpecialty(input: {
   council: string;
   regulated: boolean;
 }): Promise<ProfessionalSpecialty> {
-  const { data, error } = await api.staff.rpc('control_create_professional_specialty', {
-    p_label: input.label,
-    p_council: input.council,
-    p_regulated: input.regulated,
+  const saved = requireSpecialty(await coreApi.staff.catalogSave({
+    item: {
+      kind: 'professional_specialties',
+      key: catalogKeyFromLabel(input.label),
+      label: input.label.trim(),
+      public: true,
+      position: 0,
+      data: { council: input.council.trim(), regulated: input.regulated },
+    },
+  }));
+  const activated = await coreApi.staff.catalogActivate({
+    kind: 'professional_specialties', key: saved.key, expectedVersion: saved.version,
   });
-  if (error) throw error;
-  return parse(data);
+  return specialty(requireSpecialty(activated));
 }
 
 export async function updateProfessionalSpecialty(input: {
@@ -72,32 +69,37 @@ export async function updateProfessionalSpecialty(input: {
   council: string;
   regulated: boolean;
 }): Promise<ProfessionalSpecialty> {
-  const { data, error } = await api.staff.rpc('control_update_professional_specialty', {
-    p_key: input.key,
-    p_label: input.label,
-    p_council: input.council,
-    p_regulated: input.regulated,
-  });
-  if (error) throw error;
-  return parse(data);
+  const current = (await specialtyItems()).find((item) => item.key === input.key);
+  if (!current) throw new Error('staff.catalog_item_not_found');
+  return specialty(requireSpecialty(await coreApi.staff.catalogSave({
+    item: {
+      kind: 'professional_specialties',
+      key: input.key,
+      label: input.label.trim(),
+      public: current.public,
+      position: current.position,
+      expected_version: current.version,
+      data: { council: input.council.trim(), regulated: input.regulated },
+    },
+  })));
 }
 
 export async function setProfessionalSpecialtyActive(input: {
   key: string;
   active: boolean;
 }): Promise<ProfessionalSpecialty> {
-  const { data, error } = await api.staff.rpc('control_set_professional_specialty_active', {
-    p_key: input.key,
-    p_active: input.active,
-  });
-  if (error) throw error;
-  return parse(data);
+  const current = (await specialtyItems()).find((item) => item.key === input.key);
+  if (!current) throw new Error('staff.catalog_item_not_found');
+  if (current.active === input.active) return specialty(current);
+  const changed = input.active
+    ? await coreApi.staff.catalogActivate({ kind: 'professional_specialties', key: input.key, expectedVersion: current.version })
+    : await coreApi.staff.catalogDeactivate({
+      kind: 'professional_specialties', key: input.key, expectedVersion: current.version, confirmation: current.data.label,
+    });
+  return specialty(requireSpecialty(changed));
 }
 
 export async function reorderProfessionalSpecialties(keys: string[]): Promise<ProfessionalSpecialty[]> {
-  const { data, error } = await api.staff.rpc('control_reorder_professional_specialties', {
-    p_keys: keys,
-  });
-  if (error) throw error;
-  return Array.isArray(data) ? data.map(parse) : [];
+  await coreApi.staff.catalogReorder({ kind: 'professional_specialties', keys });
+  return listProfessionalSpecialties();
 }

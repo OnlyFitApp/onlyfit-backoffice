@@ -40,7 +40,6 @@ import { useFinancialReconciliationRuns, useRecordTreasuryMovement, useRunFinanc
 import { AppStoreReconciliation } from './AppStoreReconciliation';
 import { AppStoreTransactionsPanel } from './AppStoreTransactionsPanel';
 import { useFinancialReports } from '../hooks/useFinancialReports';
-import { api } from '../api';
 
 function formatDay(value: string): string {
   if (!value) return '—';
@@ -50,6 +49,18 @@ function formatDay(value: string): string {
 
 function isoDate(value: Date) {
   return value.toISOString().slice(0, 10);
+}
+
+function transactionStatus(value: string): TransactionStatus | '' {
+  if (value === 'created' || value === 'pending' || value === 'confirmed' || value === 'settled'
+    || value === 'failed' || value === 'refunded' || value === 'chargeback') return value;
+  return '';
+}
+
+function parsedSettlementStatus(value: string): SettlementStatus | '' {
+  if (value === 'pending' || value === 'confirmed' || value === 'settled'
+    || value === 'refunded' || value === 'chargeback') return value;
+  return '';
 }
 
 function formatPercent(value: unknown): string {
@@ -69,6 +80,10 @@ function cellText(value: unknown, fallback = '—'): string {
 
 function formatMoneyCell(value: unknown): string {
   return formatCurrencyExact(cellNumber(value));
+}
+
+function formatOptionalMoney(value: number | null): string {
+  return value === null ? '—' : formatCurrencyExact(value);
 }
 
 function friendlyLedgerLabel(value: unknown): string {
@@ -117,7 +132,7 @@ export function FinancialReportsPanel() {
   const query = useFinancialReports(filters, Boolean(from && to && from <= to));
   const report = query.data;
   const summary = report?.summary;
-  const flagTotal = report ? Object.values(report.controlFlags).reduce((sum, value) => sum + value, 0) : 0;
+  const flagTotal = report ? Object.values(report.control_flags).reduce((sum, value) => sum + value, 0) : 0;
 
   return (
     <section className="finance-section" aria-labelledby="financial-reports-title">
@@ -164,7 +179,7 @@ export function FinancialReportsPanel() {
             <article className="report-metric">
               <div><span>Controles</span><ShieldCheck size={18} /></div>
               <strong>{formatNumber(flagTotal)}</strong>
-              <p>{formatNumber(report.controlFlags.open_reconciliation_exceptions ?? 0)} exceções · {formatNumber(report.controlFlags.unprocessed_provider_events ?? 0)} eventos pendentes</p>
+              <p>{formatNumber(report.control_flags.open_reconciliation_exceptions)} exceções · {formatNumber(report.control_flags.unprocessed_provider_events)} eventos pendentes</p>
             </article>
           </div>
 
@@ -179,18 +194,18 @@ export function FinancialReportsPanel() {
             <div className="report-block">
               <h3>Economia</h3>
               <dl className="status-list">
-                <div><dt>Líquido provedor</dt><dd>{formatCurrencyExact(summary.net_revenue)}</dd></div>
-                <div><dt>Taxas provedor</dt><dd>{formatCurrencyExact(summary.asaas_fees)} · {formatPercent(summary.asaas_fee_rate_percent)}</dd></div>
+                <div><dt>Líquido provedor</dt><dd>{formatOptionalMoney(summary.net_revenue)}</dd></div>
+                <div><dt>Taxas provedor</dt><dd>{formatOptionalMoney(summary.asaas_fees)} · {summary.asaas_fee_rate_percent === null ? '—' : formatPercent(summary.asaas_fee_rate_percent)}</dd></div>
                 <div><dt>Take rate bruto</dt><dd>{formatPercent(summary.take_rate_gross_percent)}</dd></div>
                 <div><dt>Profissional</dt><dd>{formatPercent(summary.professional_share_net_percent)}</dd></div>
-                <div><dt>MRR ativo</dt><dd>{formatCurrencyExact(summary.active_subscription_mrr)}</dd></div>
+                <div><dt>MRR ativo</dt><dd>{formatOptionalMoney(summary.active_subscription_mrr)}</dd></div>
               </dl>
             </div>
             <div className="report-block">
               <h3>Carteira</h3>
               <dl className="status-list">
                 <div><dt>Disponível</dt><dd>{formatCurrencyExact(summary.wallet_available)}</dd></div>
-                <div><dt>Pendente</dt><dd>{formatCurrencyExact(summary.wallet_pending)}</dd></div>
+                <div><dt>Pendente</dt><dd>{formatOptionalMoney(summary.wallet_pending)}</dd></div>
                 <div><dt>Reservada</dt><dd>{formatCurrencyExact(summary.wallet_reserved)}</dd></div>
                 <div><dt>Resgates abertos</dt><dd>{formatNumber(summary.open_payout_count)} · {formatCurrencyExact(summary.open_payout_amount)}</dd></div>
                 <div><dt>Resgates pagos</dt><dd>{formatNumber(summary.paid_payout_count)} · {formatCurrencyExact(summary.paid_payout_amount)}</dd></div>
@@ -204,7 +219,7 @@ export function FinancialReportsPanel() {
             <table className="staff-table">
               <thead><tr><th>Tipo de oferta</th><th>Vendas</th><th>Bruto</th><th>Comissão</th><th>Profissional</th><th>Take rate</th></tr></thead>
               <tbody>
-                {report.salesByOfferingType.length ? report.salesByOfferingType.map((row) => (
+                {report.sales_by_offering_type.length ? report.sales_by_offering_type.map((row) => (
                   <tr key={cellText(row.offering_type)}>
                     <td><strong>{cellText(row.offering_type_name)}</strong><span>{cellText(row.offering_type)}</span></td>
                     <td>{formatNumber(cellNumber(row.transactions_count))}</td>
@@ -225,7 +240,7 @@ export function FinancialReportsPanel() {
             <table className="staff-table">
               <thead><tr><th>Profissional</th><th>Vendas</th><th>Bruto</th><th>Comissão</th><th>A liquidar</th><th>Disponível</th><th>Take rate</th></tr></thead>
               <tbody>
-                {report.salesByProfessional.length ? report.salesByProfessional.map((row) => (
+                {report.sales_by_professional.length ? report.sales_by_professional.map((row) => (
                   <tr key={cellText(row.professional_profile_id)}>
                     <td><strong>{cellText(row.professional_name)}</strong><span>{row.professional_username ? `@${row.professional_username}` : cellText(row.professional_profile_id).slice(0, 8)}</span></td>
                     <td>{formatNumber(cellNumber(row.transactions_count))}</td>
@@ -247,38 +262,38 @@ export function FinancialReportsPanel() {
               <span>Operação e trilha financeira</span>
             </div>
             <div className="finance-mini-grid">
-            <ReportList title="Liquidação" rows={report.settlementByStatus} labelKey="settlement_status" countKey="transactions_count" amountKey="professional_net" />
-            <ReportList title="Assinaturas" rows={report.subscriptionStatuses} labelKey="status" countKey="subscriptions_count" amountKey="total_value" />
-            <ReportList title="Repasses" rows={report.payoutStatuses} labelKey="status" countKey="payouts_count" amountKey="total_amount" />
-            <ReportList title="Eventos" rows={report.providerEvents} labelKey="event_name" countKey="events_count" amountKey="unprocessed_count" amountLabel="pendentes" />
-            <ReportList title="Auditoria" rows={report.auditEvents} labelKey="event" countKey="events_count" dateKey="last_at" />
-            <LedgerReport rows={report.journalAccounts} />
+            <ReportList title="Liquidação" rows={report.settlement_by_status} label={row => row.settlement_status} count={row => row.transactions_count} amount={row => row.professional_net} />
+            <ReportList title="Assinaturas" rows={report.subscription_statuses} label={row => row.status} count={row => row.subscriptions_count} amount={row => row.total_value} />
+            <ReportList title="Repasses" rows={report.payout_statuses} label={row => row.status} count={row => row.payouts_count} amount={row => row.total_amount} />
+            <ReportList title="Eventos" rows={report.provider_events} label={row => row.event_name} count={row => row.events_count} amount={row => row.unprocessed_count} amountLabel="pendentes" />
+            <ReportList title="Auditoria" rows={report.audit_events} label={row => row.event} count={row => row.events_count} date={row => row.last_at} />
+            <LedgerReport rows={report.journal_accounts} />
             </div>
           </div>
 
-          <p className="muted-copy">Atualizado em {formatDateTime(new Date(report.generatedAt))}.</p>
+          <p className="muted-copy">Atualizado em {formatDateTime(new Date(report.generated_at))}.</p>
         </>
       ) : null}
     </section>
   );
 }
 
-function ReportList({
+function ReportList<T>({
   title,
   rows,
-  labelKey,
-  countKey,
-  amountKey,
+  label,
+  count,
+  amount,
   amountLabel,
-  dateKey,
+  date,
 }: {
   title: string;
-  rows: Array<Record<string, string | number | null>>;
-  labelKey: string;
-  countKey: string;
-  amountKey?: string;
+  rows: T[];
+  label: (row: T) => string;
+  count: (row: T) => number;
+  amount?: (row: T) => number | null;
   amountLabel?: string;
-  dateKey?: string;
+  date?: (row: T) => string;
 }) {
   return (
     <div className="report-block">
@@ -286,11 +301,11 @@ function ReportList({
       {rows.length ? (
         <dl className="status-list">
           {rows.slice(0, 8).map((row) => (
-            <div key={`${title}-${cellText(row[labelKey])}`}>
-              <dt>{friendlyStatusLabel(row[labelKey])}{dateKey && row[dateKey] ? <span>{formatDateTime(new Date(String(row[dateKey])))}</span> : null}</dt>
+            <div key={`${title}-${label(row)}`}>
+              <dt>{friendlyStatusLabel(label(row))}{date ? <span>{formatDateTime(new Date(date(row)))}</span> : null}</dt>
               <dd>
-                {formatNumber(cellNumber(row[countKey]))}
-                {amountKey ? ` · ${amountLabel === 'pendentes' ? `${formatNumber(cellNumber(row[amountKey]))} pend.` : `${amountLabel ? `${amountLabel} ` : ''}${formatMoneyCell(row[amountKey])}`}` : ''}
+                {formatNumber(count(row))}
+                {amount ? ` · ${amountLabel === 'pendentes' ? `${formatNumber(amount(row) ?? 0)} pend.` : `${amountLabel ? `${amountLabel} ` : ''}${formatCurrencyExact(amount(row) ?? 0)}`}` : ''}
               </dd>
             </div>
           ))}
@@ -300,8 +315,8 @@ function ReportList({
   );
 }
 
-function LedgerReport({ rows }: { rows: Array<Record<string, string | number | null>> }) {
-  const totalBalance = rows.reduce((sum, row) => sum + cellNumber(row.balance), 0);
+function LedgerReport({ rows }: { rows: { code: string; balance: number }[] }) {
+  const totalBalance = rows.reduce((sum, row) => sum + row.balance, 0);
 
   return (
     <details className="ledger-summary">
@@ -315,9 +330,9 @@ function LedgerReport({ rows }: { rows: Array<Record<string, string | number | n
       {rows.length ? (
         <dl className="status-list">
           {rows.slice(0, 8).map((row) => (
-            <div key={`ledger-${cellText(row.code)}`}>
+            <div key={`ledger-${row.code}`}>
               <dt>{friendlyLedgerLabel(row.code)}</dt>
-              <dd>{formatMoneyCell(row.balance)}</dd>
+              <dd>{formatCurrencyExact(row.balance)}</dd>
             </div>
           ))}
         </dl>
@@ -335,8 +350,10 @@ export function FinancialReconciliationPanel({ canEdit }: { canEdit: boolean }) 
   }, []);
   const [from, setFrom] = useState(weekAgo);
   const [to, setTo] = useState(today);
+  const [provider, setProvider] = useState<'stripe' | 'asaas'>('asaas');
   const [treasuryDirection, setTreasuryDirection] = useState<'invest' | 'redeem'>('invest');
   const [treasuryAmount, setTreasuryAmount] = useState('');
+  const [treasuryCurrency, setTreasuryCurrency] = useState('BRL');
   const [treasuryReference, setTreasuryReference] = useState('');
   const runs = useFinancialReconciliationRuns();
   const run = useRunFinancialReconciliation();
@@ -352,9 +369,13 @@ export function FinancialReconciliationPanel({ canEdit }: { canEdit: boolean }) 
         </div>
         {canEdit ? (
           <div className="header-actions finance-filter-row">
+            <select aria-label="Provedor" value={provider} onChange={(event) => setProvider(event.target.value === 'stripe' ? 'stripe' : 'asaas')}>
+              <option value="asaas">Asaas</option>
+              <option value="stripe">Stripe</option>
+            </select>
             <label><span className="sr-only">Início</span><input type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} /></label>
             <label><span className="sr-only">Fim</span><input type="date" value={to} min={from} max={today} onChange={(event) => setTo(event.target.value)} /></label>
-            <button className="button" type="button" disabled={run.isPending || !from || !to || from > to} onClick={() => run.mutate({ from, to })}>
+            <button className="button" type="button" disabled={run.isPending || !from || !to || from > to} onClick={() => run.mutate({ provider, from, to })}>
               <ReceiptText size={16} />
               Conciliar período
             </button>
@@ -366,13 +387,14 @@ export function FinancialReconciliationPanel({ canEdit }: { canEdit: boolean }) 
       {canEdit ? <form className="finance-treasury-form" onSubmit={(event) => {
         event.preventDefault();
         if (!Number.isFinite(parsedTreasuryAmount) || parsedTreasuryAmount <= 0 || !treasuryReference.trim()) return;
-        treasury.mutate({ direction: treasuryDirection, amount: parsedTreasuryAmount, reference: treasuryReference.trim() }, {
+        treasury.mutate({ direction: treasuryDirection, amount: parsedTreasuryAmount, currency: treasuryCurrency, reference: treasuryReference.trim() }, {
           onSuccess: () => { setTreasuryAmount(''); setTreasuryReference(''); },
         });
       }}>
         <strong>Tesouraria</strong>
-        <select value={treasuryDirection} onChange={(event) => setTreasuryDirection(event.target.value as 'invest' | 'redeem')}><option value="invest">Aplicar liquidez</option><option value="redeem">Resgatar liquidez</option></select>
+        <select value={treasuryDirection} onChange={(event) => setTreasuryDirection(event.target.value === 'redeem' ? 'redeem' : 'invest')}><option value="invest">Aplicar liquidez</option><option value="redeem">Resgatar liquidez</option></select>
         <input aria-label="Valor" placeholder="Valor" inputMode="decimal" value={treasuryAmount} onChange={(event) => setTreasuryAmount(event.target.value.replace(/[^\d,.]/g, ''))} />
+        <input aria-label="Moeda" value={treasuryCurrency} maxLength={3} pattern="[A-Z]{3}" onChange={(event) => setTreasuryCurrency(event.target.value.toUpperCase().replace(/[^A-Z]/g, ''))} />
         <input aria-label="Referência bancária" placeholder="Referência bancária" value={treasuryReference} maxLength={128} onChange={(event) => setTreasuryReference(event.target.value)} />
         <button className="button secondary" type="submit" disabled={treasury.isPending || !Number.isFinite(parsedTreasuryAmount) || parsedTreasuryAmount <= 0 || !treasuryReference.trim()}>Registrar</button>
       </form> : null}
@@ -440,16 +462,10 @@ export function PayoutQueuePanel({ canEdit }: { canEdit: boolean }) {
       window.alert('Informe a referência bancária e anexe o comprovante.');
       return;
     }
-    const extension = paymentProof.name.split('.').pop()?.replace(/[^A-Za-z0-9]/g, '').slice(0, 8) || 'bin';
-    const proofPath = `payout/${request.id}/${crypto.randomUUID()}.${extension}`;
-    const { error: uploadError } = await api.comercio.storage
-      .from('payout-proofs')
-      .upload(proofPath, paymentProof, { contentType: paymentProof.type, upsert: false });
-    if (uploadError) throw uploadError;
     await recordMutation.mutateAsync({
-      payoutId: request.id,
+      payout: request,
       paymentReference: paymentReference.trim(),
-      paymentProofPath: proofPath,
+      proof: paymentProof,
     });
     setRecordingPayoutId(null);
     setPaymentReference('');
@@ -463,7 +479,7 @@ export function PayoutQueuePanel({ canEdit }: { canEdit: boolean }) {
       window.alert('Informe um motivo para rejeitar.');
       return;
     }
-    await rejectMutation.mutateAsync({ payoutId: request.id, reason: reason.trim() });
+    await rejectMutation.mutateAsync({ payout: request, reason: reason.trim() });
     setSelected((prev) => ({ ...prev, [request.id]: false }));
   }
 
@@ -474,7 +490,7 @@ export function PayoutQueuePanel({ canEdit }: { canEdit: boolean }) {
       window.alert('Informe um motivo para registrar a falha.');
       return;
     }
-    await failMutation.mutateAsync({ payoutId: request.id, reason: reason.trim() });
+    await failMutation.mutateAsync({ payout: request, reason: reason.trim() });
   }
 
   async function runReversal(request: PayoutRequest) {
@@ -484,7 +500,7 @@ export function PayoutQueuePanel({ canEdit }: { canEdit: boolean }) {
       window.alert('Informe um motivo para registrar a reversão.');
       return;
     }
-    await reverseMutation.mutateAsync({ payoutId: request.id, reason: reason.trim() });
+    await reverseMutation.mutateAsync({ payout: request, reason: reason.trim() });
   }
 
   const days = daysQuery.data ?? [];
@@ -642,7 +658,7 @@ export function PayoutQueuePanel({ canEdit }: { canEdit: boolean }) {
                             type="button"
                             title="Aprovar resgate"
                             aria-label={`Aprovar resgate de ${request.professional_name}`}
-                            onClick={() => approveMutation.mutate(request.id)}
+                            onClick={() => approveMutation.mutate(request)}
                             disabled={approveMutation.isPending}
                           >
                             <CheckCircle2 size={16} />
@@ -665,7 +681,7 @@ export function PayoutQueuePanel({ canEdit }: { canEdit: boolean }) {
                             type="button"
                             title="Confirmar pagamento"
                             aria-label={`Confirmar pagamento de ${request.professional_name}`}
-                            onClick={() => finalizeMutation.mutate(request.id)}
+                            onClick={() => finalizeMutation.mutate(request)}
                             disabled={finalizeMutation.isPending}
                           >
                             <CheckCircle2 size={16} />
@@ -805,14 +821,14 @@ function PaymentTransactionsPanel() {
         <div className="header-actions finance-filter-row">
           <select
             value={status}
-            onChange={(event) => { setStatus(event.target.value as TransactionStatus | ''); setPage(0); }}
+            onChange={(event) => { setStatus(transactionStatus(event.target.value)); setPage(0); }}
             aria-label="Filtrar por status"
           >
             {TX_STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </select>
           <select
             value={settlementStatus}
-            onChange={(event) => { setSettlementStatus(event.target.value as SettlementStatus | ''); setPage(0); }}
+            onChange={(event) => { setSettlementStatus(parsedSettlementStatus(event.target.value)); setPage(0); }}
             aria-label="Filtrar por liquidação"
           >
             {SETTLE_STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}

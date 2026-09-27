@@ -19,8 +19,11 @@ export function useFirstContactSettings(enabled: boolean) {
 export function useSetFirstContactDeadlines() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ reminderHours, alertHours }: { reminderHours: number; alertHours: number }) =>
-      setFirstContactDeadlines(reminderHours, alertHours),
+    mutationFn: ({ reminderHours, alertHours, expectedVersion }: {
+      reminderHours: number;
+      alertHours: number;
+      expectedVersion: number;
+    }) => setFirstContactDeadlines(reminderHours, alertHours, expectedVersion),
     onSuccess: (settings) => {
       queryClient.setQueryData(settingsKey, settings);
       // O prazo muda quem está na fila: a lista precisa ser relida.

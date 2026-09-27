@@ -1,21 +1,48 @@
-import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
 
-const page = await readFile(new URL('../src/components/AmbassadorNetworkPage.tsx', import.meta.url), 'utf8');
-const api = await readFile(new URL('../src/lib/ambassadorNetwork.ts', import.meta.url), 'utf8');
+const page = readFileSync(
+  new URL("../src/components/AmbassadorNetworkPage.tsx", import.meta.url),
+  "utf8",
+);
 
-test('operates assisted migration without automatic commercial inference', () => {
-  assert.match(page, /Migração controlada/);
-  assert.match(page, /Decisão humana obrigatória/);
-  assert.match(page, /legacy_membership/);
-  assert.match(api, /control_resolve_ambassador_legacy_candidate/);
+test("edits every typed program and policy control", () => {
+  for (const key of [
+    "network_enabled",
+    "onboarding_enabled",
+    "allow_direct",
+    "follower_threshold",
+    "manual_choice_enabled",
+    "automatic_principal_enabled",
+    "published",
+  ])
+    assert.match(page, new RegExp(key));
+  assert.match(page, /action: ["']setProgram["']/);
+  assert.match(page, /action: ["']savePolicy["']/);
+  assert.match(page, /Vincular associados sem Principal ao ativá-lo/);
+  assert.doesNotMatch(page, /referral_code_enabled|moderation_enabled/);
 });
 
-test('operates rollout checks, alerts and rollback from staff RPCs', () => {
-  assert.match(page, /Piloto e rollout/);
-  assert.match(page, /StoreKit ainda não conectado/);
-  assert.match(api, /control_set_ambassador_rollout_check/);
-  assert.match(api, /control_rollback_ambassador_rollout/);
-  assert.doesNotMatch(api, /\.from\(['"]ambassador_(?:legacy_migration|rollout)/);
+test("edits the complete hierarchical region model with optimistic concurrency", () => {
+  for (const key of [
+    "scope_type",
+    "country_code",
+    "state_code",
+    "city_name",
+    "parent_id",
+    "specificity",
+    "priority",
+    "expected_version",
+  ])
+    assert.match(page, new RegExp(key));
+  for (const scope of ["global", "country", "state", "city", "custom"])
+    assert.match(page, new RegExp(`["']${scope}["']`));
+});
+
+test("supports request routing and optimistic decisions", () => {
+  assert.match(page, /action: ["']transferRequest["']/);
+  assert.match(page, /decision: ["']approve["']/);
+  assert.match(page, /decision: ["']reject["']/);
+  assert.match(page, /expected_version: request\.version/);
 });

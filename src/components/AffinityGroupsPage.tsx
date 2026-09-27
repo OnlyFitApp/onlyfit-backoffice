@@ -111,17 +111,15 @@ export function AffinityGroupsPage() {
       label: form.label.trim(),
       aliases: aliasesText.split(',').map((value) => value.trim()).filter(Boolean),
     };
-    const mutation = editing === 'new' ? createMutation : updateMutation;
-    const payload = editing === 'new' ? input : { ...input, key: editing.key };
-    mutation.mutate(payload as AffinityGroupInput & { key: string }, {
-      onSuccess: (group) => {
+    const onSuccess = (group: AffinityGroup) => {
         setEditing(null);
         setMessage(editing === 'new'
-          ? `${group.label} foi cadastrado como inativo.`
+          ? `${group.label} foi cadastrado e ativado.`
           : `${group.label} foi atualizado.`);
-      },
-      onError: (mutationError) => setError(affinityGroupErrorMessage(mutationError)),
-    });
+    };
+    const onError = (mutationError: Error) => setError(affinityGroupErrorMessage(mutationError));
+    if (editing === 'new') createMutation.mutate(input, { onSuccess, onError });
+    else updateMutation.mutate({ ...input, key: editing.key }, { onSuccess, onError });
   };
 
   const activate = (group: AffinityGroup) => {
@@ -269,10 +267,7 @@ export function AffinityGroupsPage() {
                   <span className={`affinity-audit-dot ${entry.action}`} aria-hidden="true" />
                   <div>
                     <strong>{auditActionLabel[entry.action]} {entry.group_key ? `“${entry.group_key}”` : 'os grupos'}</strong>
-                    <span>{entry.actor_name ?? 'Conta interna'} · {formatDateTime(new Date(entry.created_at))}</span>
-                    {entry.action === 'deactivate' && (
-                      <small>{formatNumber(entry.impact.total_links ?? 0)} vínculo(s) removido(s)</small>
-                    )}
+                    <span>Conta interna · {formatDateTime(new Date(entry.created_at))}</span>
                   </div>
                 </li>
               ))}
@@ -287,7 +282,7 @@ export function AffinityGroupsPage() {
           onCancel={() => setDeactivating(null)}
           onSuccess={(impact) => {
             setDeactivating(null);
-            setMessage(`${deactivating.label} foi desativado e ${formatNumber(impact.total_links)} vínculo(s) foram removidos.`);
+            setMessage(`${deactivating.label} foi desativado. ${formatNumber(impact.total_links)} vínculo(s) permanecem preservados no histórico.`);
           }}
         />
       )}
@@ -512,13 +507,11 @@ function DeactivateAffinityDialog({ group, onCancel, onSuccess }: {
   const confirmed = confirmation.trim() === group.label;
   const impact = impactQuery.data;
   const details = useMemo(() => impact ? [
-    ['Pessoas interessadas', impact.interested_users],
+    ['Contas vinculadas', impact.accounts],
     ['Profissionais', impact.professionals],
-    ['Publicações', impact.posts],
-    ['Comunidades', impact.communities],
-    ['Organizações', impact.organizations],
-    ['Rede comercial', impact.ambassador_assignments + impact.ambassador_memberships + impact.ambassador_network_settings + impact.ambassador_compensation_policies],
-    ['Outros vínculos', impact.places + impact.organization_events + impact.operation_cohorts + impact.user_goals + impact.saved_preferences + impact.offerings],
+    ['Ofertas', impact.offers],
+    ['Credenciais aprovadas', impact.approved_credentials],
+    ['Credenciais pendentes', impact.pending_credentials],
   ] as const : [], [impact]);
 
   const submit = () => {
@@ -549,7 +542,7 @@ function DeactivateAffinityDialog({ group, onCancel, onSuccess }: {
         {impactQuery.isLoading ? <div className="skeleton affinity-impact-skeleton" /> : impactQuery.isError ? (
           <div className="inline-alert danger" role="alert"><AlertTriangle size={18} />Não foi possível calcular o impacto. A desativação está bloqueada.</div>
         ) : impact ? <>
-          <p className="user-dialog-total"><strong>{formatNumber(impact.total_links)}</strong> vínculo(s) serão removidos permanentemente.</p>
+          <p className="user-dialog-total"><strong>{formatNumber(impact.total_links)}</strong> vínculo(s) serão preservados, mas o grupo deixará de aceitar novos usos.</p>
           <ul className="user-footprint-list">{details.map(([label, value]) => <li key={label}><span>{label}</span><strong>{formatNumber(value)}</strong></li>)}</ul>
         </> : null}
         <label className="user-dialog-field"><span>Digite <b>{group.label}</b> para confirmar</span><input autoFocus autoComplete="off" spellCheck={false} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') submit(); }} /></label>
@@ -557,7 +550,7 @@ function DeactivateAffinityDialog({ group, onCancel, onSuccess }: {
       </section>
       <footer className="user-dialog-actions">
         <button className="button secondary" type="button" onClick={onCancel} disabled={deactivateMutation.isPending}>Cancelar</button>
-        <button className="button danger" type="button" onClick={submit} disabled={!confirmed || !impact || impactQuery.isError || deactivateMutation.isPending}>{deactivateMutation.isPending ? <RefreshCw className="spin" size={16} /> : <AlertTriangle size={16} />}Desativar e desvincular</button>
+        <button className="button danger" type="button" onClick={submit} disabled={!confirmed || !impact || impactQuery.isError || deactivateMutation.isPending}>{deactivateMutation.isPending ? <RefreshCw className="spin" size={16} /> : <AlertTriangle size={16} />}Desativar</button>
       </footer>
     </div>
   </>;

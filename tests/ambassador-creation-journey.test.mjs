@@ -1,35 +1,43 @@
-import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
 
-const page = readFileSync(new URL('../src/components/AmbassadorNetworkPage.tsx', import.meta.url), 'utf8');
-const api = readFileSync(new URL('../src/lib/ambassadorNetwork.ts', import.meta.url), 'utf8');
-
-test('finds members and explains professional preparation in the same journey', () => {
-  assert.match(page, />Usuário</);
-  assert.match(page, /candidate\.isProfessional \? 'Profissional' : 'Membro'/);
-  assert.match(page, /Motivo da habilitação profissional/);
-  assert.match(page, /Somente um superadministrador pode habilitá-lo/);
-  assert.match(api, /control_prepare_ambassador_candidate/);
-  assert.doesNotMatch(api, /service_role|VITE_.*SECRET/);
+const page = readFileSync(
+  new URL("../src/components/AmbassadorNetworkPage.tsx", import.meta.url),
+  "utf8",
+);
+test("creates and edits assignments with all canonical presentation fields", () => {
+  for (const field of [
+    "Profissional",
+    "Classificação",
+    "Região",
+    "Principal",
+    "Apresentação",
+    "Referência contratual",
+    "Ordem de exibição",
+    "Início",
+    "Fim",
+    "Visível publicamente",
+  ])
+    assert.match(page, new RegExp(field));
+  for (const key of [
+    "public_visible",
+    "display_order",
+    "starts_at",
+    "ends_at",
+    "expected_version",
+  ])
+    assert.match(page, new RegExp(key));
 });
 
-test('makes the normal path active and public without hiding critical state', () => {
-  assert.match(page, /publicVisible: true/);
-  assert.match(page, /role: 'principal'/);
-  assert.match(page, /Embaixador representa a vertical no país/);
-  assert.match(page, /Associado pode atuar com um Embaixador ou diretamente com a plataforma/);
-  assert.match(page, /Direta pela plataforma/);
-  assert.match(page, /Exibir no aplicativo assim que estiver ativo/);
-  assert.match(page, /Criar e publicar/);
-  assert.match(page, /Habilitar, criar e publicar/);
-  assert.match(page, /Ativar e publicar/);
-  assert.match(page, /Aprovar e publicar/);
-  assert.match(page, /Ativo · oculto/);
-  assert.match(page, /Este \{ambassadorRoleLabel\(selected\.role\)\} está ativo, mas oculto no aplicativo/);
-});
-
-test('keeps draft and review paths available as explicit alternatives', () => {
-  assert.match(page, /Salvar rascunho/);
-  assert.match(page, /Enviar para revisão/);
+test("offers every supported assignment transition", () => {
+  for (const transition of [
+    "submit",
+    "activate",
+    "suspend",
+    "reactivate",
+    "end",
+  ])
+    assert.match(page, new RegExp(`transition: ["']${transition}["']`));
+  assert.match(page, /action: ["']transferAssociate["']/);
 });

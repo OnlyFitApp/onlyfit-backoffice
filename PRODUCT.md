@@ -14,7 +14,7 @@ Equipe interna de gestão da OnlyFit: operação, suporte, financeiro e lideran�
 
 ## Product Purpose
 
-Portal backoffice para observar a saúde da plataforma, acompanhar grandes números e abrir caminho para futuras áreas operacionais. O primeiro destino é um dashboard com indicadores principais de usuários, receita, treinos, denúncias e filas operacionais, consumindo o mesmo Supabase/RPCs da plataforma.
+Portal backoffice para observar a saúde da plataforma e executar rotinas administrativas. O dashboard e as áreas operacionais consomem contratos tipados do OnlyFit Core, sem conhecer tabelas ou RPCs internos.
 
 ## Positioning
 
@@ -36,7 +36,7 @@ Premium, preciso, firme. A identidade visual é a do OnlyFit, mas a UX troca o c
 1. **Operação antes de ornamentação.** Cada bloco precisa responder a uma pergunta real de gestão.
 2. **A marca aparece por contenção.** Grafite, azul/teal oficial e profundidade tonal carregam a identidade sem transformar o painel em app de cliente.
 3. **Navegação cresce sem quebrar.** Sidebar recolhível e itens planejados para novas áreas.
-4. **Estado real, sempre.** Dados vêm de RPCs/RLS; fallback visual nunca finge permissão ou sucesso.
+4. **Estado real, sempre.** Dados vêm do OnlyFit Core; fallback visual nunca finge permissão ou sucesso.
 5. **Números primeiro, investigação depois.** Grandes números ficam acima; listas e alertas explicam o que precisa de ação.
 
 ## Accessibility & Inclusion

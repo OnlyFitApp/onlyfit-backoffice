@@ -1,4 +1,5 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffEmailOutboundAttachment } from '../api/core.gen';
 
 type SendEmailInput = {
   from: string;
@@ -9,11 +10,7 @@ type SendEmailInput = {
   subject: string;
   html: string;
   idempotencyKey: string;
-  attachments?: Array<{
-    filename: string;
-    contentType: string;
-    contentBase64: string;
-  }>;
+  attachments?: Array<{ filename: string; contentType: string; contentBase64: string }>;
   threadId?: string;
   replyToMessageId?: string;
 };
@@ -32,22 +29,16 @@ export async function sendOutboundEmail(input: SendEmailInput): Promise<{
   messageId: string | null;
   threadId: string | null;
 }> {
-  const { data, error } = await api.staff.functions.invoke('control-send-email', { body: input });
-  if (error) throw error;
-  const response = data as {
-    id?: unknown;
-    resendEmailId?: unknown;
-    messageId?: unknown;
-    threadId?: unknown;
-    error?: unknown;
-  } | null;
-  if (!response || typeof response.id !== 'string' || typeof response.resendEmailId !== 'string') {
-    throw new Error(typeof response?.error === 'string' ? response.error : 'invalid_send_response');
-  }
+  const attachments: StaffEmailOutboundAttachment[] | undefined = input.attachments?.map((item) => ({
+    filename: item.filename,
+    content_type: item.contentType,
+    content_base64: item.contentBase64,
+  }));
+  const response = await coreApi.staff.emailSend({ ...input, attachments });
   return {
     id: response.id,
-    resendEmailId: response.resendEmailId,
-    messageId: typeof response.messageId === 'string' ? response.messageId : null,
-    threadId: typeof response.threadId === 'string' ? response.threadId : null,
+    resendEmailId: response.resend_email_id,
+    messageId: response.message_id,
+    threadId: response.thread_id,
   };
 }

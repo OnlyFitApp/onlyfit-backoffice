@@ -1,50 +1,10 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffPaymentTransaction } from '../api/core.gen';
 
-export type TransactionStatus =
-  | 'created' | 'pending' | 'confirmed' | 'settled' | 'failed' | 'refunded' | 'chargeback';
-export type SettlementStatus =
-  | 'pending' | 'confirmed' | 'settled' | 'refunded' | 'chargeback';
-
-type PaymentTransaction = {
-  id: string;
-  provider: 'asaas' | 'stripe' | 'app_store' | 'free' | 'unknown';
-  payment_method: 'card' | 'pix' | 'app_store' | 'free' | null;
-  provider_payment_id: string;
-  asaas_payment_id: string;
-  stripe_session_id: string | null;
-  stripe_payment_intent_id: string | null;
-  stripe_invoice_id: string | null;
-  offering_id: string;
-  offering_name: string;
-  billing_type: 'one_time' | 'recurring';
-  buyer_profile_id: string;
-  buyer_name: string;
-  professional_profile_id: string;
-  professional_name: string;
-  gross_value: number;
-  net_value: number | null;
-  asaas_fee: number | null;
-  provider_fee: number | null;
-  platform_commission: number | null;
-  professional_net: number | null;
-  status: TransactionStatus;
-  settlement_status: SettlementStatus;
-  provider_status: string | null;
-  card_brand: string | null;
-  card_last4: string | null;
-  estimated_credit_date: string | null;
-  credit_date: string | null;
-  expires_at: string | null;
-  invoice_url: string | null;
-  created_at: string;
-};
-
-type TransactionsPage = {
-  total: number;
-  limit: number;
-  offset: number;
-  items: PaymentTransaction[];
-};
+export type TransactionStatus = StaffPaymentTransaction['status'];
+export type SettlementStatus = StaffPaymentTransaction['settlement_status'];
+export type PaymentTransaction = StaffPaymentTransaction;
+export type TransactionsPage = Awaited<ReturnType<typeof coreApi.staff.paymentTransactions>>;
 
 export type TransactionFilters = {
   from?: string | null;
@@ -55,84 +15,8 @@ export type TransactionFilters = {
   offset?: number;
 };
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
-}
-
-function numberFrom(value: unknown): number {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') return Number(value) || 0;
-  return 0;
-}
-
-function numberOrNull(value: unknown): number | null {
-  if (value === null || value === undefined) return null;
-  return numberFrom(value);
-}
-
-function stringOrNull(value: unknown): string | null {
-  return typeof value === 'string' ? value : null;
-}
-
-const TX_STATUSES: TransactionStatus[] = ['created', 'pending', 'confirmed', 'settled', 'failed', 'refunded', 'chargeback'];
-const SETTLE_STATUSES: SettlementStatus[] = ['pending', 'confirmed', 'settled', 'refunded', 'chargeback'];
-
-function parseTransaction(value: unknown): PaymentTransaction {
-  const row = asRecord(value);
-  return {
-    id: String(row.id ?? ''),
-    provider: row.provider === 'stripe' || row.provider === 'asaas' || row.provider === 'app_store' || row.provider === 'free' ? row.provider : 'unknown',
-    payment_method: row.payment_method === 'card' || row.payment_method === 'pix' || row.payment_method === 'app_store' || row.payment_method === 'free' ? row.payment_method : null,
-    provider_payment_id: String(row.provider_payment_id ?? row.asaas_payment_id ?? row.stripe_payment_intent_id ?? row.stripe_invoice_id ?? ''),
-    asaas_payment_id: String(row.asaas_payment_id ?? ''),
-    stripe_session_id: stringOrNull(row.stripe_session_id),
-    stripe_payment_intent_id: stringOrNull(row.stripe_payment_intent_id),
-    stripe_invoice_id: stringOrNull(row.stripe_invoice_id),
-    offering_id: String(row.offering_id ?? ''),
-    offering_name: String(row.offering_name ?? '—'),
-    billing_type: row.billing_type === 'recurring' ? 'recurring' : 'one_time',
-    buyer_profile_id: String(row.buyer_profile_id ?? ''),
-    buyer_name: String(row.buyer_name ?? 'Comprador'),
-    professional_profile_id: String(row.professional_profile_id ?? ''),
-    professional_name: String(row.professional_name ?? 'Profissional'),
-    gross_value: numberFrom(row.gross_value),
-    net_value: numberOrNull(row.net_value),
-    asaas_fee: numberOrNull(row.asaas_fee),
-    provider_fee: numberOrNull(row.provider_fee ?? row.asaas_fee),
-    platform_commission: numberOrNull(row.platform_commission),
-    professional_net: numberOrNull(row.professional_net),
-    status: TX_STATUSES.includes(row.status as TransactionStatus) ? (row.status as TransactionStatus) : 'created',
-    settlement_status: SETTLE_STATUSES.includes(row.settlement_status as SettlementStatus)
-      ? (row.settlement_status as SettlementStatus)
-      : 'pending',
-    provider_status: stringOrNull(row.provider_status),
-    card_brand: stringOrNull(row.card_brand),
-    card_last4: stringOrNull(row.card_last4),
-    estimated_credit_date: stringOrNull(row.estimated_credit_date),
-    credit_date: stringOrNull(row.credit_date),
-    expires_at: stringOrNull(row.expires_at),
-    invoice_url: stringOrNull(row.invoice_url),
-    created_at: String(row.created_at ?? ''),
-  };
-}
-
-export async function listPaymentTransactions(filters: TransactionFilters): Promise<TransactionsPage> {
-  const { data, error } = await api.staff.rpc('control_list_payment_transactions', {
-    p_from: filters.from ?? null,
-    p_to: filters.to ?? null,
-    p_status: filters.status ?? null,
-    p_settlement_status: filters.settlementStatus ?? null,
-    p_limit: filters.limit ?? 100,
-    p_offset: filters.offset ?? 0,
-  });
-  if (error) throw error;
-  const row = asRecord(data);
-  return {
-    total: numberFrom(row.total),
-    limit: numberFrom(row.limit),
-    offset: numberFrom(row.offset),
-    items: Array.isArray(row.items) ? row.items.map(parseTransaction) : [],
-  };
+export function listPaymentTransactions(filters: TransactionFilters): Promise<TransactionsPage> {
+  return coreApi.staff.paymentTransactions(filters);
 }
 
 export function transactionStatusLabel(status: TransactionStatus): string {
@@ -144,7 +28,6 @@ export function transactionStatusLabel(status: TransactionStatus): string {
     case 'failed': return 'Falhou';
     case 'refunded': return 'Estornada';
     case 'chargeback': return 'Chargeback';
-    default: return status;
   }
 }
 

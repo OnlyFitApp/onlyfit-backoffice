@@ -1,4 +1,6 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffProtocolTemplateItem } from '../api/core.gen';
+import { protocolIconKeys, type ProtocolIconKey } from './protocolIconCatalog';
 
 /**
  * O catálogo de protocolos da plataforma (F4 da jornada de templates).
@@ -13,6 +15,13 @@ import { api } from '../api';
  * tira da vitrine e preserva o histórico.
  */
 export type ProtocolFlow = 'water' | 'supplement' | 'generic';
+export type ProtocolLocale = 'pt-BR' | 'pt-PT' | 'en';
+
+export const protocolLocales: ReadonlyArray<{ value: ProtocolLocale; label: string }> = [
+  { value: 'pt-BR', label: 'Português (Brasil)' },
+  { value: 'pt-PT', label: 'Português (Portugal)' },
+  { value: 'en', label: 'English' },
+];
 
 export const protocolFlows: ReadonlyArray<{ value: ProtocolFlow; label: string; hint: string }> = [
   { value: 'generic', label: 'Etapas livres', hint: 'Etapas com horário, como sono e foco.' },
@@ -21,19 +30,29 @@ export const protocolFlows: ReadonlyArray<{ value: ProtocolFlow; label: string; 
 ];
 
 export type ProtocolStep = {
-  name: string;
-  instruction: string;
+  translations: ProtocolStepTranslation[];
   time: string;
   durationMinutes: number | null;
 };
 
-export type ProtocolCatalogEntry = {
-  id: string;
+export type ProtocolTranslation = {
+  locale: ProtocolLocale;
   name: string;
   category: string;
   description: string;
+};
+
+export type ProtocolStepTranslation = {
+  locale: ProtocolLocale;
+  name: string;
+  instruction: string;
+};
+
+export type ProtocolCatalogEntry = {
+  id: string;
+  translations: ProtocolTranslation[];
   flow: ProtocolFlow;
-  iconKey: string;
+  iconKey: ProtocolIconKey;
   structureLocked: boolean;
   clinicalNotice: boolean;
   featured: boolean;
@@ -46,11 +65,9 @@ export type ProtocolCatalogEntry = {
 
 export type ProtocolCatalogInput = {
   id: string;
-  name: string;
-  category: string;
-  description: string;
+  translations: ProtocolTranslation[];
   flow: ProtocolFlow;
-  iconKey: string;
+  iconKey: ProtocolIconKey;
   structureLocked: boolean;
   clinicalNotice: boolean;
   featured: boolean;
@@ -59,88 +76,157 @@ export type ProtocolCatalogInput = {
   active: boolean;
 };
 
-function record(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
+const isProtocolLocale = (value: unknown): value is ProtocolLocale =>
+  value === 'pt-BR' || value === 'pt-PT' || value === 'en';
 
-function parseStep(value: unknown): ProtocolStep {
-  const row = record(value);
-  const duration = Number(row.duration_minutes);
+const isProtocolIconKey = (value: string): value is ProtocolIconKey =>
+  protocolIconKeys.some((key) => key === value);
+
+function parseStepTranslation(value: {
+  locale: string;
+  name: string;
+  instruction?: string | null;
+}): ProtocolStepTranslation {
+  if (!isProtocolLocale(value.locale)) throw new Error('staff.invalid_protocol_step_translation');
   return {
-    name: String(row.name ?? ''),
-    instruction: String(row.instruction ?? ''),
-    time: String(row.time ?? ''),
-    durationMinutes: Number.isFinite(duration) && duration > 0 ? duration : null,
+    locale: value.locale,
+    name: value.name,
+    instruction: value.instruction ?? '',
   };
 }
 
-function parse(value: unknown): ProtocolCatalogEntry {
-  const row = record(value);
-  const flow = row.flow === 'water' || row.flow === 'supplement' ? row.flow : 'generic';
+function parseStep(value: StaffProtocolTemplateItem['data']['default_steps'][number]): ProtocolStep {
   return {
-    id: String(row.id ?? ''),
-    name: String(row.name ?? ''),
-    category: String(row.category ?? ''),
-    description: String(row.description ?? ''),
-    flow,
-    iconKey: String(row.icon_key ?? ''),
-    structureLocked: Boolean(row.structure_locked),
-    clinicalNotice: Boolean(row.clinical_notice),
-    featured: Boolean(row.featured),
-    defaultSteps: Array.isArray(row.default_steps) ? row.default_steps.map(parseStep) : [],
-    sortOrder: Number(row.sort_order) || 0,
-    active: Boolean(row.active),
-    inUseCount: Number(row.in_use_count) || 0,
-    updatedAt: typeof row.updated_at === 'string' ? row.updated_at : null,
+    translations: value.translations.map(parseStepTranslation),
+    time: value.time ?? '',
+    durationMinutes: value.duration_minutes,
+  };
+}
+
+function parseTranslation(value: StaffProtocolTemplateItem['data']['translations'][number]): ProtocolTranslation {
+  if (!isProtocolLocale(value.locale)) throw new Error('staff.invalid_protocol_translation');
+  return {
+    locale: value.locale,
+    name: value.name,
+    category: value.category,
+    description: value.description,
+  };
+}
+
+function parse(value: StaffProtocolTemplateItem): ProtocolCatalogEntry {
+  const data = value.data;
+  if (!isProtocolIconKey(data.icon_key)) {
+    throw new Error('staff.invalid_protocol_template');
+  }
+  return {
+    id: value.key,
+    translations: data.translations.map(parseTranslation),
+    flow: data.flow,
+    iconKey: data.icon_key,
+    structureLocked: data.structure_locked,
+    clinicalNotice: data.clinical_notice,
+    featured: data.featured,
+    defaultSteps: data.default_steps.map(parseStep),
+    sortOrder: value.position,
+    active: value.active,
+    inUseCount: value.impact.accounts,
+    updatedAt: null,
   };
 }
 
 function stepPayload(steps: ProtocolStep[]) {
   return steps
     .map((step) => ({
-      name: step.name.trim(),
-      ...(step.time.trim() ? { time: step.time.trim() } : {}),
-      ...(step.instruction.trim() ? { instruction: step.instruction.trim() } : {}),
-      ...(step.durationMinutes ? { duration_minutes: step.durationMinutes } : {}),
+      translations: step.translations.map((translation) => ({
+        locale: translation.locale,
+        name: translation.name.trim(),
+        ...(translation.instruction.trim() ? { instruction: translation.instruction.trim() } : {}),
+      })),
+      time: step.time.trim() || null,
+      duration_minutes: step.durationMinutes,
     }));
 }
 
 export async function listProtocolCatalog(): Promise<ProtocolCatalogEntry[]> {
-  const { data, error } = await api.staff.rpc('control_list_protocol_catalog');
-  if (error) throw error;
-  return Array.isArray(data) ? data.map(parse) : [];
+  const catalog = await coreApi.staff.catalog({ kind: 'protocol_templates' });
+  return catalog.items
+    .filter((item): item is StaffProtocolTemplateItem => item.kind === 'protocol_templates')
+    .map(parse);
 }
 
 export async function upsertProtocolCatalogEntry(input: ProtocolCatalogInput): Promise<string> {
-  const { data, error } = await api.staff.rpc('control_upsert_protocol_catalog_entry', {
-    p_id: input.id.trim(),
-    p_name: input.name.trim(),
-    p_category: input.category.trim(),
-    p_icon_key: input.iconKey.trim(),
-    p_flow: input.flow,
-    p_description: input.description.trim(),
-    p_default_steps: stepPayload(input.defaultSteps),
-    p_structure_locked: input.structureLocked,
-    p_clinical_notice: input.clinicalNotice,
-    p_sort_order: input.sortOrder,
-    p_active: input.active,
-    p_featured: input.featured,
-  });
-  if (error) throw error;
-  return String(record(data).id ?? input.id);
+  const current = (await coreApi.staff.catalog({ kind: 'protocol_templates' })).items
+    .find((item): item is StaffProtocolTemplateItem =>
+      item.kind === 'protocol_templates' && item.key === input.id.trim());
+  const saved = await coreApi.staff.catalogSave({ item: {
+    kind: 'protocol_templates', key: input.id.trim(),
+    label: protocolTranslation(input, 'pt-BR').name, public: true,
+    position: input.sortOrder, expected_version: current?.version,
+    data: {
+      icon_key: input.iconKey,
+      flow: input.flow,
+      translations: input.translations.map((translation) => ({
+        locale: translation.locale,
+        name: translation.name.trim(),
+        category: translation.category.trim(),
+        description: translation.description.trim(),
+      })),
+      default_steps: stepPayload(input.defaultSteps),
+      structure_locked: input.structureLocked,
+      clinical_notice: input.clinicalNotice,
+      featured: input.featured,
+    },
+  } });
+  if (saved.kind !== 'protocol_templates') throw new Error('staff.invalid_protocol_template');
+  if (saved.active !== input.active) {
+    if (input.active) {
+      await coreApi.staff.catalogActivate({
+        kind: 'protocol_templates', key: saved.key, expectedVersion: saved.version,
+      });
+    } else {
+      await coreApi.staff.catalogDeactivate({
+        kind: 'protocol_templates', key: saved.key, expectedVersion: saved.version,
+        confirmation: saved.data.label,
+      });
+    }
+  }
+  return saved.key;
+}
+
+export function protocolTranslation(
+  input: Pick<ProtocolCatalogInput, 'translations'>,
+  locale: ProtocolLocale,
+): ProtocolTranslation {
+  const translation = input.translations.find((item) => item.locale === locale);
+  if (!translation) throw new Error('staff.invalid_protocol_translation');
+  return translation;
+}
+
+export function protocolStepTranslation(step: ProtocolStep, locale: ProtocolLocale): ProtocolStepTranslation {
+  const translation = step.translations.find((item) => item.locale === locale);
+  if (!translation) throw new Error('staff.invalid_protocol_step_translation');
+  return translation;
 }
 
 export async function setProtocolCatalogEntryActive(input: {
   id: string;
   active: boolean;
 }): Promise<void> {
-  const { error } = await api.staff.rpc('control_set_protocol_catalog_active', {
-    p_id: input.id,
-    p_active: input.active,
-  });
-  if (error) throw error;
+  const current = (await coreApi.staff.catalog({ kind: 'protocol_templates' })).items
+    .find((item): item is StaffProtocolTemplateItem =>
+      item.kind === 'protocol_templates' && item.key === input.id);
+  if (!current) throw new Error('staff.catalog_item_not_found');
+  if (current.active === input.active) return;
+  if (input.active) {
+    await coreApi.staff.catalogActivate({
+      kind: 'protocol_templates', key: input.id, expectedVersion: current.version,
+    });
+  } else {
+    await coreApi.staff.catalogDeactivate({
+      kind: 'protocol_templates', key: input.id, expectedVersion: current.version,
+      confirmation: current.data.label,
+    });
+  }
 }
 
 export function protocolCatalogErrorMessage(error: unknown): string {
@@ -152,9 +238,9 @@ export function protocolCatalogErrorMessage(error: unknown): string {
   if (code.includes('catalog_description_required')) return 'A descrição é obrigatória e vai até 240 caracteres.';
   if (code.includes('catalog_icon_required')) return 'Escolha um ícone.';
   if (code.includes('invalid_protocol_flow')) return 'Fluxo inválido.';
-  if (code.includes('official_protocol_source_read_only')) return 'Publique uma nova versão com outra chave. A fonte existente preserva o histórico.';
-  if (code.includes('protocol_too_many_times')) return 'Use no máximo 24 horários distintos. Várias etapas podem compartilhar um horário.';
-  if (code.includes('invalid_official_protocol')) return 'Revise as etapas: nome, instrução, duração e horário precisam respeitar os limites do protocolo.';
+  if (code.includes('invalid_protocol_translation')) return 'Preencha nome, categoria e descrição nos três idiomas.';
+  if (code.includes('invalid_protocol_step_translation')) return 'Preencha o nome de cada etapa nos três idiomas.';
+  if (code.includes('invalid_protocol_step')) return 'Revise o horário, a duração e as traduções das etapas.';
   if (code.includes('default_steps_must_be_array')) return 'As etapas padrão vieram em formato inválido.';
   if (code.includes('protocol_catalog_entry_not_found')) return 'Essa entrada não existe mais no catálogo.';
   if (code.includes('staff_role_required')) return 'Seu perfil não tem permissão para manter o catálogo.';

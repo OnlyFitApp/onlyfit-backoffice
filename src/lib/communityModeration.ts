@@ -1,29 +1,12 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffCommunity } from '../api/core.gen';
 
 export type CommunityLifecycle =
-  "draft" | "published" | "read_only" | "suspended" | "archived";
+  StaffCommunity["status"];
 export type CommunityModerationAction =
   "suspend" | "restore" | "read_only" | "archive";
 
-export type ModeratedCommunity = {
-  id: string;
-  name: string;
-  image_url: string | null;
-  organization_id: string | null;
-  organization_name: string | null;
-  lifecycle_status: CommunityLifecycle;
-  discovery_visibility: "listed" | "unlisted" | "hidden";
-  join_policy: "open" | "approval" | "invite_only";
-  posting_policy: "members" | "team" | "approval";
-  member_count: number;
-  pending_posts: number;
-  created_at: string;
-};
-
-type CommunityModerationPage = {
-  items: ModeratedCommunity[];
-  total: number;
-};
+export type ModeratedCommunity = StaffCommunity;
 
 export async function listCommunitiesForModeration(input: {
   status: CommunityLifecycle | null;
@@ -31,14 +14,12 @@ export async function listCommunitiesForModeration(input: {
   limit: number;
   offset: number;
 }) {
-  const { data, error } = await api.staff.rpc("control_list_communities_v2", {
-    p_status: input.status,
-    p_query: input.query || null,
-    p_limit: input.limit,
-    p_offset: input.offset,
+  return coreApi.staff.communities({
+    status: input.status ?? undefined,
+    query: input.query || undefined,
+    limit: input.limit,
+    offset: input.offset,
   });
-  if (error) throw error;
-  return data as CommunityModerationPage;
 }
 
 export async function moderateCommunity(input: {
@@ -46,10 +27,9 @@ export async function moderateCommunity(input: {
   action: CommunityModerationAction;
   reason?: string;
 }) {
-  const { error } = await api.staff.rpc("control_moderate_community_v2", {
-    p_community_id: input.communityId,
-    p_action: input.action,
-    p_reason: input.reason || null,
+  return coreApi.staff.communityAct({
+    communityId: input.communityId,
+    action: input.action,
+    reason: input.reason || null,
   });
-  if (error) throw error;
 }

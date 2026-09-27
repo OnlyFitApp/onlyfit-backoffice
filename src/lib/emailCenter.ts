@@ -1,7 +1,8 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffEmailAttachment, StaffEmailMessage, StaffEmailThreadListItem } from '../api/core.gen';
 
 export type EmailBox = 'all' | 'inbox' | 'sent';
-export type EmailDirection = 'inbound' | 'outbound';
+type EmailDirection = 'inbound' | 'outbound';
 export type EmailDeliveryStatus =
   | 'processing'
   | 'queued'
@@ -88,143 +89,78 @@ export type EmailThreadFilters = {
   offset: number;
 };
 
-function record(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-}
-
-function strings(value: unknown): string[] {
-  return Array.isArray(value) ? value.map(String).filter(Boolean) : [];
-}
-
-function parseStatus(value: unknown): EmailDeliveryStatus {
-  const status = String(value ?? 'processing') as EmailDeliveryStatus;
-  return ['processing', 'queued', 'sent', 'delivered', 'delivery_delayed', 'bounced', 'complained', 'failed', 'received'].includes(status)
-    ? status
-    : 'processing';
-}
-
-function parseMailbox(value: unknown): EmailMailbox {
-  const row = record(value);
+function presentMailbox(row: import('../api/core.gen').StaffEmailMailbox): EmailMailbox {
   return {
-    id: String(row.id ?? ''),
-    email: String(row.email ?? ''),
-    displayName: String(row.display_name ?? 'OnlyFit'),
-    unreadCount: Number(row.unread_count ?? 0),
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name,
+    unreadCount: row.unread_count,
   };
 }
 
-function parseThreadItem(value: unknown): EmailThreadListItem {
-  const row = record(value);
+function presentThreadItem(row: StaffEmailThreadListItem): EmailThreadListItem {
   return {
-    id: String(row.id ?? ''),
-    mailboxId: String(row.mailbox_id ?? ''),
-    mailboxEmail: String(row.mailbox_email ?? ''),
-    mailboxName: String(row.mailbox_name ?? 'OnlyFit'),
-    subject: String(row.subject ?? '(sem assunto)'),
-    externalParticipants: strings(row.external_participants),
-    latestMessageAt: String(row.latest_message_at ?? ''),
-    latestSnippet: String(row.latest_snippet ?? ''),
-    latestDirection: row.latest_direction === 'inbound' ? 'inbound' : 'outbound',
-    latestStatus: parseStatus(row.latest_status),
-    messageCount: Number(row.message_count ?? 0),
-    hasAttachments: Boolean(row.has_attachments),
-    isUnread: Boolean(row.is_unread),
+    id: row.id, mailboxId: row.mailbox_id, mailboxEmail: row.mailbox_email,
+    mailboxName: row.mailbox_name, subject: row.subject,
+    externalParticipants: row.external_participants, latestMessageAt: row.latest_message_at,
+    latestSnippet: row.latest_snippet, latestDirection: row.latest_direction,
+    latestStatus: row.latest_status, messageCount: row.message_count,
+    hasAttachments: row.has_attachments, isUnread: row.is_unread,
   };
 }
 
-function parseAttachment(value: unknown): EmailAttachment {
-  const row = record(value);
-  const availability = String(row.availability_status ?? 'stored');
+function presentAttachment(row: StaffEmailAttachment): EmailAttachment {
   return {
-    id: String(row.id ?? ''),
-    filename: String(row.filename ?? 'anexo'),
-    contentType: String(row.content_type ?? 'application/octet-stream'),
-    sizeBytes: Number(row.size_bytes ?? 0),
-    contentDisposition: row.content_disposition === 'inline' ? 'inline' : 'attachment',
-    availabilityStatus: availability === 'too_large' || availability === 'download_failed' ? availability : 'stored',
+    id: row.id, filename: row.filename, contentType: row.content_type,
+    sizeBytes: row.size_bytes, contentDisposition: row.content_disposition,
+    availabilityStatus: row.availability_status,
   };
 }
 
-function parseMessage(value: unknown): EmailMessage {
-  const row = record(value);
+function presentMessage(row: StaffEmailMessage): EmailMessage {
   return {
-    id: String(row.id ?? ''),
-    resendEmailId: row.resend_email_id == null ? null : String(row.resend_email_id),
-    messageId: row.message_id == null ? null : String(row.message_id),
-    direction: row.direction === 'inbound' ? 'inbound' : 'outbound',
-    fromEmail: String(row.from_email ?? ''),
-    fromName: row.from_name == null ? null : String(row.from_name),
-    toEmails: strings(row.to_emails),
-    ccEmails: strings(row.cc_emails),
-    bccEmails: strings(row.bcc_emails),
-    replyToEmails: strings(row.reply_to_emails),
-    subject: String(row.subject ?? '(sem assunto)'),
-    htmlContent: String(row.html_content ?? ''),
-    textContent: String(row.text_content ?? ''),
-    status: parseStatus(row.status),
-    errorMessage: row.error_message == null ? null : String(row.error_message),
-    inReplyTo: row.in_reply_to == null ? null : String(row.in_reply_to),
-    referenceMessageIds: strings(row.reference_message_ids),
-    providerCreatedAt: String(row.provider_created_at ?? ''),
-    attachments: Array.isArray(row.attachments) ? row.attachments.map(parseAttachment) : [],
+    id: row.id, resendEmailId: row.resend_email_id, messageId: row.message_id,
+    direction: row.direction, fromEmail: row.from_email, fromName: row.from_name,
+    toEmails: row.to_emails, ccEmails: row.cc_emails, bccEmails: row.bcc_emails,
+    replyToEmails: row.reply_to_emails, subject: row.subject, htmlContent: row.html_content,
+    textContent: row.text_content, status: row.status, errorMessage: row.error_message,
+    inReplyTo: row.in_reply_to, referenceMessageIds: row.reference_message_ids,
+    providerCreatedAt: row.provider_created_at, attachments: row.attachments.map(presentAttachment),
   };
 }
 
 export async function listEmailMailboxes(): Promise<EmailMailbox[]> {
-  const { data, error } = await api.staff.rpc('control_list_email_mailboxes');
-  if (error) throw error;
-  return Array.isArray(data) ? data.map(parseMailbox) : [];
+  return (await coreApi.staff.emailMailboxes()).map(presentMailbox);
 }
 
 export async function listEmailThreads(filters: EmailThreadFilters): Promise<EmailThreadPage> {
-  const { data, error } = await api.staff.rpc('control_list_email_threads', {
-    p_mailbox_id: filters.mailboxId,
-    p_box: filters.box,
-    p_query: filters.query.trim() || null,
-    p_limit: filters.limit,
-    p_offset: filters.offset,
+  const result = await coreApi.staff.emailThreads({
+    mailboxId: filters.mailboxId ?? undefined, box: filters.box,
+    query: filters.query.trim() || undefined, limit: filters.limit, offset: filters.offset,
   });
-  if (error) throw error;
-  const result = record(data);
-  return {
-    items: Array.isArray(result.items) ? result.items.map(parseThreadItem) : [],
-    total: Number(result.total ?? 0),
-  };
+  return { items: result.items.map(presentThreadItem), total: result.total };
 }
 
 export async function getEmailThread(id: string): Promise<EmailThread> {
-  const { data, error } = await api.staff.rpc('control_get_email_thread', { p_thread_id: id });
-  if (error) throw error;
-  const row = record(data);
+  const row = await coreApi.staff.emailThread({ threadId: id });
   return {
-    id: String(row.id ?? ''),
-    mailboxId: String(row.mailbox_id ?? ''),
-    mailboxEmail: String(row.mailbox_email ?? ''),
-    mailboxName: String(row.mailbox_name ?? 'OnlyFit'),
-    subject: String(row.subject ?? '(sem assunto)'),
-    externalParticipants: strings(row.external_participants),
-    latestMessageAt: String(row.latest_message_at ?? ''),
-    messages: Array.isArray(row.messages) ? row.messages.map(parseMessage) : [],
+    id: row.id, mailboxId: row.mailbox_id, mailboxEmail: row.mailbox_email,
+    mailboxName: row.mailbox_name, subject: row.subject,
+    externalParticipants: row.external_participants, latestMessageAt: row.latest_message_at,
+    messages: row.messages.map(presentMessage),
   };
 }
 
 export async function markEmailThreadRead(id: string): Promise<void> {
-  const { error } = await api.staff.rpc('control_mark_email_thread_read', { p_thread_id: id });
-  if (error) throw error;
+  await coreApi.staff.emailThreadRead({ threadId: id, idempotencyKey: crypto.randomUUID() });
 }
 
 export async function syncEmailCenter(): Promise<void> {
-  const { error } = await api.staff.functions.invoke('control-sync-email-center', { body: {} });
-  if (error) throw error;
+  await coreApi.staff.emailSync({ idempotencyKey: crypto.randomUUID() });
 }
 
 export async function openEmailAttachment(id: string): Promise<void> {
-  const { data, error } = await api.staff.functions.invoke('control-email-attachment', {
-    body: { attachmentId: id },
-  });
-  if (error) throw error;
-  const url = record(data).url;
-  if (typeof url !== 'string' || !url.startsWith('https://')) throw new Error('invalid_attachment_url');
+  const { url } = await coreApi.staff.emailAttachment({ attachmentId: id });
   const link = document.createElement('a');
   link.href = url;
   link.rel = 'noopener noreferrer';

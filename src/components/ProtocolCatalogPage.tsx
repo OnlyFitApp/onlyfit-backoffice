@@ -6,9 +6,13 @@ import { protocolIcon, protocolIconKeys } from '../lib/protocolIconCatalog';
 import {
   protocolCatalogErrorMessage,
   protocolFlows,
+  protocolLocales,
+  protocolStepTranslation,
+  protocolTranslation,
   type ProtocolCatalogEntry,
   type ProtocolCatalogInput,
   type ProtocolFlow,
+  type ProtocolLocale,
   type ProtocolStep,
 } from '../lib/protocolCatalog';
 import { formatNumber } from '../lib/format';
@@ -18,9 +22,12 @@ type Draft = ProtocolCatalogInput & { isNew: boolean };
 const emptyDraft: Draft = {
   isNew: true,
   id: '',
-  name: '',
-  category: '',
-  description: '',
+  translations: protocolLocales.map(({ value }) => ({
+    locale: value,
+    name: '',
+    category: '',
+    description: '',
+  })),
   flow: 'generic',
   iconKey: 'sparkles',
   structureLocked: false,
@@ -77,8 +84,15 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
   }
 
   function openEdit(entry: ProtocolCatalogEntry) {
-    const official = entry.id.startsWith('onlyfit_health_');
-    setDraft({ ...entry, id: official ? `${entry.id}_v2` : entry.id, isNew: official, defaultSteps: entry.defaultSteps.map((step) => ({ ...step })) });
+    setDraft({
+      ...entry,
+      isNew: false,
+      translations: entry.translations.map((translation) => ({ ...translation })),
+      defaultSteps: entry.defaultSteps.map((step) => ({
+        ...step,
+        translations: step.translations.map((translation) => ({ ...translation })),
+      })),
+    });
     upsert.reset();
     setActive.reset();
   }
@@ -86,8 +100,13 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!draft || !canGovern) return;
-    const id = draft.isNew ? slug(draft.id || draft.name) : draft.id;
-    if (!id || !draft.name.trim() || !draft.category.trim() || !draft.description.trim()) return;
+    const primary = protocolTranslation(draft, 'pt-BR');
+    const id = draft.isNew ? slug(draft.id || primary.name) : draft.id;
+    const translationsComplete = draft.translations.every((translation) =>
+      translation.name.trim() && translation.category.trim() && translation.description.trim());
+    const stepsComplete = draft.defaultSteps.every((step) =>
+      step.translations.every((translation) => translation.name.trim()));
+    if (!id || !translationsComplete || !stepsComplete) return;
     await upsert.mutateAsync({ ...draft, id });
     setDraft(null);
   }
@@ -104,6 +123,25 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
       );
       return { ...current, defaultSteps: steps };
     });
+  }
+
+  function patchTranslation(locale: ProtocolLocale, values: { name?: string; category?: string; description?: string }) {
+    setDraft((current) => current ? {
+      ...current,
+      translations: current.translations.map((translation) =>
+        translation.locale === locale ? { ...translation, ...values } : translation),
+    } : current);
+  }
+
+  function patchStepTranslation(index: number, locale: ProtocolLocale, values: { name?: string; instruction?: string }) {
+    setDraft((current) => current ? {
+      ...current,
+      defaultSteps: current.defaultSteps.map((step, position) => position === index ? {
+        ...step,
+        translations: step.translations.map((translation) =>
+          translation.locale === locale ? { ...translation, ...values } : translation),
+      } : step),
+    } : current);
   }
 
   return (
@@ -158,6 +196,7 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
                 {entries.map((entry) => {
                   const Icon = protocolIcon(entry.iconKey);
                   const flow = protocolFlows.find((option) => option.value === entry.flow);
+                  const primary = protocolTranslation(entry, 'pt-BR');
                   return (
                     <li className={entry.active ? 'pcat-row' : 'pcat-row inactive'} key={entry.id}>
                       <span className="pcat-icon"><Icon size={19} /></span>
@@ -165,14 +204,14 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
                       <div className="pcat-row-main">
                         <div>
                           <strong>
-                            {entry.name}
+                            {primary.name}
                             {entry.featured ? (
                               <Star size={13} aria-label="Abre a vitrine" className="pcat-featured" />
                             ) : null}
                           </strong>
                           <code>{entry.id}</code>
                         </div>
-                        <span className="role-badge">{entry.category}</span>
+                        <span className="role-badge">{primary.category}</span>
                         <span className={entry.active ? 'pcat-status active' : 'pcat-status'}>
                           {entry.active ? 'Na vitrine' : 'Fora'}
                         </span>
@@ -187,7 +226,7 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
                       {canGovern ? (
                         <div className="pcat-row-actions">
                           <button className="button secondary compact" type="button" disabled={busy} onClick={() => openEdit(entry)}>
-                            <Pencil size={14} /> {entry.id.startsWith('onlyfit_health_') ? 'Nova versão' : 'Editar'}
+                            <Pencil size={14} /> Editar
                           </button>
                           <button
                             className={entry.active ? 'button danger compact' : 'button primary compact'}
@@ -211,30 +250,29 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
             <form className="pcat-editor" onSubmit={submit}>
               <h2 className="pcat-section-heading">{draft.isNew ? 'Novo protocolo' : 'Editar protocolo'}</h2>
 
-              <label className="pcat-field">
-                <span>Nome</span>
-                <input
-                  value={draft.name}
-                  maxLength={120}
-                  autoFocus
-                  onChange={(event) => patch({ name: event.target.value })}
-                />
-              </label>
-
-              <label className="pcat-field">
-                <span>Categoria</span>
-                <input value={draft.category} maxLength={80} onChange={(event) => patch({ category: event.target.value })} />
-              </label>
-
-              <label className="pcat-field">
-                <span>Descrição</span>
-                <textarea
-                  rows={2}
-                  value={draft.description}
-                  maxLength={240}
-                  onChange={(event) => patch({ description: event.target.value })}
-                />
-              </label>
+              {protocolLocales.map((locale, localeIndex) => {
+                const translation = protocolTranslation(draft, locale.value);
+                return (
+                  <fieldset className="pcat-translation" key={locale.value}>
+                    <legend>{locale.label}</legend>
+                    <label className="pcat-field">
+                      <span>Nome</span>
+                      <input value={translation.name} maxLength={120} autoFocus={localeIndex === 0}
+                        onChange={(event) => patchTranslation(locale.value, { name: event.target.value })} />
+                    </label>
+                    <label className="pcat-field">
+                      <span>Categoria</span>
+                      <input value={translation.category} maxLength={80}
+                        onChange={(event) => patchTranslation(locale.value, { category: event.target.value })} />
+                    </label>
+                    <label className="pcat-field">
+                      <span>Descrição</span>
+                      <textarea rows={2} value={translation.description} maxLength={500}
+                        onChange={(event) => patchTranslation(locale.value, { description: event.target.value })} />
+                    </label>
+                  </fieldset>
+                );
+              })}
 
               <div className="pcat-field">
                 <span>Ícone</span>
@@ -307,19 +345,18 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
                 <span>Etapas padrão</span>
                 {draft.defaultSteps.map((step, index) => (
                   <div className="pcat-step" key={index}>
-                    <input
-                      value={step.name}
-                      placeholder="Etapa"
-                      maxLength={160}
-                      onChange={(event) => patchStep(index, { name: event.target.value })}
-                    />
-                    <textarea
-                      rows={3}
-                      value={step.instruction}
-                      placeholder="Instrução"
-                      maxLength={1000}
-                      onChange={(event) => patchStep(index, { instruction: event.target.value })}
-                    />
+                    {protocolLocales.map((locale) => {
+                      const translation = protocolStepTranslation(step, locale.value);
+                      return (
+                        <div className="pcat-step-translation" key={locale.value}>
+                          <strong>{locale.label}</strong>
+                          <input value={translation.name} placeholder="Etapa" maxLength={160}
+                            onChange={(event) => patchStepTranslation(index, locale.value, { name: event.target.value })} />
+                          <textarea rows={3} value={translation.instruction} placeholder="Instrução" maxLength={1000}
+                            onChange={(event) => patchStepTranslation(index, locale.value, { instruction: event.target.value })} />
+                        </div>
+                      );
+                    })}
                     <input
                       type="time"
                       value={step.time}
@@ -352,7 +389,11 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
                   type="button"
                   onClick={() =>
                     patch({
-                      defaultSteps: [...draft.defaultSteps, { name: '', instruction: '', time: '08:00', durationMinutes: null }],
+                      defaultSteps: [...draft.defaultSteps, {
+                        translations: protocolLocales.map(({ value }) => ({ locale: value, name: '', instruction: '' })),
+                        time: '08:00',
+                        durationMinutes: null,
+                      }],
                     })
                   }
                 >
@@ -366,7 +407,7 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
                   <input
                     value={draft.id}
                     maxLength={80}
-                    placeholder={slug(draft.name) || 'ex.: mobilidade'}
+                    placeholder={slug(protocolTranslation(draft, 'pt-BR').name) || 'ex.: mobilidade'}
                     onChange={(event) => patch({ id: event.target.value })}
                   />
                 </label>
@@ -383,7 +424,9 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
                 <button
                   className="button primary"
                   type="submit"
-                  disabled={busy || !draft.name.trim() || !draft.category.trim() || !draft.description.trim()}
+                  disabled={busy || draft.translations.some((translation) =>
+                    !translation.name.trim() || !translation.category.trim() || !translation.description.trim())
+                    || draft.defaultSteps.some((step) => step.translations.some((translation) => !translation.name.trim()))}
                 >
                   <Save size={16} /> Salvar
                 </button>

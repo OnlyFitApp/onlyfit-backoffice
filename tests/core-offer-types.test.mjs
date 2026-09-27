@@ -10,7 +10,9 @@ test('administra tipos de oferta somente pelo contrato tipado do Core', () => {
 
   assert.match(source, /coreApi\.staff\.catalog\(\{ kind: 'offer_types' \}\)/);
   assert.match(source, /coreApi\.staff\.catalogSave/);
-  assert.match(source, /coreApi\.staff\.catalogAct/);
+  assert.match(source, /coreApi\.staff\.catalogActivate/);
+  assert.match(source, /coreApi\.staff\.catalogDeactivate/);
+  assert.doesNotMatch(source, /coreApi\.staff\.catalogAct\(/);
   assert.match(generated, /staff_catalog_save_v1/);
   assert.doesNotMatch(source, /\.from\(|\.loose\b|service_role/);
 });
@@ -37,17 +39,16 @@ test('expõe criação, configuração completa e ciclo sem apagar catálogo', (
   assert.doesNotMatch(app, /deleteOfferingType|Excluir tipo/);
 });
 
-test('falha fechado quando as identidades divergem e exige MFA nos dois projetos', () => {
+test('usa uma única sessão Core e exige MFA no mesmo projeto', () => {
   const core = read('src/api/core.ts');
   const auth = read('src/contexts/AuthContext.tsx');
   const mfa = read('src/components/MfaGate.tsx');
 
-  assert.match(core, /legacy\.session\.user\.id !== core\.session\?\.user\.id/);
-  assert.match(core, /await client\.auth\.signInWithPassword[\s\S]*await supabase\.auth\.signInWithPassword/);
-  assert.match(core, /Promise\.allSettled/);
-  assert.match(auth, /coreSessionMatches/);
+  assert.match(core, /!data\.session\?\.user\.id/);
+  assert.match(core, /client\.auth\.signInWithPassword/);
+  assert.doesNotMatch(core + auth + mfa, /legacy|signInBoth|coreSessionMatches/);
+  assert.match(auth, /requireCoreClient/);
   assert.match(auth, /acceptSession/);
-  assert.match(mfa, /legacyAssurance\.data\.currentLevel === 'aal2'/);
   assert.match(mfa, /coreAssurance\.data\.currentLevel === 'aal2'/);
   assert.doesNotMatch(core, /service_role|SERVICE_ROLE/);
 });

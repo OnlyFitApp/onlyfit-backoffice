@@ -23,6 +23,7 @@ const pageSize = 50;
 const states: Array<{ value: CommunityLifecycle | null; label: string }> = [
   { value: null, label: "Todas" },
   { value: "published", label: "Ativas" },
+  { value: "entry_paused", label: "Entradas pausadas" },
   { value: "read_only", label: "Somente leitura" },
   { value: "suspended", label: "Suspensas" },
   { value: "archived", label: "Arquivadas" },
@@ -31,6 +32,7 @@ const states: Array<{ value: CommunityLifecycle | null; label: string }> = [
 const statusLabel: Record<CommunityLifecycle, string> = {
   draft: "Rascunho",
   published: "Ativa",
+  entry_paused: "Entradas pausadas",
   read_only: "Somente leitura",
   suspended: "Suspensa",
   archived: "Arquivada",
@@ -41,6 +43,11 @@ export function CommunityModerationPage() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
+  const [pendingDecision, setPendingDecision] = useState<{
+    community: ModeratedCommunity;
+    action: "suspend" | "archive";
+  } | null>(null);
+  const [reason, setReason] = useState("");
   const communities = useCommunitiesForModeration(
     status,
     query.trim(),
@@ -53,16 +60,36 @@ export function CommunityModerationPage() {
     community: ModeratedCommunity,
     action: CommunityModerationAction,
   ) => {
-    const reason =
-      action === "suspend" || action === "archive"
-        ? window.prompt("Motivo da ação (registrado na auditoria):")?.trim()
-        : "";
-    if ((action === "suspend" || action === "archive") && !reason) return;
+    if (action === "suspend" || action === "archive") {
+      setPendingDecision({ community, action });
+      setReason("");
+      return;
+    }
     setMessage(null);
     moderation.mutate(
-      { communityId: community.id, action, reason },
+      { communityId: community.id, action },
       {
         onSuccess: () => setMessage("Comunidade atualizada."),
+        onError: () => setMessage("Não foi possível atualizar a comunidade."),
+      },
+    );
+  };
+
+  const confirmDecision = () => {
+    if (!pendingDecision || reason.trim().length < 3) return;
+    setMessage(null);
+    moderation.mutate(
+      {
+        communityId: pendingDecision.community.id,
+        action: pendingDecision.action,
+        reason: reason.trim(),
+      },
+      {
+        onSuccess: () => {
+          setPendingDecision(null);
+          setReason("");
+          setMessage("Comunidade atualizada.");
+        },
         onError: () => setMessage("Não foi possível atualizar a comunidade."),
       },
     );
@@ -161,13 +188,13 @@ export function CommunityModerationPage() {
                 <div className="community-moderation-body">
                   <div className="community-moderation-title">
                     <div>
-                      <span>{community.organization_name || "Negócio"}</span>
+                      <span>{community.business_name || "Negócio"}</span>
                       <h2>{community.name}</h2>
                     </div>
                     <span
-                      className={`review-status ${community.lifecycle_status}`}
+                      className={`review-status ${community.status}`}
                     >
-                      {statusLabel[community.lifecycle_status]}
+                      {statusLabel[community.status]}
                     </span>
                   </div>
                   <div className="community-moderation-stats">
@@ -181,11 +208,12 @@ export function CommunityModerationPage() {
                       </span>
                     )}
                     <span>
-                      <Eye size={14} /> {community.discovery_visibility}
+                      <Eye size={14} /> {community.visibility}
                     </span>
                   </div>
                   <div className="review-report-actions">
-                    {community.lifecycle_status !== "published" && (
+                    {(community.status === "read_only" ||
+                      community.status === "suspended") && (
                       <button
                         className="button secondary"
                         type="button"
@@ -195,7 +223,7 @@ export function CommunityModerationPage() {
                         <Undo2 size={15} /> Restaurar
                       </button>
                     )}
-                    {community.lifecycle_status === "published" && (
+                    {community.status === "published" && (
                       <button
                         className="button secondary"
                         type="button"
@@ -205,8 +233,8 @@ export function CommunityModerationPage() {
                         <LockKeyhole size={15} /> Somente leitura
                       </button>
                     )}
-                    {community.lifecycle_status !== "suspended" &&
-                      community.lifecycle_status !== "archived" && (
+                    {community.status !== "suspended" &&
+                      community.status !== "archived" && (
                         <button
                           className="button danger"
                           type="button"
@@ -216,7 +244,7 @@ export function CommunityModerationPage() {
                           <ShieldAlert size={15} /> Suspender
                         </button>
                       )}
-                    {community.lifecycle_status !== "archived" && (
+                    {community.status !== "archived" && (
                       <button
                         className="button secondary"
                         type="button"
@@ -257,6 +285,57 @@ export function CommunityModerationPage() {
           </div>
         )}
       </section>
+
+      {pendingDecision && (
+        <section
+          className="user-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="community-decision-title"
+        >
+          <header className="user-dialog-head">
+            <div>
+              <h2 id="community-decision-title">
+                {pendingDecision.action === "suspend" ? "Suspender" : "Arquivar"} comunidade
+              </h2>
+              <p>{pendingDecision.community.name}</p>
+            </div>
+          </header>
+          <div className="user-dialog-body">
+            <label className="user-dialog-field" htmlFor="community-decision-reason">
+              <span>Motivo registrado na auditoria</span>
+              <textarea
+                id="community-decision-reason"
+                rows={4}
+                maxLength={500}
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                autoFocus
+              />
+            </label>
+          </div>
+          <footer className="user-dialog-actions">
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => {
+                setPendingDecision(null);
+                setReason("");
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              className="button danger"
+              type="button"
+              disabled={reason.trim().length < 3 || moderation.isPending}
+              onClick={confirmDecision}
+            >
+              Confirmar
+            </button>
+          </footer>
+        </section>
+      )}
     </>
   );
 }

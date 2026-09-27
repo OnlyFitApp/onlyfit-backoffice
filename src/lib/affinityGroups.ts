@@ -1,26 +1,10 @@
 import { affinityAccents, affinityIcons, type AffinityAccent, type AffinityIcon } from './affinityCatalog';
-import { api } from '../api';
+import { coreApi } from '../api/core';
+import type { StaffAffinityGroupItem, StaffCatalogImpact } from '../api/core.gen';
+import { catalogKeyFromLabel } from './catalogKey';
 export type { AffinityAccent, AffinityIcon };
 
-export type AffinityImpact = {
-  interested_users: number;
-  professionals: number;
-  posts: number;
-  communities: number;
-  organizations: number;
-  places: number;
-  organization_events: number;
-  operation_cohorts: number;
-  user_goals: number;
-  saved_preferences: number;
-  offerings: number;
-  ambassador_assignments: number;
-  ambassador_memberships: number;
-  ambassador_network_settings: number;
-  ambassador_compensation_policies: number;
-  total_links: number;
-  token: string;
-};
+export type AffinityImpact = StaffCatalogImpact & { token: string };
 
 export type AffinityGroup = AffinityImpact & {
   key: string;
@@ -30,119 +14,110 @@ export type AffinityGroup = AffinityImpact & {
   aliases: string[];
   sort_order: number;
   active: boolean;
-  created_at: string;
-  updated_at: string;
 };
 
 export type AffinityGroupInput = Pick<AffinityGroup, 'label' | 'icon' | 'accent' | 'aliases'>;
 
-type AffinityAuditEntry = {
-  id: string;
+export type AffinityAuditEntry = {
+  id: number;
   group_key: string | null;
   action: 'create' | 'update' | 'reorder' | 'activate' | 'deactivate';
-  before_data: Record<string, unknown>;
-  after_data: Record<string, unknown>;
-  impact: Partial<AffinityImpact>;
   created_at: string;
-  actor_user_id: string | null;
-  actor_name: string | null;
 };
 
-const numberFrom = (value: unknown) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
+function affinityIcon(value: string): AffinityIcon {
+  for (const icon of affinityIcons) if (icon === value) return icon;
+  throw new Error('staff.invalid_affinity_icon');
+}
 
-const recordFrom = (value: unknown): Record<string, unknown> =>
-  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+function affinityAccent(value: string): AffinityAccent {
+  for (const accent of affinityAccents) if (accent === value) return accent;
+  throw new Error('staff.invalid_affinity_accent');
+}
 
-function impactFrom(value: unknown): AffinityImpact {
-  const row = recordFrom(value);
+function affinityItem(item: StaffAffinityGroupItem): AffinityGroup {
   return {
-    interested_users: numberFrom(row.interested_users),
-    professionals: numberFrom(row.professionals),
-    posts: numberFrom(row.posts),
-    communities: numberFrom(row.communities),
-    organizations: numberFrom(row.organizations),
-    places: numberFrom(row.places),
-    organization_events: numberFrom(row.organization_events),
-    operation_cohorts: numberFrom(row.operation_cohorts),
-    user_goals: numberFrom(row.user_goals),
-    saved_preferences: numberFrom(row.saved_preferences),
-    offerings: numberFrom(row.offerings),
-    ambassador_assignments: numberFrom(row.ambassador_assignments),
-    ambassador_memberships: numberFrom(row.ambassador_memberships),
-    ambassador_network_settings: numberFrom(row.ambassador_network_settings),
-    ambassador_compensation_policies: numberFrom(row.ambassador_compensation_policies),
-    total_links: numberFrom(row.total_links),
-    token: typeof row.token === 'string' ? row.token : '',
+    ...item.impact,
+    token: String(item.version),
+    key: item.key,
+    label: item.data.label,
+    icon: affinityIcon(item.data.icon),
+    accent: affinityAccent(item.data.accent),
+    aliases: item.data.aliases,
+    sort_order: item.position,
+    active: item.active,
   };
 }
 
-function groupFrom(value: unknown): AffinityGroup {
-  const row = recordFrom(value);
-  const icon = affinityIcons.includes(row.icon as AffinityIcon) ? row.icon as AffinityIcon : 'Sparkles';
-  const accent = affinityAccents.includes(row.accent as AffinityAccent)
-    ? row.accent as AffinityAccent
-    : 'from-lime-500/30';
-  return {
-    ...impactFrom(row),
-    key: String(row.key ?? ''),
-    label: String(row.label ?? ''),
-    icon,
-    accent,
-    aliases: Array.isArray(row.aliases) ? row.aliases.map(String) : [],
-    sort_order: numberFrom(row.sort_order),
-    active: row.active === true,
-    created_at: String(row.created_at ?? ''),
-    updated_at: String(row.updated_at ?? ''),
-  };
+function requireAffinityItem(item: Awaited<ReturnType<typeof coreApi.staff.catalogSave>>): StaffAffinityGroupItem {
+  if (item.kind !== 'affinity_groups') throw new Error('staff.invalid_catalog_response');
+  return item;
+}
+
+async function affinityItems(): Promise<StaffAffinityGroupItem[]> {
+  const catalog = await coreApi.staff.catalog({ kind: 'affinity_groups' });
+  return catalog.items.filter((item): item is StaffAffinityGroupItem => item.kind === 'affinity_groups');
 }
 
 export async function listAffinityGroups(): Promise<AffinityGroup[]> {
-  const { data, error } = await api.staff.rpc('control_list_affinity_groups');
-  if (error) throw error;
-  return Array.isArray(data) ? data.map(groupFrom) : [];
+  return (await affinityItems()).map(affinityItem);
 }
 
 export async function getAffinityGroupImpact(key: string): Promise<AffinityImpact> {
-  const { data, error } = await api.staff.rpc('control_get_affinity_group_impact', { p_key: key });
-  if (error) throw error;
-  return impactFrom(data);
+  const item = (await affinityItems()).find((candidate) => candidate.key === key);
+  if (!item) throw new Error('staff.catalog_item_not_found');
+  return { ...item.impact, token: String(item.version) };
 }
 
 export async function createAffinityGroup(input: AffinityGroupInput): Promise<AffinityGroup> {
-  const { data, error } = await api.staff.rpc('control_create_affinity_group', {
-    p_label: input.label,
-    p_icon: input.icon,
-    p_accent: input.accent,
-    p_aliases: input.aliases,
+  const item = await coreApi.staff.catalogSave({
+    item: {
+      kind: 'affinity_groups',
+      key: catalogKeyFromLabel(input.label),
+      label: input.label.trim(),
+      public: true,
+      position: 0,
+      data: { icon: input.icon, accent: input.accent, aliases: input.aliases },
+    },
   });
-  if (error) throw error;
-  return groupFrom(data);
+  const saved = requireAffinityItem(item);
+  const activated = await coreApi.staff.catalogActivate({
+    kind: 'affinity_groups',
+    key: saved.key,
+    expectedVersion: saved.version,
+  });
+  return affinityItem(requireAffinityItem(activated));
 }
 
 export async function updateAffinityGroup(input: AffinityGroupInput & { key: string }): Promise<AffinityGroup> {
-  const { data, error } = await api.staff.rpc('control_update_affinity_group', {
-    p_key: input.key,
-    p_label: input.label,
-    p_icon: input.icon,
-    p_accent: input.accent,
-    p_aliases: input.aliases,
+  const current = (await affinityItems()).find((item) => item.key === input.key);
+  if (!current) throw new Error('staff.catalog_item_not_found');
+  const item = await coreApi.staff.catalogSave({
+    item: {
+      kind: 'affinity_groups',
+      key: input.key,
+      label: input.label.trim(),
+      public: current.public,
+      position: current.position,
+      expected_version: current.version,
+      data: { icon: input.icon, accent: input.accent, aliases: input.aliases },
+    },
   });
-  if (error) throw error;
-  return groupFrom(data);
+  return affinityItem(requireAffinityItem(item));
 }
 
 export async function reorderAffinityGroups(keys: string[]): Promise<void> {
-  const { error } = await api.staff.rpc('control_reorder_affinity_groups', { p_keys: keys });
-  if (error) throw error;
+  await coreApi.staff.catalogReorder({ kind: 'affinity_groups', keys });
 }
 
 export async function activateAffinityGroup(key: string): Promise<AffinityGroup> {
-  const { data, error } = await api.staff.rpc('control_activate_affinity_group', { p_key: key });
-  if (error) throw error;
-  return groupFrom(data);
+  const current = (await affinityItems()).find((item) => item.key === key);
+  if (!current) throw new Error('staff.catalog_item_not_found');
+  if (current.active) return affinityItem(current);
+  const changed = await coreApi.staff.catalogActivate({
+    kind: 'affinity_groups', key, expectedVersion: current.version,
+  });
+  return affinityItem(requireAffinityItem(changed));
 }
 
 export async function deactivateAffinityGroup(input: {
@@ -150,45 +125,49 @@ export async function deactivateAffinityGroup(input: {
   confirmation: string;
   expectedToken: string;
 }): Promise<{ group: AffinityGroup; impact: AffinityImpact; alreadyInactive: boolean }> {
-  const { data, error } = await api.staff.rpc('control_deactivate_affinity_group', {
-    p_key: input.key,
-    p_confirmation: input.confirmation,
-    p_expected_token: input.expectedToken,
+  const current = (await affinityItems()).find((item) => item.key === input.key);
+  if (!current) throw new Error('staff.catalog_item_not_found');
+  if (String(current.version) !== input.expectedToken) throw new Error('affinity_group_impact_changed');
+  if (current.data.label !== input.confirmation) throw new Error('affinity_group_confirmation_mismatch');
+  const impact = { ...current.impact, token: String(current.version) };
+  if (!current.active) return { group: affinityItem(current), impact, alreadyInactive: true };
+  const changed = await coreApi.staff.catalogDeactivate({
+    kind: 'affinity_groups',
+    key: input.key,
+    expectedVersion: current.version,
+    confirmation: input.confirmation,
   });
-  if (error) throw error;
-  const result = recordFrom(data);
-  return {
-    group: groupFrom(result.group),
-    impact: impactFrom(result.impact),
-    alreadyInactive: result.already_inactive === true,
-  };
+  return { group: affinityItem(requireAffinityItem(changed)), impact, alreadyInactive: false };
+}
+
+function auditAction(value: string, created: boolean): AffinityAuditEntry['action'] | null {
+  const action = value.replace('staff.catalog_', '');
+  if (action === 'saved') return created ? 'create' : 'update';
+  if (action === 'create' || action === 'update' || action === 'reorder'
+    || action === 'activate' || action === 'deactivate') return action;
+  return null;
 }
 
 export async function listAffinityGroupAudit(): Promise<AffinityAuditEntry[]> {
-  const { data, error } = await api.staff.rpc('control_list_affinity_group_audit', { p_limit: 50 });
-  if (error) throw error;
-  return Array.isArray(data) ? data.map((value) => {
-    const row = recordFrom(value);
-    return {
-      id: String(row.id ?? ''),
-      group_key: typeof row.group_key === 'string' ? row.group_key : null,
-      action: String(row.action ?? 'update') as AffinityAuditEntry['action'],
-      before_data: recordFrom(row.before_data),
-      after_data: recordFrom(row.after_data),
-      impact: impactFrom(row.impact),
-      created_at: String(row.created_at ?? ''),
-      actor_user_id: typeof row.actor_user_id === 'string' ? row.actor_user_id : null,
-      actor_name: typeof row.actor_name === 'string' ? row.actor_name : null,
-    };
-  }) : [];
+  const [itemsAudit, catalogAudit] = await Promise.all([
+    coreApi.staff.audit({ targetType: 'catalog_item', limit: 100 }),
+    coreApi.staff.audit({ targetType: 'catalog', targetId: 'affinity_groups', limit: 100 }),
+  ]);
+  return [...itemsAudit.items, ...catalogAudit.items].flatMap((item) => {
+    if (item.target_type === 'catalog_item' && !item.target_id.startsWith('affinity_groups:')) return [];
+    const action = auditAction(item.action, item.before === null);
+    if (!action) return [];
+    return [{
+      id: item.id,
+      group_key: item.target_type === 'catalog_item' ? item.target_id.split(':')[1] || null : null,
+      action,
+      created_at: item.at,
+    }];
+  }).sort((left, right) => right.id - left.id).slice(0, 100);
 }
 
 function affinityGroupErrorText(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  const row = recordFrom(error);
-  return [row.message, row.details, row.hint, row.code]
-    .filter((value): value is string => typeof value === 'string')
-    .join(' ');
+  return error instanceof Error ? error.message : '';
 }
 
 export function isAffinityGroupImpactChanged(error: unknown): boolean {

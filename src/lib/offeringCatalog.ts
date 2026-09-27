@@ -1,243 +1,31 @@
-import type { AppStoreProductType } from './offeringMonetization';
-import { api } from '../api';
-export type { AppStoreProductType } from './offeringMonetization';
+import { coreApi } from '../api/core';
+import type { StaffFinancialOffering, StaffNativeProductInput } from '../api/core.gen';
 
-export type OfferingCatalogSource = 'business_offering';
-export type OfferingCatalogStatus = 'draft' | 'active' | 'paused' | 'archived';
-export type AppStoreProductStatus = 'pending' | 'ready' | 'retired';
-
-export type OfferingCatalogItem = {
-  source: OfferingCatalogSource;
-  catalog_item_id: string;
-  business_offering_id: string | null;
-  product_id: string | null;
-  offering_type: string | null;
-  offering_type_name: string;
-  name: string;
-  description: string | null;
-  status: OfferingCatalogStatus;
-  billing_type: 'one_time' | 'recurring' | 'free';
-  billing_interval: string | null;
-  price: number;
-  ios_price: number | null;
-  ios_fee_percent_snapshot: number | null;
-  ios_fee_fixed_snapshot: number | null;
-  ios_pricing_version: number | null;
-  app_store_product_id: string | null;
-  app_store_product_type: AppStoreProductType | null;
-  app_store_product_status: AppStoreProductStatus | null;
-  app_store_subscription_group: string | null;
-  currency: string;
-  fee_percent_snapshot: number | null;
-  fee_fixed_snapshot: number | null;
-  min_price_snapshot: number | null;
-  organization_id: string | null;
-  organization_name: string | null;
-  organization_slug: string | null;
-  owner_profile_id: string | null;
-  owner_name: string | null;
-  owner_username: string | null;
-  financial_status: string;
-  transactions_count: number;
-  gross_revenue: number;
-  platform_commission: number;
-  professional_net: number;
-  pending_settlement_value: number;
-  settled_value: number;
-  settings: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-};
-
-type OfferingCatalogPage = {
-  total: number;
-  limit: number;
-  offset: number;
-  items: OfferingCatalogItem[];
-};
+export type OfferingCatalogItem = StaffFinancialOffering;
+export type OfferingCatalogStatus = string;
 
 export type OfferingCatalogFilters = {
-  source?: OfferingCatalogSource | null;
   offeringType?: string | null;
-  status?: OfferingCatalogStatus | null;
+  status?: string | null;
   limit?: number;
   offset?: number;
 };
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-}
-
-function numberFrom(value: unknown): number {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') return Number(value) || 0;
-  return 0;
-}
-
-function numberOrNull(value: unknown): number | null {
-  if (value === null || value === undefined) return null;
-  return numberFrom(value);
-}
-
-function stringOrNull(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() ? value : null;
-}
-
-function arrayLength(value: unknown): number {
-  return Array.isArray(value) ? value.filter((item) => typeof item === 'string' && item.trim()).length : 0;
-}
-
-function settingsReady(offeringType: string | null, settings: Record<string, unknown>, name: string): boolean {
-  switch (offeringType) {
-    case 'premium_content':
-      return String(settings.headline ?? name).trim().length >= 3 && arrayLength(settings.benefits) >= 1;
-    case 'health_consultancy':
-      return ['online', 'in_person', 'hybrid'].includes(String(settings.format ?? ''))
-        && Number(settings.duration_minutes ?? 0) >= 15
-        && Number(settings.sessions_per_cycle ?? 0) >= 1
-        && (String(settings.scheduling_notes ?? '').trim().length >= 3 || arrayLength(settings.deliverables) >= 1);
-    case 'physical_products':
-      return String(settings.product_category ?? '').trim().length >= 2
-        && ['shipping', 'pickup', 'digital', 'hybrid'].includes(String(settings.fulfillment_type ?? ''))
-        && ['limited', 'unlimited', 'preorder'].includes(String(settings.stock_mode ?? ''));
-    default:
-      return true;
-  }
-}
-
-const STATUSES: OfferingCatalogStatus[] = ['draft', 'active', 'paused', 'archived'];
-
-function parseCatalogItem(value: unknown): OfferingCatalogItem {
-  const row = asRecord(value);
-  const settings = asRecord(row.settings);
-  const source: OfferingCatalogSource = 'business_offering';
-  const offeringType = stringOrNull(row.offering_type);
-  const name = String(row.name ?? 'Oferta');
-  const financialStatus = String(row.financial_status ?? 'unknown');
-  return {
-    source,
-    catalog_item_id: String(row.catalog_item_id ?? ''),
-    business_offering_id: stringOrNull(row.business_offering_id),
-    product_id: stringOrNull(row.product_id),
-    offering_type: offeringType,
-    offering_type_name: String(row.offering_type_name ?? 'Sem tipo'),
-    name,
-    description: stringOrNull(row.description),
-    status: STATUSES.includes(row.status as OfferingCatalogStatus) ? row.status as OfferingCatalogStatus : 'draft',
-    billing_type: row.billing_type === 'recurring' ? 'recurring' : row.billing_type === 'free' ? 'free' : 'one_time',
-    billing_interval: stringOrNull(row.billing_interval),
-    price: numberFrom(row.price),
-    ios_price: numberOrNull(row.ios_price),
-    ios_fee_percent_snapshot: numberOrNull(row.ios_fee_percent_snapshot),
-    ios_fee_fixed_snapshot: numberOrNull(row.ios_fee_fixed_snapshot),
-    ios_pricing_version: numberOrNull(row.ios_pricing_version),
-    app_store_product_id: null,
-    app_store_product_type: null,
-    app_store_product_status: null,
-    app_store_subscription_group: null,
-    currency: String(row.currency ?? 'BRL'),
-    fee_percent_snapshot: numberOrNull(row.fee_percent_snapshot),
-    fee_fixed_snapshot: numberOrNull(row.fee_fixed_snapshot),
-    min_price_snapshot: numberOrNull(row.min_price_snapshot),
-    organization_id: stringOrNull(row.organization_id),
-    organization_name: stringOrNull(row.organization_name),
-    organization_slug: stringOrNull(row.organization_slug),
-    owner_profile_id: stringOrNull(row.owner_profile_id),
-    owner_name: stringOrNull(row.owner_name),
-    owner_username: stringOrNull(row.owner_username),
-    financial_status: source === 'business_offering'
-      && financialStatus === 'ready'
-      && !settingsReady(offeringType, settings, name)
-        ? 'config_required'
-        : financialStatus,
-    transactions_count: numberFrom(row.transactions_count),
-    gross_revenue: numberFrom(row.gross_revenue),
-    platform_commission: numberFrom(row.platform_commission),
-    professional_net: numberFrom(row.professional_net),
-    pending_settlement_value: numberFrom(row.pending_settlement_value),
-    settled_value: numberFrom(row.settled_value),
-    settings,
-    created_at: String(row.created_at ?? ''),
-    updated_at: String(row.updated_at ?? row.created_at ?? ''),
-  };
-}
-
-export async function listOfferingCatalog(filters: OfferingCatalogFilters): Promise<OfferingCatalogPage> {
-  const { data, error } = await api.staff.rpc('control_list_financial_offering_catalog', {
-    p_source: filters.source ?? null,
-    p_offering_type: filters.offeringType ?? null,
-    p_status: filters.status ?? null,
-    p_limit: filters.limit ?? 100,
-    p_offset: filters.offset ?? 0,
+export function listOfferingCatalog(filters: OfferingCatalogFilters) {
+  return coreApi.staff.financialOfferings({
+    type: filters.offeringType,
+    status: filters.status,
+    limit: filters.limit,
+    offset: filters.offset,
   });
-  if (error) throw error;
-
-  const row = asRecord(data);
-  const items = Array.isArray(row.items) ? row.items.map(parseCatalogItem) : [];
-  const offeringIds = items
-    .map((item) => item.business_offering_id)
-    .filter((id): id is string => Boolean(id));
-  let channelPrices: Record<string, unknown> = {};
-  let appStoreProducts: Record<string, unknown> = {};
-  if (offeringIds.length > 0) {
-    const [pricesResult, productsResult] = await Promise.all([
-      api.staff.rpc('control_get_business_offering_channel_prices', { p_offering_ids: offeringIds }),
-      api.staff.rpc('control_get_app_store_products', { p_offering_ids: offeringIds }),
-    ]);
-    const { data: priceData, error: priceError } = pricesResult;
-    if (priceError) throw priceError;
-    if (productsResult.error) throw productsResult.error;
-    channelPrices = asRecord(priceData);
-    appStoreProducts = asRecord(productsResult.data);
-  }
-
-  return {
-    total: numberFrom(row.total),
-    limit: numberFrom(row.limit),
-    offset: numberFrom(row.offset),
-    items: items.map((item) => {
-      const price = asRecord(item.business_offering_id ? channelPrices[item.business_offering_id] : null);
-      const product = asRecord(item.business_offering_id ? appStoreProducts[item.business_offering_id] : null);
-      const productType = stringOrNull(product.product_type);
-      const productStatus = stringOrNull(product.status);
-      return {
-        ...item,
-        ios_price: numberOrNull(price.ios_price),
-        ios_fee_percent_snapshot: numberOrNull(price.ios_fee_percent_snapshot),
-        ios_fee_fixed_snapshot: numberOrNull(price.ios_fee_fixed_snapshot),
-        ios_pricing_version: numberOrNull(price.ios_pricing_version),
-        app_store_product_id: stringOrNull(product.product_id),
-        app_store_product_type: productType === 'auto_renewable_subscription' || productType === 'non_consumable' || productType === 'non_renewing_subscription'
-          ? productType
-          : null,
-        app_store_product_status: productStatus === 'pending' || productStatus === 'ready' || productStatus === 'retired'
-          ? productStatus
-          : null,
-        app_store_subscription_group: stringOrNull(product.subscription_group_reference),
-      };
-    }),
-  };
 }
 
-export type AppStoreProductInput = {
-  offeringId: string;
-  productId: string;
-  productType: AppStoreProductType;
-  status: AppStoreProductStatus;
-  appStorePrice: number | null;
-  currency: string;
-  subscriptionGroupReference: string | null;
-};
+export type NativeStoreProductInput = StaffNativeProductInput;
 
-export async function upsertAppStoreProduct(input: AppStoreProductInput): Promise<void> {
-  const { error } = await api.staff.rpc('control_upsert_app_store_product', {
-    p_offering_id: input.offeringId,
-    p_product_id: input.productId,
-    p_product_type: input.productType,
-    p_status: input.status,
-    p_app_store_price: input.appStorePrice,
-    p_currency: input.currency,
-    p_subscription_group_reference: input.subscriptionGroupReference,
-  });
-  if (error) throw error;
+export function saveNativeStoreProduct(product: NativeStoreProductInput) {
+  return coreApi.staff.nativeProductSave({ product });
+}
+
+export function listNativeProducts() {
+  return coreApi.staff.nativeProducts();
 }

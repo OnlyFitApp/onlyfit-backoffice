@@ -1,8 +1,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   listExerciseCatalog,
+  saveExerciseCatalogEntry,
   setExerciseCatalogActive,
-  upsertExerciseCatalogEntry,
+  uploadExerciseMedia,
   type ExerciseCatalogFilters,
 } from '../lib/exerciseCatalog';
 
@@ -20,12 +21,16 @@ function useRefreshExerciseCatalog() {
   return () => void client.invalidateQueries({ queryKey: exerciseCatalogKey });
 }
 
-export function useUpsertExerciseCatalogEntry() {
+export function useSaveExerciseCatalogEntry() {
   const refresh = useRefreshExerciseCatalog();
-  return useMutation({ mutationFn: upsertExerciseCatalogEntry, onSuccess: refresh });
+  return useMutation({ mutationFn: saveExerciseCatalogEntry, onSuccess: refresh });
 }
 
 export function useSetExerciseCatalogActive() {
   const refresh = useRefreshExerciseCatalog();
   return useMutation({ mutationFn: setExerciseCatalogActive, onSuccess: refresh });
+}
+
+export function useUploadExerciseMedia() {
+  return useMutation({ mutationFn: ({ file, kind }: { file: File; kind: 'video' | 'thumbnail' }) => uploadExerciseMedia(file, kind) });
 }

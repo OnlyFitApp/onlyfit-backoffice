@@ -46,7 +46,16 @@ import {
  * ícones que existem nos dois pacotes — chave que só existe no web deixaria o
  * app sem ícone, sem erro nenhum.
  */
-const protocolIcons: Readonly<Record<string, LucideIcon>> = {
+export const protocolIconKeys = [
+  'sparkles', 'droplets', 'glass-water', 'pill', 'moon', 'bed', 'timer',
+  'alarm-clock', 'heart-pulse', 'scan-heart', 'hand-heart', 'brain', 'target',
+  'leaf', 'flower-2', 'flame', 'waves', 'wind', 'sun', 'activity', 'dumbbell',
+  'bike', 'apple', 'salad', 'stethoscope', 'smile', 'notebook-pen',
+] as const;
+
+export type ProtocolIconKey = (typeof protocolIconKeys)[number];
+
+const protocolIcons: Readonly<Record<ProtocolIconKey, LucideIcon>> = {
   sparkles: Sparkles,
   droplets: Droplets,
   'glass-water': GlassWater,
@@ -76,10 +85,9 @@ const protocolIcons: Readonly<Record<string, LucideIcon>> = {
   'notebook-pen': NotebookPen,
 };
 
-export const protocolIconKeys = Object.keys(protocolIcons);
-
 export function protocolIcon(key: string): LucideIcon {
-  return protocolIcons[key] ?? Sparkles;
+  const supported = protocolIconKeys.find((candidate) => candidate === key);
+  return supported ? protocolIcons[supported] : Sparkles;
 }
 
 /**

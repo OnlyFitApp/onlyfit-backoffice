@@ -1,4 +1,4 @@
-import { api } from '../api';
+import { coreApi } from '../api/core';
 
 export type LegalDocumentKind = 'acceptance' | 'notice' | 'declaration';
 
@@ -126,7 +126,7 @@ export const LEGAL_DOCUMENT_CATALOG = [
   },
 ] as const;
 
-export type LegalDocumentCatalogEntry = (typeof LEGAL_DOCUMENT_CATALOG)[number];
+type LegalDocumentCatalogEntry = (typeof LEGAL_DOCUMENT_CATALOG)[number];
 export type LegalDocumentKey = LegalDocumentCatalogEntry['key'];
 
 export function legalDocumentCatalogEntry(key: string): LegalDocumentCatalogEntry | undefined {
@@ -172,53 +172,46 @@ type PublishLegalDocumentInput = {
   file: File;
 };
 
-const text = (value: unknown) => value?.toString() ?? '';
-const number = (value: unknown) => Number.isFinite(Number(value)) ? Number(value) : 0;
-
 export async function listLegalDocuments(): Promise<LegalDocumentVersion[]> {
-  const { data, error } = await api.staff.rpc('control_list_legal_documents');
-  if (error) throw error;
-  const rows = Array.isArray(data) ? data : [];
-  return rows.map((raw) => {
-    const row = raw as Record<string, unknown>;
-    return {
-      key: text(row.key), version: text(row.version), kind: text(row.kind) as LegalDocumentKind,
-      title: text(row.title), description: text(row.description), pdfUrl: text(row.pdf_url),
-      acceptanceText: text(row.acceptance_text), actionLabel: text(row.action_label),
-      isRequired: row.is_required === true, sortOrder: number(row.sort_order),
-      journey: row.journey == null ? null : text(row.journey) || null,
-      publishedAt: text(row.published_at), isCurrent: row.is_current === true,
-      isActive: row.is_active === true, acceptedCount: number(row.accepted_count),
-      eligibleCount: number(row.eligible_count), pendingCount: number(row.pending_count),
-    };
-  });
+  return (await coreApi.staff.legalDocuments()).map((row) => ({
+    key: row.key, version: row.version, kind: row.kind,
+    title: row.title, description: row.description, pdfUrl: row.pdf_url,
+    acceptanceText: row.acceptance_text, actionLabel: row.action_label,
+    isRequired: row.is_required, sortOrder: row.sort_order, journey: row.journey,
+    publishedAt: row.published_at, isCurrent: row.is_current, isActive: row.is_active,
+    acceptedCount: row.accepted_count, eligibleCount: row.eligible_count,
+    pendingCount: row.pending_count,
+  }));
+}
+
+async function currentRevision(key: string): Promise<number> {
+  const current = (await coreApi.staff.legalDocuments()).find((item) => item.key === key && item.is_current);
+  return current?.revision ?? 0;
 }
 
 export async function publishLegalDocument(input: PublishLegalDocumentInput): Promise<void> {
   if (input.file.type !== 'application/pdf') throw new Error('pdf_required');
   const key = input.key.trim().toLowerCase();
   const version = input.version.trim();
-  const safeName = input.file.name.toLowerCase().replace(/[^a-z0-9.-]+/g, '-');
-  const path = `${version}/${key}-${Date.now()}-${safeName}`;
-  const upload = await api.identidade.storage.from('legal-documents').upload(path, input.file, {
-    contentType: 'application/pdf', upsert: false,
+  const [upload, expectedRevision] = await Promise.all([
+    coreApi.staff.legalDocumentUpload({
+      filename: input.file.name,
+      contentType: 'application/pdf',
+      contentLength: input.file.size,
+    }),
+    currentRevision(key),
+  ]);
+  const uploadResponse = await fetch(upload.upload_url, {
+    method: 'PUT', headers: { 'Content-Type': upload.upload_headers['Content-Type'] }, body: input.file,
   });
-  if (upload.error) throw upload.error;
-  const { data: publicUrl } = api.identidade.storage.from('legal-documents').getPublicUrl(path);
-  const { error } = await api.staff.rpc('control_publish_legal_document', {
-    p_key: key,
-    p_version: version,
-    p_kind: input.kind,
-    p_title: input.title.trim(),
-    p_description: input.description.trim(),
-    p_pdf_url: publicUrl.publicUrl,
-    p_acceptance_text: input.acceptanceText.trim(),
-    p_action_label: input.actionLabel.trim(),
-    p_is_required: input.isRequired,
-    p_sort_order: input.sortOrder,
-    p_activate: input.activate,
+  if (!uploadResponse.ok) throw new Error('staff.legal_document_upload_failed');
+  await coreApi.staff.legalDocumentPublish({
+    uploadId: upload.upload_id, key, version, kind: input.kind,
+    title: input.title.trim(), description: input.description.trim(),
+    acceptanceText: input.acceptanceText.trim(), actionLabel: input.actionLabel.trim(),
+    isRequired: input.isRequired, sortOrder: input.sortOrder, activate: input.activate,
+    expectedRevision, idempotencyKey: crypto.randomUUID(),
   });
-  if (error) throw error;
 }
 
 /** A jornada é ato próprio: publicar versão nova não mexe nela. */
@@ -226,17 +219,13 @@ export async function setLegalDocumentJourney(
   key: string,
   journey: LegalDocumentJourney | null,
 ): Promise<void> {
-  const { error } = await api.staff.rpc('control_set_legal_document_journey', {
-    p_key: key,
-    p_journey: journey,
+  await coreApi.staff.legalDocumentJourneySave({
+    key, journey, expectedRevision: await currentRevision(key), idempotencyKey: crypto.randomUUID(),
   });
-  if (error) throw error;
 }
 
 export async function setLegalDocumentActive(key: string, active: boolean): Promise<void> {
-  const { error } = await api.staff.rpc('control_set_legal_document_active', {
-    p_key: key,
-    p_active: active,
+  await coreApi.staff.legalDocumentActiveSave({
+    key, active, expectedRevision: await currentRevision(key), idempotencyKey: crypto.randomUUID(),
   });
-  if (error) throw error;
 }

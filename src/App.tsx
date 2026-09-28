@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronLeft,
   CreditCard,
+  Database,
   ClipboardCheck,
   Stethoscope,
   Dumbbell,
@@ -92,6 +93,7 @@ import { AffinityGroupsPage } from './components/AffinityGroupsPage';
 import { OnlyFitHealthLibraryPage } from './components/OnlyFitHealthLibraryPage';
 import { SessionTypesPage } from './components/SessionTypesPage';
 import { ExerciseCatalogPage } from './components/ExerciseCatalogPage';
+import { NutritionCatalogsPage } from './components/NutritionCatalogsPage';
 import { CombatTechniquesPage } from './components/CombatTechniquesPage';
 import { ProfessionalCredentialsPage } from './components/ProfessionalCredentialsPage';
 import { ProfessionalSpecialtiesPage } from './components/ProfessionalSpecialtiesPage';
@@ -159,6 +161,7 @@ const navItems = [
       { id: 'onlyfit-health-library', label: 'OnlyFit Health', icon: BookOpen },
       { id: 'training-quotas', label: 'Cotas de treinos', icon: Dumbbell },
       { id: 'exercise-catalog', label: 'Exercícios', icon: Dumbbell },
+      { id: 'nutrition-catalogs', label: 'Catálogos nutricionais', icon: Database },
       { id: 'combat-techniques', label: 'Técnicas de luta', icon: Swords },
       { id: 'session-types', label: 'Tipos de sessão', icon: Dumbbell },
     ],
@@ -207,6 +210,7 @@ type SectionId =
   | 'onlyfit-health-library'
   | 'training-quotas'
   | 'exercise-catalog'
+  | 'nutrition-catalogs'
   | 'combat-techniques'
   | 'session-types'
   | 'professional-specialties'
@@ -2161,6 +2165,7 @@ function AppShell() {
         {activeSection === 'training-quotas' && <TrainingQuotaSettingsPage />}
         {activeSection === 'session-types' && <SessionTypesPage />}
         {activeSection === 'exercise-catalog' && <ExerciseCatalogPage />}
+        {activeSection === 'nutrition-catalogs' && <NutritionCatalogsPage />}
         {activeSection === 'combat-techniques' && <CombatTechniquesPage />}
         {activeSection === 'professional-specialties' && <ProfessionalSpecialtiesPage />}
         {activeSection === 'market-settings' && <MarketSettingsPage />}

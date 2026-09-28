@@ -351,6 +351,8 @@ export type ApiErrorCode =
   | 'org.website_in_use'
   | 'platform.idempotency_conflict'
   | 'platform.invalid_events'
+  | 'platform.maintenance'
+  | 'platform.maintenance_state_unavailable'
   | 'platform.mark_window_closed'
   | 'platform.reason_note_required'
   | 'platform.reason_required'
@@ -8251,6 +8253,13 @@ export interface StrengthPrescription {
   notes?: string;
 }
 
+export interface SystemStatus {
+  maintenance: boolean;
+  message_key: string | null;
+  started_at: string | null;
+  retry_after_seconds: number;
+}
+
 export interface TeamAccount {
   id: string;
   username: string | null;
@@ -8831,6 +8840,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       eventsSave: (input: { events: AppTelemetryEvent[] }) => call('app_events_save_v1', { p_events: input.events }) as Promise<EventsSaved>,
       /** Busca municípios brasileiros sem diferenciar caixa ou acento. (query; contract/app/locations.v1.json) */
       locations: (input: { query?: string | null; stateCode?: string | null; limit?: number } = {}) => call('app_locations_v1', { p_query: input.query, p_state_code: input.stateCode, p_limit: input.limit }) as Promise<AppLocationPage>,
+      /** Estado operacional público e sanitizado da plataforma. (query; contract/app/system_status.v1.json) */
+      systemStatus: () => invoke('worker', '/app/status', {}) as Promise<SystemStatus>,
       /** Configuração pública e versionada do pré-carregamento de vídeo no Flutter. (query; contract/app/video_preload_settings.v1.json) */
       videoPreloadSettings: () => call('app_video_preload_settings_v1', {}) as Promise<VideoPreloadSettings>,
     },

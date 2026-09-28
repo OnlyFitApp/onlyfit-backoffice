@@ -46,6 +46,9 @@ type EditorState =
   | { kind: 'program'; id: string | null; expectedVersion: number | null; payload: StaffHealthProgramPayload };
 
 const PAGE_SIZE = 25;
+const commaSeparatedValues = (value: string): string[] =>
+  [...new Set(value.split(',').map((item) => item.trim()).filter(Boolean))];
+
 const tabs: Array<{ id: Tab; label: string; description: string; icon: typeof Dumbbell }> = [
   { id: 'workout', label: 'Treinos', description: 'Sessões e exercícios', icon: Dumbbell },
   { id: 'program', label: 'Programas', description: 'Semanas e dias', icon: BookOpen },
@@ -70,7 +73,16 @@ function newEditor(kind: LibraryKind): EditorState {
     kind,
     id: null,
     expectedVersion: null,
-    payload: { kind, title: '', sport_id: 'bodybuilding', weeks: 4, days: [] },
+    payload: {
+      kind,
+      title: '',
+      description: '',
+      estimated_minutes_per_week: null,
+      equipment: [],
+      sport_id: 'bodybuilding',
+      weeks: 4,
+      days: [],
+    },
   };
 }
 
@@ -127,7 +139,16 @@ function editorFrom(item: StaffHealthLibraryItem): EditorState {
     kind: item.kind,
     id: item.id,
     expectedVersion: item.version,
-    payload: { kind: item.kind, title: item.title, sport_id: item.sport_id, weeks: item.detail.weeks, days: item.detail.days },
+    payload: {
+      kind: item.kind,
+      title: item.title,
+      description: item.detail.description,
+      estimated_minutes_per_week: item.detail.estimated_minutes_per_week,
+      equipment: [...item.detail.equipment],
+      sport_id: item.sport_id,
+      weeks: item.detail.weeks,
+      days: item.detail.days,
+    },
   };
 }
 
@@ -276,7 +297,7 @@ function ProgramFields({ state, onChange }: { state: Extract<EditorState, { kind
   const workouts = useOnlyFitHealthCatalog('workout', '', state.payload.sport_id, 'active', 100, 0);
   const workoutItems = workouts.data?.items.filter((item): item is StaffHealthWorkout => item.kind === 'workout') ?? [];
   const addDay = () => { const first = workoutItems[0]; if (!first) return; patch({ days: [...state.payload.days, { week: 1, weekday: 1, workout_id: first.id, order_index: state.payload.days.length }] }); };
-  return <div className="ohlib-form-grid"><label className="wide"><span>Título</span><input autoFocus required maxLength={120} value={state.payload.title} onChange={(event) => patch({ title: event.target.value })} /></label><label><span>Modalidade</span><input required value={state.payload.sport_id} onChange={(event) => patch({ sport_id: event.target.value })} /></label><label><span>Duração (semanas)</span><input type="number" min={1} max={52} value={state.payload.weeks} onChange={(event) => patch({ weeks: Number(event.target.value) })} /></label>
+  return <div className="ohlib-form-grid"><label className="wide"><span>Título</span><input autoFocus required maxLength={120} value={state.payload.title} onChange={(event) => patch({ title: event.target.value })} /></label><label className="wide"><span>Descrição</span><textarea required rows={3} maxLength={2000} value={state.payload.description} onChange={(event) => patch({ description: event.target.value })} /></label><label><span>Modalidade</span><input required value={state.payload.sport_id} onChange={(event) => patch({ sport_id: event.target.value })} /></label><label><span>Duração (semanas)</span><input type="number" min={1} max={52} value={state.payload.weeks} onChange={(event) => patch({ weeks: Number(event.target.value) })} /></label><label><span>Minutos estimados por semana</span><input type="number" min={1} max={10080} value={state.payload.estimated_minutes_per_week ?? ''} onChange={(event) => patch({ estimated_minutes_per_week: event.target.value === '' ? null : Number(event.target.value) })} /></label><label className="wide"><span>Equipamentos</span><input value={state.payload.equipment.join(', ')} onChange={(event) => patch({ equipment: commaSeparatedValues(event.target.value) })} placeholder="Separados por vírgula" /></label>
     <div className="wide ohlib-exercises"><div className="ohlib-subheading"><div><strong>Dias do programa</strong><small>Cada dia aponta para um treino oficial ativo.</small></div><button className="button secondary compact" type="button" disabled={!workoutItems.length} onClick={addDay}><Plus size={14} />Dia</button></div>{!workoutItems.length ? <div className="ohlib-inline-empty">Cadastre um treino publicado nesta modalidade antes de montar o programa.</div> : null}<div className="ohlib-exercise-list">{state.payload.days.map((day, index) => <div className="ohlib-exercise-row" key={`${day.workout_id}-${index}`}><label><span>Semana</span><input type="number" min={1} max={state.payload.weeks} value={day.week} onChange={(event) => patch({ days: state.payload.days.map((current, position) => position === index ? { ...current, week: Number(event.target.value) } : current) })} /></label><label><span>Dia</span><input type="number" min={1} max={7} value={day.weekday} onChange={(event) => patch({ days: state.payload.days.map((current, position) => position === index ? { ...current, weekday: Number(event.target.value) } : current) })} /></label><label><span>Treino</span><select value={day.workout_id} onChange={(event) => patch({ days: state.payload.days.map((current, position) => position === index ? { ...current, workout_id: event.target.value } : current) })}>{workoutItems.map((workout) => <option value={workout.id} key={workout.id}>{workout.title}</option>)}</select></label><button className="icon-button" type="button" aria-label="Remover dia" onClick={() => patch({ days: state.payload.days.filter((_, position) => position !== index).map((current, position) => ({ ...current, order_index: position })) })}><Trash2 size={15} /></button></div>)}</div></div>
   </div>;
 }

@@ -75,10 +75,8 @@ export type ApiErrorCode =
   | 'commerce.invalid_google_play_purchase'
   | 'commerce.invalid_market_filter'
   | 'commerce.invalid_member_filter'
-  | 'commerce.invalid_network_action'
   | 'commerce.invalid_network_location'
   | 'commerce.invalid_network_principal'
-  | 'commerce.invalid_network_tab'
   | 'commerce.invalid_offer'
   | 'commerce.invalid_offer_action'
   | 'commerce.invalid_offering_tool'
@@ -91,7 +89,6 @@ export type ApiErrorCode =
   | 'commerce.invalid_physical_media'
   | 'commerce.invalid_physical_product'
   | 'commerce.invalid_progress'
-  | 'commerce.invalid_purchase_action'
   | 'commerce.invalid_purchase_filter'
   | 'commerce.invalid_purchase_payload'
   | 'commerce.invalid_return_url'
@@ -159,7 +156,6 @@ export type ApiErrorCode =
   | 'health.invalid_assistant_message'
   | 'health.invalid_consent'
   | 'health.invalid_correction'
-  | 'health.invalid_delivery_rule'
   | 'health.invalid_document'
   | 'health.invalid_event'
   | 'health.invalid_media'
@@ -167,7 +163,6 @@ export type ApiErrorCode =
   | 'health.invalid_progress_photo'
   | 'health.invalid_provider'
   | 'health.invalid_questionnaire'
-  | 'health.invalid_recipient'
   | 'health.invalid_report'
   | 'health.invalid_sync'
   | 'health.questionnaire_changed'
@@ -179,13 +174,11 @@ export type ApiErrorCode =
   | 'health.upload_incomplete'
   | 'identity.account_not_found'
   | 'identity.auth_not_configured'
-  | 'identity.code_exhausted'
   | 'identity.delete_failed'
   | 'identity.document_in_use'
   | 'identity.email_already_confirmed'
   | 'identity.invalid_address'
   | 'identity.invalid_changes'
-  | 'identity.invalid_code'
   | 'identity.invalid_credentials'
   | 'identity.invalid_device'
   | 'identity.invalid_document'
@@ -201,7 +194,6 @@ export type ApiErrorCode =
   | 'identity.missing_credentials'
   | 'identity.onboarding_incomplete'
   | 'identity.one_default_address'
-  | 'identity.own_code'
   | 'identity.preferences_conflict'
   | 'identity.professional_credential_invalid'
   | 'identity.professional_profile_required'
@@ -242,15 +234,12 @@ export type ApiErrorCode =
   | 'media.invalid_cover_jpeg'
   | 'media.invalid_cover_size'
   | 'media.invalid_finalization'
-  | 'media.invalid_private_object'
   | 'media.invalid_upload'
   | 'media.invalid_video_contract'
   | 'media.invalid_video_size'
   | 'media.mime_not_allowed'
   | 'media.object_mismatch'
   | 'media.ogg_silent_attestation_unsupported'
-  | 'media.private_object_forbidden'
-  | 'media.private_object_not_found'
   | 'media.quarantine_contract_mismatch'
   | 'media.rate_limited'
   | 'media.storage_unavailable'
@@ -280,7 +269,6 @@ export type ApiErrorCode =
   | 'nutrition.invalid_meal'
   | 'nutrition.invalid_photo'
   | 'nutrition.invalid_range'
-  | 'nutrition.meal_item_not_found'
   | 'nutrition.meal_not_found'
   | 'nutrition.photo_in_use'
   | 'nutrition.photo_not_found'
@@ -417,9 +405,6 @@ export type ApiErrorCode =
   | 'social.version_conflict'
   | 'staff.account_email_not_found'
   | 'staff.account_not_found'
-  | 'staff.ad_package_changed'
-  | 'staff.ad_package_not_found'
-  | 'staff.advertising_settings_changed'
   | 'staff.app_store_catalog_changed'
   | 'staff.app_store_catalog_incomplete'
   | 'staff.app_store_finance_not_configured'
@@ -487,8 +472,6 @@ export type ApiErrorCode =
   | 'staff.health_library_item_not_found'
   | 'staff.idempotency_required'
   | 'staff.invalid_action'
-  | 'staff.invalid_ad_package'
-  | 'staff.invalid_advertising_settings'
   | 'staff.invalid_affinity_group'
   | 'staff.invalid_app_store_catalog_action'
   | 'staff.invalid_app_store_catalog_filter'
@@ -567,7 +550,6 @@ export type ApiErrorCode =
   | 'staff.invalid_sport'
   | 'staff.invalid_training_quota'
   | 'staff.invalid_treasury_movement'
-  | 'staff.invalid_video_preload_settings'
   | 'staff.invite_email_count_invalid'
   | 'staff.invite_email_invalid'
   | 'staff.invite_note_too_long'
@@ -655,8 +637,6 @@ export type ApiErrorCode =
   | 'training.invalid_scope'
   | 'training.invalid_sport'
   | 'training.invalid_start_date'
-  | 'training.invalid_step_order'
-  | 'training.invalid_step_target'
   | 'training.invalid_steps'
   | 'training.invalid_workout'
   | 'training.invalid_zones'
@@ -672,8 +652,6 @@ export type ApiErrorCode =
   | 'training.scheduled_not_found'
   | 'training.scope_requires_program'
   | 'training.session_not_found'
-  | 'training.step_id_conflict'
-  | 'training.step_not_found'
   | 'training.unknown_action'
   | 'training.unknown_exercise'
   | 'training.unknown_sport'
@@ -692,12 +670,6 @@ export interface AcceptedLegalDocument {
   url: string;
   required: boolean;
   accepted_at: string | null;
-}
-
-export interface Access {
-  /** Veredito do servidor (J01.5). */
-  status: "confirm_email" | "waitlist" | "granted";
-  invite_code: InviteCode;
 }
 
 export interface AccountCard {
@@ -1041,6 +1013,8 @@ export interface Catalogs {
   offer_types: OfferType[];
   /** Canais de pagamento habilitados pela staff. */
   payment_channels: PaymentChannel[];
+  food_sources: FoodSource[];
+  nutrients: NutrientCatalogItem[];
   /** Especialidades profissionais configuradas pela staff; o conselho pertence ao catálogo. */
   professional_specialties: ProfessionalSpecialty[];
 }
@@ -1635,18 +1609,6 @@ export interface CommerceMemberHubs {
   offset: number;
 }
 
-export interface CommerceMemberSummary {
-  account: OrgAccountCard;
-  purchases: number;
-  total: number;
-  last_purchase_at: string;
-}
-
-export interface CommerceMembers {
-  items: CommerceMemberSummary[];
-  next_cursor: string | null;
-}
-
 export interface CommerceMyPhysicalOrder {
   id: string;
   product_id: string | null;
@@ -1677,31 +1639,6 @@ export interface CommerceNativeProduct {
   price: number;
   currency: string;
   subscription_group_reference: string | null;
-}
-
-export interface CommerceNetwork {
-  items: CommerceNetworkItem[];
-}
-
-export interface CommerceNetworkActionData {
-  network_classification?: string;
-}
-
-export interface CommerceNetworkItem {
-  id: string;
-  container_id: string;
-  account: OrgAccountCard;
-  status: string;
-  classification: string | null;
-  created_at: string;
-}
-
-export interface CommerceNetworkMembership {
-  id: string;
-  container_id: string;
-  account_id: string;
-  status: string;
-  classification: string | null;
 }
 
 export interface CommerceOffer {
@@ -2788,17 +2725,32 @@ export interface FoodSaveInput {
   id: string | null;
   name: string;
   brand: string | null;
+  category: string | null;
+  notes: string | null;
   barcode: string | null;
-  /** Mapa dinâmico de métricas numéricas nomeadas pelo catálogo. */
-  per_100g: Record<string, number>;
+  per_100g: NutritionFactsInput;
   portions: FoodSavePortion[];
   delete?: boolean;
 }
 
 export interface FoodSavePortion {
+  amount: number;
   unit: string;
-  label?: string | null;
+  label: string | null;
   grams: number;
+}
+
+export interface FoodSource {
+  id: string;
+  name_key: string;
+  origin: "taco" | "tbca" | "usda" | "brand" | "restaurant" | "personal";
+  display_name_key: string;
+  license_name: string | null;
+  license_url: string | null;
+  attribution_text: string | null;
+  homepage_url: string | null;
+  verified_by_default: boolean;
+  search_priority: number;
 }
 
 export interface FreeMeal {
@@ -3312,32 +3264,8 @@ export interface HealthProgressPhotoInput {
   replace_file_id?: string | null;
 }
 
-export interface HealthQuestionnaireActionData {
-  rules?: HealthQuestionnaireDeliveryRule[];
-  account_id?: string;
-  expires_hours?: number;
-}
-
-export type HealthQuestionnaireActionResult = HealthQuestionnaireArchived | HealthQuestionnaireDeliveryRuleSet | HealthQuestionnaireSent | HealthQuestionnaireLinkCreated;
-
-export interface HealthQuestionnaireArchived {
-  action: "archive";
-  questionnaire: HealthBusinessQuestionnaire;
-}
-
 export interface HealthQuestionnaireDeliveryRule {
   scope: "business";
-}
-
-export interface HealthQuestionnaireDeliveryRuleSet {
-  action: "setDeliveryRule";
-  questionnaire: HealthBusinessQuestionnaire;
-}
-
-export interface HealthQuestionnaireLinkCreated {
-  action: "createLink";
-  form: HealthForm;
-  token: string;
 }
 
 export interface HealthQuestionnairePending {
@@ -3377,12 +3305,6 @@ export interface HealthQuestionnaireSaved {
   version: number;
   status: "active" | "archived";
   updated_at: string;
-}
-
-export interface HealthQuestionnaireSent {
-  action: "send";
-  form: HealthForm;
-  token: string;
 }
 
 export interface HealthQuestionnaireSubmission {
@@ -4075,13 +3997,6 @@ export interface InteractionThread {
   next_cursor: string | null;
 }
 
-export interface InviteCode {
-  code: string | null;
-  uses: number | null;
-  /** null até a staff definir */
-  max_uses: number | null;
-}
-
 export interface LegalCenter {
   documents: AcceptedLegalDocument[];
   contracts: LegalContractTerm[];
@@ -4187,6 +4102,13 @@ export interface MediaUploadCompleted {
 export interface NotDoneReason {
   id: string;
   name_key: string;
+}
+
+export interface NutrientCatalogItem {
+  id: string;
+  name_key: string;
+  unit: "kcal" | "g" | "mg" | "mcg";
+  display_name_key: string;
 }
 
 export interface NutritionAdherenceDay {
@@ -4345,21 +4267,43 @@ export interface NutritionDietProposalInput {
   targets: NutritionTargets;
 }
 
+export interface NutritionFacts {
+  kcal: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  fiber_g: number | null;
+  sodium_mg: number | null;
+  extended: NutritionNutrient[];
+}
+
+export interface NutritionFactsInput {
+  kcal: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  fiber_g: number | null;
+  sodium_mg: number | null;
+  extended: NutritionNutrient[];
+}
+
 export interface NutritionFood {
   id: string;
   name: string;
   brand: string | null;
+  category: string | null;
+  notes: string | null;
   origin: "taco" | "tbca" | "usda" | "brand" | "restaurant" | "personal";
   barcode: string | null;
-  /** Nutrientes por 100 g, nomeados pelo catálogo nutricional. */
-  per_100g: Record<string, number>;
+  per_100g: NutritionFacts;
   portions: NutritionFoodPortion[];
   own: boolean;
 }
 
 export interface NutritionFoodPortion {
+  amount: number;
   unit: string;
-  label?: string | null;
+  label: string | null;
   grams: number;
 }
 
@@ -4368,12 +4312,20 @@ export interface NutritionFoodSaveResult {
   deleted?: boolean;
   name?: string;
   brand?: string | null;
+  category?: string | null;
+  notes?: string | null;
   origin?: "taco" | "tbca" | "usda" | "brand" | "restaurant" | "personal";
   barcode?: string | null;
-  /** Nutrientes por 100 g, nomeados pelo catálogo nutricional. */
-  per_100g?: Record<string, number>;
+  per_100g?: NutritionFacts;
   portions?: NutritionFoodPortion[];
   own?: boolean;
+}
+
+export interface NutritionNutrient {
+  code: string;
+  amount_per_100g: number | null;
+  unit: "kcal" | "g" | "mg" | "mcg";
+  status: "measured" | "trace" | "not_available";
 }
 
 export interface NutritionPhotoDeleteResult {
@@ -4427,14 +4379,6 @@ export interface NutritionProfessionalLibrary {
   total: number;
   limit: number;
   offset: number;
-}
-
-export interface NutritionSwapSuggestions {
-  meal_id: string;
-  item_id: string;
-  date: string;
-  suggestions: NutritionFood[];
-  basis: "catalog" | "energy_range";
 }
 
 export interface NutritionTargets {
@@ -4911,11 +4855,6 @@ export interface PaymentChannel {
   provider: string;
 }
 
-export interface PrivateDownload {
-  downloadUrl: string;
-  expiresIn: number;
-}
-
 export interface ProductCategory {
   id: string;
   name_key: string;
@@ -4976,13 +4915,6 @@ export interface ProfessionalWorkoutStep {
   prescription: WorkoutPrescription;
 }
 
-export interface ProfessionalWorkoutStepInput {
-  id?: string;
-  exercise_id?: string | null;
-  title: string;
-  prescription: WorkoutPrescription;
-}
-
 export interface ProfessionalWorkoutStepSaveInput {
   id?: string;
   exercise_id?: string | null;
@@ -5006,6 +4938,9 @@ export interface ProfessionalWorkoutTemplate {
 export interface ProgramSummary {
   id: string;
   title: string;
+  description: string;
+  estimated_minutes_per_week: number | null;
+  equipment: string[];
   sport_id: string;
   weeks: number;
   weekly_sessions: number;
@@ -5219,14 +5154,6 @@ export interface Session {
   review: TrainingSessionReview | null;
   /** Resultados por identificador de passo. */
   suggestions: TrainingStepActualMap;
-}
-
-export interface SessionActionResult {
-  id: string;
-  status: "abandoned";
-  scheduled_id: string | null;
-  workout_id: string;
-  abandoned_at: string;
 }
 
 /** Conclusão completa/parcial, duração, calorias, sensação, notas e parciais; a avaliação pode vir depois de encerrar. */
@@ -6185,45 +6112,6 @@ export interface StaffAccounts {
   next_cursor: string | null;
 }
 
-export interface StaffAdInventory {
-  platform_business_id: string | null;
-  items: StaffAdInventoryItem[];
-}
-
-export interface StaffAdInventoryItem {
-  id: string;
-  placement: string;
-  offer_id: string;
-  offer_name: string;
-  offer_business_id: string;
-  duration_days: number;
-  capacity: number;
-  occupied: number;
-  position: number;
-  enabled: boolean;
-  price: number;
-  currency: string;
-  version: number;
-}
-
-export interface StaffAdPackage {
-  id: string;
-  placement: "sponsor_carousel" | "featured_products";
-  offer_id: string;
-  duration_days: number;
-  capacity: number;
-  position: number;
-  enabled: boolean;
-  price: number;
-  currency: string;
-  version: number;
-}
-
-export interface StaffAdvertisingSettings {
-  business_id: string;
-  version: number;
-}
-
 export interface StaffAffinityGroupData {
   label: string;
   icon: string;
@@ -6724,7 +6612,7 @@ export interface StaffBusinessVerifications {
 }
 
 export interface StaffCatalog {
-  kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "offer_types" | "payment_providers";
+  kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "food_sources" | "nutrients" | "offer_types" | "payment_providers";
   can_edit: boolean;
   items: StaffCatalogItem[];
 }
@@ -6738,15 +6626,15 @@ export interface StaffCatalogImpact {
   total_links: number;
 }
 
-export type StaffCatalogItem = StaffAffinityGroupItem | StaffSportItem | StaffSessionTypeItem | StaffFightTechniqueItem | StaffProtocolTemplateItem | StaffBusinessNicheItem | StaffProfessionalSpecialtyItem | StaffProductCategoryItem | StaffOfferTypeItem | StaffPaymentProviderItem;
+export type StaffCatalogItem = StaffAffinityGroupItem | StaffSportItem | StaffSessionTypeItem | StaffFightTechniqueItem | StaffProtocolTemplateItem | StaffBusinessNicheItem | StaffProfessionalSpecialtyItem | StaffProductCategoryItem | StaffOfferTypeItem | StaffPaymentProviderItem | StaffFoodSourceItem | StaffNutrientItem;
 
 export interface StaffCatalogReordered {
-  kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "offer_types";
+  kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "food_sources" | "nutrients" | "offer_types";
   can_edit: boolean;
   items: StaffCatalogItem[];
 }
 
-export type StaffCatalogSaveItem = StaffAffinityGroupSave | StaffSportSave | StaffSessionTypeSave | StaffFightTechniqueSave | StaffProtocolTemplateSave | StaffBusinessNicheSave | StaffProfessionalSpecialtySave | StaffProductCategorySave | StaffOfferTypeSave | StaffPaymentProviderSave;
+export type StaffCatalogSaveItem = StaffAffinityGroupSave | StaffSportSave | StaffSessionTypeSave | StaffFightTechniqueSave | StaffProtocolTemplateSave | StaffBusinessNicheSave | StaffProfessionalSpecialtySave | StaffProductCategorySave | StaffOfferTypeSave | StaffPaymentProviderSave | StaffFoodSourceSave | StaffNutrientSave;
 
 export interface StaffChannelCostPolicy {
   id: string;
@@ -7091,9 +6979,12 @@ export interface StaffEmailThreads {
 export interface StaffExercise {
   id: string;
   name: string;
+  instructions: string | null;
   kind: "exercise" | "technique";
-  sport_id: string | null;
-  locale: string;
+  sport_ids: string[];
+  locale: "pt-BR" | "en-US" | "es";
+  visibility: "public";
+  localizations: TrainingExerciseLocalization[];
   muscles: string[];
   equipment: string | null;
   video_url: string | null;
@@ -7302,6 +7193,49 @@ export interface StaffFirstContacts {
   has_more: boolean;
 }
 
+export interface StaffFoodSourceData {
+  origin: "taco" | "tbca" | "usda" | "brand" | "restaurant" | "personal";
+  display_name_key: string;
+  license_name: string | null;
+  license_url: string | null;
+  attribution_text: string | null;
+  homepage_url: string | null;
+  verified_by_default: boolean;
+  search_priority: number;
+}
+
+export interface StaffFoodSourceDataInput {
+  origin: "taco" | "tbca" | "usda" | "brand" | "restaurant" | "personal";
+  display_name_key: string;
+  license_name: string | null;
+  license_url: string | null;
+  attribution_text: string | null;
+  homepage_url: string | null;
+  verified_by_default: boolean;
+  search_priority: number;
+}
+
+export interface StaffFoodSourceItem {
+  kind: "food_sources";
+  key: string;
+  name_key: string;
+  active: boolean;
+  public: boolean;
+  position: number;
+  version: number;
+  data: StaffFoodSourceData;
+  impact: StaffCatalogImpact;
+}
+
+export interface StaffFoodSourceSave {
+  kind: "food_sources";
+  key: string;
+  public: boolean;
+  position: number;
+  expected_version?: number | null;
+  data: StaffFoodSourceDataInput;
+}
+
 export interface StaffHealthDiet {
   kind: "diet";
   id: string;
@@ -7357,12 +7291,18 @@ export interface StaffHealthProgramDay {
 
 export interface StaffHealthProgramDetail {
   weeks: number;
+  description: string;
+  estimated_minutes_per_week: number | null;
+  equipment: string[];
   days: StaffHealthProgramDay[];
 }
 
 export interface StaffHealthProgramPayload {
   kind: "program";
   title: string;
+  description: string;
+  estimated_minutes_per_week: number | null;
+  equipment: string[];
   sport_id: string;
   weeks: number;
   days: StaffHealthProgramDay[];
@@ -7657,6 +7597,37 @@ export interface StaffNativeProductSummary {
   price: number;
   currency: string;
   version: number;
+}
+
+export interface StaffNutrientData {
+  unit: "kcal" | "g" | "mg" | "mcg";
+  display_name_key: string;
+}
+
+export interface StaffNutrientDataInput {
+  unit: "kcal" | "g" | "mg" | "mcg";
+  display_name_key: string;
+}
+
+export interface StaffNutrientItem {
+  kind: "nutrients";
+  key: string;
+  name_key: string;
+  active: boolean;
+  public: boolean;
+  position: number;
+  version: number;
+  data: StaffNutrientData;
+  impact: StaffCatalogImpact;
+}
+
+export interface StaffNutrientSave {
+  kind: "nutrients";
+  key: string;
+  public: boolean;
+  position: number;
+  expected_version?: number | null;
+  data: StaffNutrientDataInput;
 }
 
 export interface StaffOfferTypeItem {
@@ -8093,30 +8064,6 @@ export interface StaffProviderEventSummary {
   unprocessed_count: number;
 }
 
-export interface StaffReconciliationItem {
-  id: string;
-  run_id: string;
-  provider_reference: string;
-  purchase_id: string | null;
-  charge_id: string | null;
-  result: "matched" | "missing_internal" | "missing_external" | "amount_mismatch";
-  internal_currency: string | null;
-  external_currency: string | null;
-  internal_amount: number | null;
-  external_amount: number | null;
-  internal_status: string | null;
-  external_status: string | null;
-  detail_code: string | null;
-  created_at: string;
-}
-
-export interface StaffReconciliationItemPage {
-  total: number;
-  limit: number;
-  offset: number;
-  items: StaffReconciliationItem[];
-}
-
 export interface StaffReconciliationRun {
   id: string;
   provider: "all" | "stripe" | "asaas" | "apple" | "google";
@@ -8279,17 +8226,6 @@ export interface StaffUploadHeaders {
   "Content-Length": string;
 }
 
-export interface StaffVideoPreloadSettingsInput {
-  rollout_version: number;
-  cohort: "baseline" | "internal" | "1" | "5" | "25" | "50" | "100";
-  native_engine: boolean;
-  feed: boolean;
-  explore: boolean;
-  creator: boolean;
-  stories: boolean;
-  refresh_interval_seconds: number;
-}
-
 export interface StepMark {
   status: string | null;
   reason: string | null;
@@ -8441,6 +8377,9 @@ export interface TrainingClientProgram {
   client_id: string;
   source_program_id: string | null;
   title: string;
+  description: string;
+  estimated_minutes_per_week: number | null;
+  equipment: string[];
   alias: string | null;
   sport_id: string;
   status: "draft" | "released" | "hidden" | "ended" | "removed";
@@ -8496,9 +8435,11 @@ export interface TrainingDay {
 export interface TrainingExercise {
   id: string;
   name: string;
+  instructions: string | null;
   kind: "exercise" | "technique";
-  sport_id: string | null;
-  locale: string;
+  sport_ids: string[];
+  locale: "pt-BR" | "en-US" | "es";
+  visibility: "private" | "public";
   muscles: string[];
   equipment: string | null;
   video_url: string | null;
@@ -8513,6 +8454,14 @@ export interface TrainingExerciseFavoriteResult {
   exercise_id: string;
   favorite: boolean;
 }
+
+export interface TrainingExerciseLocalization {
+  locale: "pt-BR" | "en-US" | "es";
+  name: string;
+  instructions: string | null;
+}
+
+export type TrainingExerciseLocalizations = TrainingExerciseLocalization[];
 
 export interface TrainingOwnedProtocolTemplate {
   id: string;
@@ -8559,6 +8508,9 @@ export interface TrainingProfessionalProgram {
   kind: "program_template";
   business_id: string;
   title: string;
+  description: string;
+  estimated_minutes_per_week: number | null;
+  equipment: string[];
   sport_id: string;
   status: "active" | "hidden";
   duration_weeks: number;
@@ -8627,6 +8579,9 @@ export interface TrainingProfessionalProtocolTemplateInput {
 export interface TrainingProgram {
   id: string;
   title: string;
+  description: string;
+  estimated_minutes_per_week: number | null;
+  equipment: string[];
   sport_id: string;
   weeks: number;
   version: number;
@@ -8665,6 +8620,9 @@ export interface TrainingProgramSaveInput {
   id?: string;
   business_id: string;
   title: string;
+  description: string;
+  estimated_minutes_per_week: number | null;
+  equipment: string[];
   sport_id: string;
   weeks: number;
   days: TrainingProgramDaySaveInput[];
@@ -8933,16 +8891,10 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       memberHubContents: (input: { businessId: string; kind?: "all" | "course" | "video" | "pdf" | "article" | "bundle"; query?: string | null; limit?: number; offset?: number }) => invoke('worker', '/commerce/member-hub-contents', { business_id: input.businessId, kind: input.kind, query: input.query, limit: input.limit, offset: input.offset }) as Promise<CommerceMemberHubContents>,
       /** Lista negócios que possuem cursos atualmente acessíveis pela conta. (query; contract/commerce/member_hubs.v1.json) */
       memberHubs: (input: { query?: string | null; limit?: number; offset?: number } = {}) => invoke('worker', '/commerce/member-hubs', { query: input.query, limit: input.limit, offset: input.offset }) as Promise<CommerceMemberHubs>,
-      /** Lista compradores confirmados de um negócio. (query; contract/commerce/members.v1.json) */
-      members: (input: { businessId: string; cursor?: string | null; limit?: number }) => call('commerce_members_v1', { p_business_id: input.businessId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommerceMembers>,
       /** Pagina os pedidos físicos da conta autenticada sem expor dados de outros compradores. (query; contract/commerce/my_physical_orders.v1.json) */
       myPhysicalOrders: (input: { cursor?: string | null; limit?: number } = {}) => call('commerce_my_physical_orders_v1', { p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommerceMyPhysicalOrders>,
       /** Resolve o produto da loja nativa vinculado a uma oferta digital publicada. (query; contract/commerce/native_product.v1.json) */
       nativeProduct: (input: { offerId: string; channel: "app_store" | "google_play" }) => call('commerce_native_product_v1', { p_offer_id: input.offerId, p_channel: input.channel }) as Promise<CommerceNativeProduct>,
-      /** Lista vínculos da rede comercial. (query; contract/commerce/network.v1.json) */
-      network: (input: { tab?: "mine" | "discover" } = {}) => call('commerce_network_v1', { p_tab: input.tab }) as Promise<CommerceNetwork>,
-      /** Solicita, decide ou encerra vínculo na rede. (command; contract/commerce/network_act.v1.json) */
-      networkAct: (input: { action: "request" | "approve" | "reject" | "leave"; containerId: string; targetId?: string | null; data?: CommerceNetworkActionData }) => call('commerce_network_act_v1', { p_action: input.action, p_container_id: input.containerId, p_target_id: input.targetId, p_data: input.data }) as Promise<CommerceNetworkMembership>,
       /** Lê uma oferta pública ou administrada. (query; contract/commerce/offer.v1.json) */
       offer: (input: { offerId: string }) => call('commerce_offer_v1', { p_offer_id: input.offerId }) as Promise<CommerceOffer>,
       /** Publica, pausa, retoma ou arquiva uma oferta. (command; contract/commerce/offer_act.v1.json) */
@@ -8991,8 +8943,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       promotedOffers: (input: { placement: "sponsor_carousel" | "featured_products"; sessionSeed: string }) => call('commerce_promoted_offers_v1', { p_placement: input.placement, p_session_seed: input.sessionSeed }) as Promise<CommercePromotedOffers>,
       /** Lê compra, entrega, progresso e cobranças autorizadas. (query; contract/commerce/purchase.v1.json) */
       purchase: (input: { purchaseId: string }) => call('commerce_purchase_v1', { p_purchase_id: input.purchaseId }) as Promise<CommercePurchase>,
-      /** Cancela ou repete uma compra ainda não confirmada. (command; contract/commerce/purchase_act.v1.json) */
-      purchaseAct: (input: { purchaseId: string; action: "cancel" | "retry"; expectedVersion: number }) => call('commerce_purchase_act_v1', { p_purchase_id: input.purchaseId, p_action: input.action, p_expected_version: input.expectedVersion }) as Promise<CommercePurchaseSummary>,
       /** Pesquisa e pagina o histórico canônico de compras do titular. (query; contract/commerce/purchases.v1.json) */
       purchases: (input: { status?: string | null; query?: string | null; filter?: "all" | "contents" | "workouts" | "diets" | "consultancies" | "products" | null; cursor?: string | null; limit?: number } = {}) => call('commerce_purchases_v1', { p_status: input.status, p_query: input.query, p_filter: input.filter, p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommercePurchases>,
       /** Lê elegibilidade e resumo de avaliações de uma oferta. (query; contract/commerce/review_context.v1.json) */
@@ -9049,8 +8999,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       pendingForms: () => call('health_pending_forms_v1', {}) as Promise<HealthPendingForms>,
       /** Confirma os metadados de uma foto de evolução pertencente ao próprio cliente. (command; contract/health/progress_photo_save.v1.json) */
       progressPhotoSave: (input: { photo: HealthProgressPhotoInput }) => call('health_progress_photo_save_v1', { p_photo: input.photo }) as Promise<HealthFileSummary>,
-      /** Configura entrega, envia, cria link ou arquiva questionário. (command; contract/health/questionnaire_act.v1.json) */
-      questionnaireAct: (input: { id: string; action: "setDeliveryRule" | "send" | "createLink" | "archive"; data?: HealthQuestionnaireActionData }) => call('health_questionnaire_act_v1', { p_id: input.id, p_action: input.action, p_data: input.data }) as Promise<HealthQuestionnaireActionResult>,
       /** Salva modelo; edição respondida cria nova versão. (command; contract/health/questionnaire_save.v1.json) */
       questionnaireSave: (input: { questionnaire: HealthQuestionnaireSaveInput }) => call('health_questionnaire_save_v1', { p_questionnaire: input.questionnaire }) as Promise<HealthQuestionnaireSaved>,
       /** Modelos, entregas e respostas do negócio. (query; contract/health/questionnaires.v1.json) */
@@ -9071,8 +9019,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       wearableSync: (input: { sync: HealthWearableSyncInput }) => call('health_wearable_sync_v1', { p_sync: input.sync }) as Promise<HealthWearableSyncResult>,
     },
     identity: {
-      /** applyCode: usa o código de indicação de outra pessoa para sair da fila. Devolve o veredito de acesso. (command; contract/identity/access_act.v1.json) */
-      accessAct: (input: { action: "applyCode"; code?: string }) => call('identity_access_act_v1', { p_action: input.action, p_code: input.code }) as Promise<Access>,
       /** Carrega a identidade autenticada completa e tipada. (query; contract/identity/bootstrap.v1.json) */
       bootstrap: () => call('identity_bootstrap_v1', {}) as Promise<IdentityBootstrap>,
       /** Exclui a própria conta e agenda a remoção segura dos seus arquivos externos. (command; contract/identity/delete.v1.json) */
@@ -9113,8 +9059,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       clientDietSave: (input: { businessId: string; clientId: string; dietId: string | null; sourceDietId: string | null; title: string | null; objective: string | null; meals: NutritionDietMeal[]; expectedVersion: number | null; idempotencyKey: string }) => call('nutrition_client_diet_save_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_diet_id: input.dietId, p_source_diet_id: input.sourceDietId, p_title: input.title, p_objective: input.objective, p_meals: input.meals, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<NutritionProfessionalDiet>,
       /** O dia de Nutrição: dieta ativa, marcação e edição de cada refeição no dia e refeições livres. (query; contract/nutrition/day.v1.json) */
       day: (input: { date?: string } = {}) => call('nutrition_day_v1', { p_date: input.date }) as Promise<NutritionDay>,
-      /** Detalhe da dieta: refeições, itens, metas e quem prescreveu. (query; contract/nutrition/diet.v1.json) */
-      diet: (input: { dietId: string }) => call('nutrition_diet_v1', { p_diet_id: input.dietId }) as Promise<Diet>,
       /** apply (ativa; da OnlyFit Health cria a cópia uma vez, J16.50/88) · remove (tira da biblioteca) · mealTime (horário, J16.52). Devolve a biblioteca. (command; contract/nutrition/diet_act.v1.json) */
       dietAct: (input: { dietId: string; action: "apply" | "remove" | "mealTime"; input?: DietActionInput }) => call('nutrition_diet_act_v1', { p_diet_id: input.dietId, p_action: input.action, p_input: input.input }) as Promise<DietLibrary>,
       /** Gera ou ajusta uma proposta estruturada de dieta para revisão profissional obrigatória. (command; contract/nutrition/diet_assistant.v1.json) */
@@ -9143,8 +9087,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       professionalDietSave: (input: { businessId: string; dietId: string | null; title: string; objective: string; meals: NutritionDietMealInput[]; expectedVersion: number | null; idempotencyKey: string }) => call('nutrition_professional_diet_save_v1', { p_business_id: input.businessId, p_diet_id: input.dietId, p_title: input.title, p_objective: input.objective, p_meals: input.meals, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<NutritionProfessionalDiet>,
       /** Lista modelos de dieta compartilhados pela equipe do negócio. (query; contract/nutrition/professional_library.v1.json) */
       professionalLibrary: (input: { businessId: string; status?: string | null; limit?: number; offset?: number }) => call('nutrition_professional_library_v1', { p_business_id: input.businessId, p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<NutritionProfessionalLibrary>,
-      /** Sugere trocas determinísticas por equivalência energética no catálogo autorizado. (query; contract/nutrition/swap_suggest.v1.json) */
-      swapSuggest: (input: { mealId: string; itemId: string; date?: string | null; limit?: number }) => call('nutrition_swap_suggest_v1', { p_meal_id: input.mealId, p_item_id: input.itemId, p_date: input.date, p_limit: input.limit }) as Promise<NutritionSwapSuggestions>,
     },
     org: {
       /** Lista os negócios, compõe perfil e equipe e pesquisa profissionais elegíveis para convite. (query; contract/org/business.v1.json) */
@@ -9241,8 +9183,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       postSave: (input: { post: SocialPostSaveCommand }) => call('social_post_save_v1', { p_post: input.post }) as Promise<SocialPost>,
       /** Lê um conjunto ordenado de publicações visíveis sem acesso direto às tabelas. (query; contract/social/posts.v1.json) */
       posts: (input: { ids: string[] }) => call('social_posts_v1', { p_ids: input.ids }) as Promise<SocialPosts>,
-      /** Gera por cinco minutos a leitura de um arquivo privado pertencente à conta autenticada. (query; contract/social/private_download.v1.json) */
-      privateDownload: (input: { objectKey: string }) => invoke('worker', '/media/private-download', { object_key: input.objectKey }) as Promise<PrivateDownload>,
       /** Perfil público, publicações e stories ativos. (query; contract/social/profile.v1.json) */
       profile: (input: { username: string; cursor?: string; limit?: number; scope?: "all" | "free" | "paid" | "owned" }) => call('social_profile_v1', { p_username: input.username, p_cursor: input.cursor, p_limit: input.limit, p_scope: input.scope }) as Promise<SocialProfile>,
       /** Executa uma ação moderável sobre um perfil público. (command; contract/social/profile_act.v1.json) */
@@ -9285,12 +9225,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       accountAct: (input: { id: string; command: StaffAccountCommand }) => call('staff_account_act_v1', { p_id: input.id, p_command: input.command }) as Promise<StaffAccount>,
       /** Busca contas canônicas por cursor e filtro operacional. (query; contract/staff/accounts.v1.json) */
       accounts: (input: { search?: string; filter?: "all" | "staff" | "professional" | "inactive"; createdFrom?: string; createdTo?: string; cursor?: string; limit?: number } = {}) => call('staff_accounts_v1', { p_search: input.search, p_filter: input.filter, p_created_from: input.createdFrom, p_created_to: input.createdTo, p_cursor: input.cursor, p_limit: input.limit }) as Promise<StaffAccounts>,
-      /** Lê a configuração administrativa de publicidade. (query; contract/staff/ad_inventory.v1.json) */
-      adInventory: () => call('staff_ad_inventory_v1', {}) as Promise<StaffAdInventory>,
-      /** Cria ou altera pacote, capacidade, posição e oferta oficial de publicidade. (command; contract/staff/ad_package_save.v1.json) */
-      adPackageSave: (input: { packageId: string | null; placement: "sponsor_carousel" | "featured_products"; offerId: string; durationDays: number; capacity: number; position: number; enabled: boolean; expectedVersion: number; idempotencyKey: string }) => call('staff_ad_package_save_v1', { p_package_id: input.packageId, p_placement: input.placement, p_offer_id: input.offerId, p_duration_days: input.durationDays, p_capacity: input.capacity, p_position: input.position, p_enabled: input.enabled, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<StaffAdPackage>,
-      /** Define explicitamente o business oficial da plataforma para publicidade. (command; contract/staff/advertising_settings_save.v1.json) */
-      advertisingSettingsSave: (input: { businessId: string; expectedVersion: number; idempotencyKey: string }) => call('staff_advertising_settings_save_v1', { p_business_id: input.businessId, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<StaffAdvertisingSettings>,
       /** Lê a rede comercial administrativa, suas regiões, políticas, solicitações e auditoria. (query; contract/staff/ambassador_network.v1.json) */
       ambassadorNetwork: (input: { search?: string; affinityGroupKey?: string; regionId?: string | null; status?: "draft" | "pending" | "active" | "suspended" | "ended"; cursor?: string; limit?: number } = {}) => call('staff_ambassador_network_v1', { p_search: input.search, p_affinity_group_key: input.affinityGroupKey, p_region_id: input.regionId, p_status: input.status, p_cursor: input.cursor, p_limit: input.limit }) as Promise<StaffAmbassadorNetwork>,
       /** Administra regiões, políticas, atribuições e solicitações da rede com concorrência otimista. (command; contract/staff/ambassador_network_act.v1.json) */
@@ -9322,13 +9256,13 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Lista empresas submetidas à verificação da plataforma. (query; contract/staff/business_verifications.v1.json) */
       businessVerifications: (input: { status?: "pending_review" | "approved" | "rejected"; limit?: number; offset?: number } = {}) => call('staff_business_verifications_v1', { p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<StaffBusinessVerifications>,
       /** Lê um catálogo operacional permitido, incluindo inativos e impacto. (query; contract/staff/catalog.v1.json) */
-      catalog: (input: { kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "offer_types" | "payment_providers" }) => call('staff_catalog_v1', { p_kind: input.kind }) as Promise<StaffCatalog>,
+      catalog: (input: { kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "food_sources" | "nutrients" | "offer_types" | "payment_providers" }) => call('staff_catalog_v1', { p_kind: input.kind }) as Promise<StaffCatalog>,
       /** Ativa um item de catálogo depois de revalidar a configuração. (command; contract/staff/catalog_activate.v1.json) */
-      catalogActivate: (input: { kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "offer_types"; key: string; expectedVersion: number }) => call('staff_catalog_activate_v1', { p_kind: input.kind, p_key: input.key, p_expected_version: input.expectedVersion }) as Promise<StaffCatalogItem>,
+      catalogActivate: (input: { kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "food_sources" | "nutrients" | "offer_types"; key: string; expectedVersion: number }) => call('staff_catalog_activate_v1', { p_kind: input.kind, p_key: input.key, p_expected_version: input.expectedVersion }) as Promise<StaffCatalogItem>,
       /** Desativa um item de catálogo após confirmação literal, preservando referências históricas. (command; contract/staff/catalog_deactivate.v1.json) */
-      catalogDeactivate: (input: { kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "offer_types"; key: string; expectedVersion: number; confirmation: string }) => call('staff_catalog_deactivate_v1', { p_kind: input.kind, p_key: input.key, p_expected_version: input.expectedVersion, p_confirmation: input.confirmation }) as Promise<StaffCatalogItem>,
+      catalogDeactivate: (input: { kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "food_sources" | "nutrients" | "offer_types"; key: string; expectedVersion: number; confirmation: string }) => call('staff_catalog_deactivate_v1', { p_kind: input.kind, p_key: input.key, p_expected_version: input.expectedVersion, p_confirmation: input.confirmation }) as Promise<StaffCatalogItem>,
       /** Reordena integralmente um catálogo em uma única transação auditada. (command; contract/staff/catalog_reorder.v1.json) */
-      catalogReorder: (input: { kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "offer_types"; keys: string[] }) => call('staff_catalog_reorder_v1', { p_kind: input.kind, p_keys: input.keys }) as Promise<StaffCatalogReordered>,
+      catalogReorder: (input: { kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "food_sources" | "nutrients" | "offer_types"; keys: string[] }) => call('staff_catalog_reorder_v1', { p_kind: input.kind, p_keys: input.keys }) as Promise<StaffCatalogReordered>,
       /** Salva item inteiro de um catálogo permitido, com concorrência otimista e validação específica. (command; contract/staff/catalog_save.v1.json) */
       catalogSave: (input: { item: StaffCatalogSaveItem }) => call('staff_catalog_save_v1', { p_item: input.item }) as Promise<StaffCatalogItem>,
       /** Lista custos por canal como políticas normais, inclusive Apple. (query; contract/staff/channel_cost_policies.v1.json) */
@@ -9371,8 +9305,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       exerciseCatalog: (input: { query?: string; sport?: string; kind?: "exercise" | "technique"; status?: "all" | "active" | "inactive"; limit?: number; offset?: number } = {}) => call('staff_exercise_catalog_v1', { p_query: input.query, p_sport: input.sport, p_kind: input.kind, p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<StaffExerciseCatalogPage>,
       /** Ativa ou desativa exercício oficial sem apagar referências. (command; contract/staff/exercise_catalog_act.v1.json) */
       exerciseCatalogAct: (input: { exerciseId: string; active: boolean; expectedVersion: number; idempotencyKey: string }) => call('staff_exercise_catalog_act_v1', { p_exercise_id: input.exerciseId, p_active: input.active, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingExercise>,
-      /** Cria ou altera exercício oficial; null remove mídia, o mesmo file id preserva e um novo file id substitui. (command; contract/staff/exercise_catalog_save.v1.json) */
-      exerciseCatalogSave: (input: { exerciseId: string | null; sportId: string; kind: "exercise" | "technique"; locale: string; name: string; muscles: string[]; equipment: string | null; videoFileId: string | null; thumbFileId: string | null; expectedVersion: number | null; idempotencyKey: string }) => call('staff_exercise_catalog_save_v1', { p_exercise_id: input.exerciseId, p_sport_id: input.sportId, p_kind: input.kind, p_locale: input.locale, p_name: input.name, p_muscles: input.muscles, p_equipment: input.equipment, p_video_file_id: input.videoFileId, p_thumb_file_id: input.thumbFileId, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<StaffExercise>,
+      /** Cria ou altera exercício oficial tipado, localizado e associado a um ou mais esportes. (command; contract/staff/exercise_catalog_save.v1.json) */
+      exerciseCatalogSave: (input: { exerciseId: string | null; sportIds: string[]; kind: "exercise" | "technique"; localizations: TrainingExerciseLocalizations; muscles: string[]; equipment: string | null; videoFileId: string | null; thumbFileId: string | null; expectedVersion: number | null; idempotencyKey: string }) => call('staff_exercise_catalog_save_v1', { p_exercise_id: input.exerciseId, p_sport_ids: input.sportIds, p_kind: input.kind, p_localizations: input.localizations, p_muscles: input.muscles, p_equipment: input.equipment, p_video_file_id: input.videoFileId, p_thumb_file_id: input.thumbFileId, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<StaffExercise>,
       /** Prepara e conclui upload R2 inspecionado de vídeo ou miniatura de exercício oficial. (command; contract/staff/exercise_media_upload.v1.json) */
       exerciseMediaUpload: (input: { upload: StaffExerciseMediaUploadCommand }) => invoke('worker', '/staff/exercise-media-upload', { upload: input.upload }) as Promise<StaffExerciseMediaUploadResult>,
       /** Lê a proporção versionada entre seguidos e descoberta do feed. (query; contract/staff/feed_settings.v1.json) */
@@ -9455,8 +9389,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       professionalCredentialAct: (input: { reviewId: string; action: "approve" | "reject"; reason?: string | null }) => call('staff_professional_credential_act_v1', { p_review_id: input.reviewId, p_action: input.action, p_reason: input.reason }) as Promise<StaffProfessionalCredentialDecision>,
       /** Lista registros profissionais para revisão administrativa. (query; contract/staff/professional_credentials.v1.json) */
       professionalCredentials: (input: { status?: "pending" | "approved" | "rejected"; cursor?: string | null; limit?: number } = {}) => call('staff_professional_credentials_v1', { p_status: input.status, p_cursor: input.cursor, p_limit: input.limit }) as Promise<StaffProfessionalCredentials>,
-      /** Lista evidências e divergências imutáveis de uma conciliação. (query; contract/staff/reconciliation_items.v1.json) */
-      reconciliationItems: (input: { runId: string; result?: "matched" | "missing_internal" | "missing_external" | "amount_mismatch" | null; limit?: number; offset?: number }) => call('staff_reconciliation_items_v1', { p_run_id: input.runId, p_result: input.result, p_limit: input.limit, p_offset: input.offset }) as Promise<StaffReconciliationItemPage>,
       /** Lista execuções de conciliação financeira. (query; contract/staff/reconciliation_runs.v1.json) */
       reconciliationRuns: (input: { limit?: number; offset?: number } = {}) => call('staff_reconciliation_runs_v1', { p_limit: input.limit, p_offset: input.offset }) as Promise<StaffReconciliationRunPage>,
       /** Concilia o período com o provedor exclusivamente no worker. (command; contract/staff/reconciliation_start.v1.json) */
@@ -9471,8 +9403,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       trainingQuotaSave: (input: { freePersonalWorkoutLimit: number; expectedVersion: number }) => call('staff_training_quota_save_v1', { p_free_personal_workout_limit: input.freePersonalWorkoutLimit, p_expected_version: input.expectedVersion }) as Promise<StaffTrainingQuota>,
       /** Registra transferência de tesouraria em lançamento balanceado e imutável. (command; contract/staff/treasury_movement.v1.json) */
       treasuryMovement: (input: { direction: "invest" | "redeem"; amount: number; currency: string; reference: string; note: string | null; idempotencyKey: string }) => call('staff_treasury_movement_v1', { p_direction: input.direction, p_amount: input.amount, p_currency: input.currency, p_reference: input.reference, p_note: input.note, p_idempotency_key: input.idempotencyKey }) as Promise<StaffTreasuryMovement>,
-      /** Atualiza integralmente o rollout de pré-carregamento com concorrência otimista. (command; contract/staff/video_preload_settings_save.v1.json) */
-      videoPreloadSettingsSave: (input: { settings: StaffVideoPreloadSettingsInput; expectedVersion: number }) => call('staff_video_preload_settings_save_v1', { p_settings: input.settings, p_expected_version: input.expectedVersion }) as Promise<VideoPreloadSettings>,
     },
     training: {
       /** Importa um lote do Watch, Apple Saúde ou Health Connect. A execução iniciada no OnlyFit volta com o mesmo id e é enriquecida; repetir não duplica; a mesma execução regravada pela mesma origem vira observação; o vínculo é decidido por dia (J20.7). Lote vazio só reavalia os dias pendentes. (command; contract/training/activities_save.v1.json) */
@@ -9501,8 +9431,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       clientProtocolStatusAct: (input: { businessId: string; clientId: string; protocolId: string; action: "activate" | "pause" | "resume" | "end"; expectedVersion: number; idempotencyKey: string }) => call('training_client_protocol_status_act_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_protocol_id: input.protocolId, p_action: input.action, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingClientProtocol>,
       /** Lista protocolos prescritos ao cliente dentro do contrato e consentimento vigentes. (query; contract/training/client_protocols.v1.json) */
       clientProtocols: (input: { businessId: string; clientId: string }) => call('training_client_protocols_v1', { p_business_id: input.businessId, p_client_id: input.clientId }) as Promise<TrainingClientProtocols>,
-      /** Edita, ordena ou move passos prescritos entre treinos do plano com concorrência otimista. (command; contract/training/client_step_act.v1.json) */
-      clientStepAct: (input: { businessId: string; clientId: string; programId: string; assignmentId: string; action: "add" | "update" | "remove" | "reorder" | "move"; step?: ProfessionalWorkoutStepInput | null; stepId?: string | null; orderedStepIds?: string[] | null; targetAssignmentId?: string | null; expectedProgramVersion: number; expectedWorkoutVersion: number; expectedTargetWorkoutVersion?: number | null; idempotencyKey: string }) => call('training_client_step_act_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_program_id: input.programId, p_assignment_id: input.assignmentId, p_action: input.action, p_step: input.step, p_step_id: input.stepId, p_ordered_step_ids: input.orderedStepIds, p_target_assignment_id: input.targetAssignmentId, p_expected_program_version: input.expectedProgramVersion, p_expected_workout_version: input.expectedWorkoutVersion, p_expected_target_workout_version: input.expectedTargetWorkoutVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingClientEditorResult>,
       /** Treinos do dia com passos, mídia, execução no player, desfecho (feito, incompleto, não feito, perdido) e atividade vinculada. (query; contract/training/day.v1.json) */
       day: (input: { date?: string } = {}) => call('training_day_v1', { p_date: input.date }) as Promise<TrainingDay>,
       /** Define explicitamente se um exercício está nos favoritos. (command; contract/training/exercise_favorite_toggle.v1.json) */
@@ -9523,8 +9451,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       occurrenceAct: (input: { scheduledId: string; action: "remove" | "mark" | "edit" | "swapExercise"; input?: OccurrenceActionInput }) => call('training_occurrence_act_v1', { p_scheduled_id: input.scheduledId, p_action: input.action, p_input: input.input }) as Promise<TrainingDay>,
       /** Arquiva ou restaura um exercício próprio sem apagá-lo. (command; contract/training/professional_exercise_act.v1.json) */
       professionalExerciseAct: (input: { exerciseId: string; action: "archive" | "restore"; expectedVersion: number; idempotencyKey: string }) => call('training_professional_exercise_act_v1', { p_exercise_id: input.exerciseId, p_action: input.action, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingExercise>,
-      /** Cria ou altera um exercício próprio usando somente mídia pública pronta do titular. (command; contract/training/professional_exercise_save.v1.json) */
-      professionalExerciseSave: (input: { exerciseId: string | null; sportId: string; kind: "exercise" | "technique"; locale: string; name: string; muscles: string[]; equipment: string | null; videoFileId: string | null; thumbFileId: string | null; expectedVersion: number | null; idempotencyKey: string }) => call('training_professional_exercise_save_v1', { p_exercise_id: input.exerciseId, p_sport_id: input.sportId, p_kind: input.kind, p_locale: input.locale, p_name: input.name, p_muscles: input.muscles, p_equipment: input.equipment, p_video_file_id: input.videoFileId, p_thumb_file_id: input.thumbFileId, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingExercise>,
+      /** Cria ou altera um exercício próprio tipado, localizado e associado a um ou mais esportes. (command; contract/training/professional_exercise_save.v1.json) */
+      professionalExerciseSave: (input: { exerciseId: string | null; sportIds: string[]; kind: "exercise" | "technique"; visibility: "private" | "public"; localizations: TrainingExerciseLocalizations; muscles: string[]; equipment: string | null; videoFileId: string | null; thumbFileId: string | null; expectedVersion: number | null; idempotencyKey: string }) => call('training_professional_exercise_save_v1', { p_exercise_id: input.exerciseId, p_sport_ids: input.sportIds, p_kind: input.kind, p_visibility: input.visibility, p_localizations: input.localizations, p_muscles: input.muscles, p_equipment: input.equipment, p_video_file_id: input.videoFileId, p_thumb_file_id: input.thumbFileId, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingExercise>,
       /** Biblioteca de modelos de treino do profissional, distinguida e integralmente tipada por negócio. (query; contract/training/professional_library.v1.json) */
       professionalLibrary: (input: { businessId: string }) => call('training_professional_library_v1', { p_business_id: input.businessId }) as Promise<TrainingProfessionalLibrary>,
       /** Lista separadamente modelos privados do negócio e modelos oficiais clonáveis. (query; contract/training/professional_protocol_library.v1.json) */
@@ -9545,8 +9473,6 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       programSave: (input: { program: TrainingProgramSaveInput }) => call('training_program_save_v1', { p_program: input.program }) as Promise<TrainingProfessionalProgram>,
       /** Duplica, arquiva ou restaura um modelo profissional com concorrência otimista. (command; contract/training/program_template_act.v1.json) */
       programTemplateAct: (input: { businessId: string; programId: string; action: "duplicate" | "archive" | "restore"; expectedVersion: number; idempotencyKey: string }) => call('training_program_template_act_v1', { p_business_id: input.businessId, p_program_id: input.programId, p_action: input.action, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingProfessionalProgram>,
-      /** Abandona de forma idempotente uma sessão em andamento sem registrar execução. (command; contract/training/session_act.v1.json) */
-      sessionAct: (input: { sessionId: string; action: "abandon"; idempotencyKey: string }) => call('training_session_act_v1', { p_session_id: input.sessionId, p_action: input.action, p_idempotency_key: input.idempotencyKey }) as Promise<SessionActionResult>,
       /** Grava os passos realizados em lote e, com finish, encerra. Tudo ou nada; repetir dá o mesmo resultado. (command; contract/training/session_save.v1.json) */
       sessionSave: (input: { sessionId: string; steps?: SessionStepInput[]; finish?: boolean; review?: SessionReviewInput }) => call('training_session_save_v1', { p_session_id: input.sessionId, p_steps: input.steps, p_finish: input.finish, p_review: input.review }) as Promise<Session>,
       /** Inicia (ou retoma) a sessão de um treino agendado ou avulso autorizado. Congela o prescrito. (command; contract/training/session_start.v1.json) */

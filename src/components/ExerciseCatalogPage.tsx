@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import {
   Check,
   ChevronLeft,
@@ -13,10 +14,9 @@ import {
   Video,
   X,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { FormEvent, useMemo, useState } from 'react';
 import { coreApi } from '../api/core';
-import type { StaffExercise, StaffSportItem } from '../api/core.gen';
+import type { StaffExercise, StaffSportItem, TrainingExerciseLocalization } from '../api/core.gen';
 import {
   useExerciseCatalog,
   useSaveExerciseCatalogEntry,
@@ -28,14 +28,19 @@ import { exerciseCatalogErrorMessage } from '../lib/exerciseCatalog';
 import { formatNumber } from '../lib/format';
 
 const PAGE_SIZE = 40;
+const localeOptions: ReadonlyArray<{ value: TrainingExerciseLocalization['locale']; label: string }> = [
+  { value: 'pt-BR', label: 'Português (Brasil)' },
+  { value: 'en-US', label: 'Inglês (EUA)' },
+  { value: 'es', label: 'Espanhol' },
+];
 
 type Draft = {
   exerciseId: string | null;
   expectedVersion: number | null;
-  sportId: string;
-  kind: 'exercise' | 'technique';
-  locale: string;
-  name: string;
+  sportIds: string[];
+  kind: StaffExercise['kind'];
+  visibility: StaffExercise['visibility'];
+  localizations: TrainingExerciseLocalization[];
   muscles: string[];
   equipment: string;
   videoFileId: string | null;
@@ -50,10 +55,10 @@ function emptyDraft(sportId: string): Draft {
   return {
     exerciseId: null,
     expectedVersion: null,
-    sportId,
+    sportIds: sportId ? [sportId] : [],
     kind: 'exercise',
-    locale: 'pt-BR',
-    name: '',
+    visibility: 'public',
+    localizations: [{ locale: 'pt-BR', name: '', instructions: null }],
     muscles: [],
     equipment: '',
     videoFileId: null,
@@ -69,10 +74,10 @@ function draftFrom(entry: StaffExercise): Draft {
   return {
     exerciseId: entry.id,
     expectedVersion: entry.version,
-    sportId: entry.sport_id ?? '',
+    sportIds: [...entry.sport_ids],
     kind: entry.kind,
-    locale: entry.locale,
-    name: entry.name,
+    visibility: entry.visibility,
+    localizations: entry.localizations.map((localization) => ({ ...localization })),
     muscles: [...entry.muscles],
     equipment: entry.equipment ?? '',
     videoFileId: entry.video_file_id,
@@ -84,7 +89,7 @@ function draftFrom(entry: StaffExercise): Draft {
   };
 }
 
-function csv(value: string): string[] {
+function commaSeparatedValues(value: string): string[] {
   return [...new Set(value.split(',').map((item) => item.trim()).filter(Boolean))];
 }
 
@@ -136,6 +141,44 @@ export function ExerciseCatalogPage() {
     setDraft((current) => current ? { ...current, ...values } : current);
   }
 
+  function toggleSport(sportId: string) {
+    setDraft((current) => {
+      if (!current) return current;
+      const sportIds = current.sportIds.includes(sportId)
+        ? current.sportIds.filter((id) => id !== sportId)
+        : [...current.sportIds, sportId];
+      return { ...current, sportIds };
+    });
+  }
+
+  function updateLocalization(index: number, values: Partial<TrainingExerciseLocalization>) {
+    setDraft((current) => current ? {
+      ...current,
+      localizations: current.localizations.map((item, position) =>
+        position === index ? { ...item, ...values } : item),
+    } : current);
+  }
+
+  function addLocalization() {
+    setDraft((current) => {
+      if (!current || current.localizations.length >= localeOptions.length) return current;
+      const locale = localeOptions.find((option) =>
+        !current.localizations.some((item) => item.locale === option.value))?.value;
+      if (!locale) return current;
+      return {
+        ...current,
+        localizations: [...current.localizations, { locale, name: '', instructions: null }],
+      };
+    });
+  }
+
+  function removeLocalization(index: number) {
+    setDraft((current) => current && current.localizations.length > 1 ? {
+      ...current,
+      localizations: current.localizations.filter((_, position) => position !== index),
+    } : current);
+  }
+
   function submitSearch(event: FormEvent) {
     event.preventDefault();
     setPage(0);
@@ -144,7 +187,14 @@ export function ExerciseCatalogPage() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!draft || !canGovern || !draft.name.trim() || !draft.sportId.trim()) return;
+    if (!draft || !canGovern || draft.sportIds.length === 0) return;
+    const localizations = draft.localizations.map((item) => ({
+      locale: item.locale,
+      name: item.name.trim(),
+      instructions: item.instructions?.trim() || null,
+    }));
+    if (localizations.some((item) => item.name.length < 2)) return;
+
     let videoFileId = draft.videoFileId;
     let thumbFileId = draft.thumbFileId;
     let videoUrl = draft.videoUrl;
@@ -162,10 +212,9 @@ export function ExerciseCatalogPage() {
       }
       await save.mutateAsync({
         exerciseId: draft.exerciseId,
-        sportId: draft.sportId.trim(),
+        sportIds: draft.sportIds,
         kind: draft.kind,
-        locale: draft.locale.trim(),
-        name: draft.name.trim(),
+        localizations,
         muscles: draft.muscles,
         equipment: draft.equipment.trim() || null,
         videoFileId,
@@ -189,9 +238,19 @@ export function ExerciseCatalogPage() {
   const first = total === 0 ? 0 : page * PAGE_SIZE + 1;
   const last = Math.min(total, (page + 1) * PAGE_SIZE);
   const defaultSport = sports.data?.find((item) => item.active)?.key ?? '';
+  const draftIsValid = Boolean(
+    draft
+      && draft.sportIds.length
+      && draft.localizations.length
+      && draft.sportIds.length <= 20
+      && draft.localizations.every((item) => item.name.trim().length >= 2),
+  );
 
   return <>
-    <header className="page-header"><div><p className="section-label">Biblioteca da plataforma</p><h1>Exercícios</h1><p className="ohlib-lead">Catálogo oficial consumido pelos treinos do OnlyFit Core.</p></div><div className="pcat-row-actions">{canGovern ? <button className="button primary" type="button" onClick={() => setDraft(emptyDraft(defaultSport))} disabled={busy || !defaultSport}><Plus size={16} /> Novo exercício</button> : null}<button className="button secondary" type="button" onClick={() => void query.refetch()} disabled={query.isFetching}><RefreshCw className={query.isFetching ? 'spin' : ''} size={16} /> Atualizar</button></div></header>
+    <header className="page-header">
+      <div><p className="section-label">Biblioteca da plataforma</p><h1>Exercícios</h1><p className="ohlib-lead">Catálogo oficial consumido pelos treinos do OnlyFit Core.</p></div>
+      <div className="pcat-row-actions">{canGovern ? <button className="button primary" type="button" onClick={() => setDraft(emptyDraft(defaultSport))} disabled={busy || !defaultSport}><Plus size={16} /> Novo exercício</button> : null}<button className="button secondary" type="button" onClick={() => void query.refetch()} disabled={query.isFetching}><RefreshCw className={query.isFetching ? 'spin' : ''} size={16} /> Atualizar</button></div>
+    </header>
     <section className="content pcat-page exercise-catalog-page">
       <div className="pcat-summary"><span><strong>{formatNumber(total)}</strong> neste filtro</span><span><strong>{formatNumber(items.filter((item) => !item.archived).length)}</strong> disponíveis nesta página</span></div>
       <form className="exercise-catalog-filters" onSubmit={submitSearch}>
@@ -207,26 +266,50 @@ export function ExerciseCatalogPage() {
         <div className="pcat-list-panel">
           {query.isLoading ? <div className="exercise-catalog-skeleton" aria-label="Carregando exercícios" aria-busy="true">{Array.from({ length: 6 }, (_, index) => <span key={index} />)}</div> : null}
           {!query.isLoading && items.length === 0 ? <div className="pcat-empty"><Dumbbell size={26} /><strong>Nenhum exercício neste filtro</strong></div> : null}
-          {items.length > 0 ? <ul className="pcat-list">{items.map((entry) => {
-            const active = !entry.archived;
-            return <li className={active ? 'pcat-row exercise-catalog-row' : 'pcat-row exercise-catalog-row inactive'} key={entry.id}>
-              <span className="exercise-catalog-thumb">{entry.thumb_url ? <img src={entry.thumb_url} alt="" loading="lazy" /> : <Dumbbell size={20} />}</span>
-              <div className="pcat-row-main"><div><strong>{entry.name}</strong><code>{entry.locale} · {entry.kind === 'technique' ? 'Técnica' : 'Exercício'}</code></div><span className={active ? 'pcat-status active' : 'pcat-status'}>{active ? 'Disponível' : 'Fora'}</span><span className="pcat-muted">{entry.sport_id ?? 'Sem modalidade'}{entry.equipment ? ` · ${entry.equipment}` : ''}{entry.muscles.length ? ` · ${entry.muscles.join(', ')}` : ''}</span>{(entry.thumb_url || entry.video_url) ? <span className="pcat-muted">{entry.thumb_url ? <><ImageIcon size={13} /> miniatura</> : null} {entry.video_url ? <><Video size={13} /> vídeo</> : null}</span> : null}</div>
-              {canGovern && entry.version !== null ? <div className="pcat-row-actions"><button className="button secondary compact" type="button" disabled={busy} onClick={() => setDraft(draftFrom(entry))}><Pencil size={14} />Editar</button><button className={active ? 'button danger compact' : 'button primary compact'} type="button" disabled={busy} onClick={() => setActive.mutate({ exerciseId: entry.id, active: !active, expectedVersion: entry.version ?? 0 })}>{active ? <X size={14} /> : <Check size={14} />}{active ? 'Despublicar' : 'Publicar'}</button></div> : null}
-            </li>;
-          })}</ul> : null}
+          {items.length > 0 ? <ul className="pcat-list">{items.map((entry) => <ExerciseRow key={entry.id} entry={entry} busy={busy} canGovern={canGovern} onEdit={() => setDraft(draftFrom(entry))} onSetActive={(active) => entry.version !== null && setActive.mutate({ exerciseId: entry.id, active, expectedVersion: entry.version })} />)}</ul> : null}
           {total > 0 ? <footer className="exercise-catalog-pagination"><span>{formatNumber(first)}–{formatNumber(last)} de {formatNumber(total)}</span><div><button className="button secondary compact" type="button" disabled={page === 0} onClick={() => setPage((value) => value - 1)} aria-label="Página anterior"><ChevronLeft size={15} /></button><span>{page + 1} / {pageCount}</span><button className="button secondary compact" type="button" disabled={page + 1 >= pageCount} onClick={() => setPage((value) => value + 1)} aria-label="Próxima página"><ChevronRight size={15} /></button></div></footer> : null}
         </div>
-        {draft ? <form className="pcat-editor exercise-catalog-editor" onSubmit={submit}>
-          <h2 className="pcat-section-heading">{draft.exerciseId ? 'Editar exercício oficial' : 'Novo exercício oficial'}</h2>
-          <section className="exercise-editor-section"><h3>Identificação</h3><label className="pcat-field"><span>Nome</span><input autoFocus required maxLength={120} value={draft.name} onChange={(event) => patch({ name: event.target.value })} /></label><div className="exercise-editor-grid"><label className="pcat-field"><span>Idioma</span><input required value={draft.locale} onChange={(event) => patch({ locale: event.target.value })} /></label><label className="pcat-field"><span>Tipo</span><select value={draft.kind} onChange={(event) => patch({ kind: readKind(event.target.value) })}><option value="exercise">Exercício</option><option value="technique">Técnica</option></select></label></div></section>
-          <section className="exercise-editor-section"><h3>Aplicação</h3><label className="pcat-field"><span>Modalidade</span><select required value={draft.sportId} onChange={(event) => patch({ sportId: event.target.value })}>{sports.data?.map((item) => <option value={item.key} key={item.key}>{item.data.label ?? item.name_key}{item.active ? '' : ' (inativa)'}</option>)}</select></label><label className="pcat-field"><span>Músculos</span><input value={draft.muscles.join(', ')} onChange={(event) => patch({ muscles: csv(event.target.value) })} placeholder="Separados por vírgula" /></label><label className="pcat-field"><span>Equipamento</span><input value={draft.equipment} onChange={(event) => patch({ equipment: event.target.value })} /></label></section>
-          <section className="exercise-editor-section"><h3>Mídia</h3><MediaField kind="thumbnail" label="Miniatura" accept="image/jpeg,image/png,image/webp" url={draft.thumbUrl} replacement={draft.thumbReplacement} onSelect={(file) => patch({ thumbReplacement: file })} onRemove={() => patch({ thumbFileId: null, thumbUrl: null, thumbReplacement: null })} /><MediaField kind="video" label="Vídeo" accept="video/mp4,video/webm,video/quicktime" url={draft.videoUrl} replacement={draft.videoReplacement} onSelect={(file) => patch({ videoReplacement: file })} onRemove={() => patch({ videoFileId: null, videoUrl: null, videoReplacement: null })} /></section>
-          <div className="pcat-editor-actions"><button className="button secondary" type="button" onClick={() => setDraft(null)} disabled={busy}>Cancelar</button><button className="button primary" type="submit" disabled={busy || !draft.name.trim() || !draft.sportId.trim()}>{busy ? <RefreshCw className="spin" size={16} /> : <Save size={16} />} Salvar</button></div>
-        </form> : null}
+        {draft ? <ExerciseEditor draft={draft} sports={sports.data ?? []} busy={busy} valid={draftIsValid} onPatch={patch} onToggleSport={toggleSport} onUpdateLocalization={updateLocalization} onAddLocalization={addLocalization} onRemoveLocalization={removeLocalization} onCancel={() => setDraft(null)} onSubmit={submit} /> : null}
       </div>
     </section>
   </>;
+}
+
+function ExerciseRow({ entry, busy, canGovern, onEdit, onSetActive }: {
+  entry: StaffExercise;
+  busy: boolean;
+  canGovern: boolean;
+  onEdit: () => void;
+  onSetActive: (active: boolean) => void;
+}) {
+  const active = !entry.archived;
+  return <li className={active ? 'pcat-row exercise-catalog-row' : 'pcat-row exercise-catalog-row inactive'}>
+    <span className="exercise-catalog-thumb">{entry.thumb_url ? <img src={entry.thumb_url} alt="" loading="lazy" /> : <Dumbbell size={20} />}</span>
+    <div className="pcat-row-main"><div><strong>{entry.name}</strong><code>{entry.localizations.map((item) => item.locale).join(' · ')} · {entry.kind === 'technique' ? 'Técnica' : 'Exercício'}</code></div><span className={active ? 'pcat-status active' : 'pcat-status'}>{active ? 'Disponível' : 'Fora'}</span><span className="pcat-muted">{entry.sport_ids.length ? entry.sport_ids.join(' · ') : 'Sem modalidade'}{entry.equipment ? ` · ${entry.equipment}` : ''}{entry.muscles.length ? ` · ${entry.muscles.join(', ')}` : ''}</span><span className="pcat-muted">Visibilidade: {entry.visibility === 'public' ? 'pública' : entry.visibility}</span>{(entry.thumb_url || entry.video_url) ? <span className="pcat-muted">{entry.thumb_url ? <><ImageIcon size={13} /> miniatura</> : null} {entry.video_url ? <><Video size={13} /> vídeo</> : null}</span> : null}</div>
+    {canGovern && entry.version !== null ? <div className="pcat-row-actions"><button className="button secondary compact" type="button" disabled={busy} onClick={onEdit}><Pencil size={14} />Editar</button><button className={active ? 'button danger compact' : 'button primary compact'} type="button" disabled={busy} onClick={() => onSetActive(!active)}>{active ? <X size={14} /> : <Check size={14} />}{active ? 'Despublicar' : 'Publicar'}</button></div> : null}
+  </li>;
+}
+
+function ExerciseEditor({ draft, sports, busy, valid, onPatch, onToggleSport, onUpdateLocalization, onAddLocalization, onRemoveLocalization, onCancel, onSubmit }: {
+  draft: Draft;
+  sports: StaffSportItem[];
+  busy: boolean;
+  valid: boolean;
+  onPatch: (values: Partial<Draft>) => void;
+  onToggleSport: (sportId: string) => void;
+  onUpdateLocalization: (index: number, values: Partial<TrainingExerciseLocalization>) => void;
+  onAddLocalization: () => void;
+  onRemoveLocalization: (index: number) => void;
+  onCancel: () => void;
+  onSubmit: (event: FormEvent) => Promise<void>;
+}) {
+  return <form className="pcat-editor exercise-catalog-editor" onSubmit={onSubmit}>
+    <h2 className="pcat-section-heading">{draft.exerciseId ? 'Editar exercício oficial' : 'Novo exercício oficial'}</h2>
+    <section className="exercise-editor-section"><h3>Identificação</h3><label className="pcat-field"><span>Tipo</span><select value={draft.kind} onChange={(event) => onPatch({ kind: readKind(event.target.value) })}><option value="exercise">Exercício</option><option value="technique">Técnica</option></select></label><label className="pcat-field"><span>Visibilidade</span><input value={draft.visibility === 'public' ? 'Pública' : draft.visibility} readOnly /><small>Conteúdo oficial é público por definição do contrato.</small></label>{draft.localizations.map((localization, index) => <div className="exercise-localization" key={localization.locale}><div className="exercise-editor-grid"><label className="pcat-field"><span>Idioma</span><select value={localization.locale} onChange={(event) => onUpdateLocalization(index, { locale: event.target.value === 'en-US' ? 'en-US' : event.target.value === 'es' ? 'es' : 'pt-BR' })}>{localeOptions.map((option) => <option key={option.value} value={option.value} disabled={draft.localizations.some((item, position) => position !== index && item.locale === option.value)}>{option.label}</option>)}</select></label><label className="pcat-field"><span>Nome</span><input autoFocus={index === 0} required minLength={2} maxLength={120} value={localization.name} onChange={(event) => onUpdateLocalization(index, { name: event.target.value })} /></label></div><label className="pcat-field"><span>Instruções</span><textarea rows={4} maxLength={20000} value={localization.instructions ?? ''} onChange={(event) => onUpdateLocalization(index, { instructions: event.target.value || null })} /></label><button className="button danger compact" type="button" disabled={draft.localizations.length === 1} onClick={() => onRemoveLocalization(index)}><Trash2 size={14} />Remover idioma</button></div>)}<button className="button secondary compact" type="button" disabled={draft.localizations.length >= localeOptions.length} onClick={onAddLocalization}><Plus size={14} />Idioma</button></section>
+    <section className="exercise-editor-section"><h3>Aplicação</h3><fieldset className="pcat-field"><legend>Modalidades</legend><div className="exercise-sports">{sports.map((item) => <label className="ohlib-check compact" key={item.key}><input type="checkbox" checked={draft.sportIds.includes(item.key)} disabled={(!item.active || draft.sportIds.length >= 20) && !draft.sportIds.includes(item.key)} onChange={() => onToggleSport(item.key)} /><span>{item.data.label ?? item.name_key}{item.active ? '' : ' (inativa)'}</span></label>)}</div></fieldset><label className="pcat-field"><span>Músculos</span><input value={draft.muscles.join(', ')} onChange={(event) => onPatch({ muscles: commaSeparatedValues(event.target.value) })} placeholder="Separados por vírgula" /></label><label className="pcat-field"><span>Equipamento</span><input value={draft.equipment} onChange={(event) => onPatch({ equipment: event.target.value })} /></label></section>
+    <section className="exercise-editor-section"><h3>Mídia</h3><MediaField kind="thumbnail" label="Miniatura" accept="image/jpeg,image/png,image/webp" url={draft.thumbUrl} replacement={draft.thumbReplacement} onSelect={(file) => onPatch({ thumbReplacement: file })} onRemove={() => onPatch({ thumbFileId: null, thumbUrl: null, thumbReplacement: null })} /><MediaField kind="video" label="Vídeo" accept="video/mp4,video/webm,video/quicktime" url={draft.videoUrl} replacement={draft.videoReplacement} onSelect={(file) => onPatch({ videoReplacement: file })} onRemove={() => onPatch({ videoFileId: null, videoUrl: null, videoReplacement: null })} /></section>
+    <div className="pcat-editor-actions"><button className="button secondary" type="button" onClick={onCancel} disabled={busy}>Cancelar</button><button className="button primary" type="submit" disabled={busy || !valid}>{busy ? <RefreshCw className="spin" size={16} /> : <Save size={16} />} Salvar</button></div>
+  </form>;
 }
 
 function MediaField({ kind, label, accept, url, replacement, onSelect, onRemove }: {

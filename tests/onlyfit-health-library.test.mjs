@@ -28,6 +28,21 @@ test('edits workout, diet and program with generated typed builders instead of J
   for (const type of ['ProfessionalWorkoutStepSaveInput', 'NutritionDietMealInput', 'StaffHealthProgramPayload']) assert.ok(page.includes(type));
   for (const label of ['Exercícios', 'Refeições e alimentos', 'Dias do programa']) assert.ok(page.includes(label));
   assert.doesNotMatch(page, /JSON\.parse|JSON\.stringify|Record<string,\s*unknown>|JsonField|primaryJson|secondaryJson/);
+  for (const field of ['description', 'estimated_minutes_per_week', 'equipment']) {
+    assert.match(page, new RegExp(`item\\.detail\\.${field}`));
+    assert.ok(page.includes(`state.payload.${field}`));
+  }
+});
+
+test('edits the normalized exercise contract without dropping sports, translations or instructions', () => {
+  for (const field of ['sport_ids', 'localizations', 'instructions', 'visibility']) {
+    assert.ok(exercisePage.includes(field));
+  }
+  assert.match(exercisePage, /sportIds:\s*\[\.\.\.entry\.sport_ids\]/);
+  assert.match(exercisePage, /localizations:\s*entry\.localizations\.map/);
+  assert.match(exercisePage, /sportIds:\s*draft\.sportIds/);
+  assert.match(exercisePage, /localizations,/);
+  assert.doesNotMatch(exercisePage, /sportId:\s*draft|locale:\s*draft|name:\s*draft|entry\.sport_id\b/);
 });
 
 test('preserves, replaces and explicitly removes exercise media through the inspected upload flow', () => {

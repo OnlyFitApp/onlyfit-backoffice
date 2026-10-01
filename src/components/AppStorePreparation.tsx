@@ -82,7 +82,7 @@ export function AppStorePreparation({ offeringId }: { offeringId: string }) {
     <h3>Catálogo Apple</h3>
     <p>Cria um produto exclusivo para esta oferta. O preço cheio vem do cálculo do backend; o líquido do profissional não é usado.</p>
     <p role="status" aria-live="polite">{status.isPending ? 'Consultando preparação…' : status.isError ? 'Preparação indisponível' : label}</p>
-    {data && <p>Preço cheio para iPhone: {new Intl.NumberFormat('pt-BR', {
+    {data && <p>Preço cheio para iPhone: {data.offering.price === null ? 'Sem preço' : new Intl.NumberFormat('pt-BR', {
       style: 'currency', currency: data.offering.currency,
     }).format(data.offering.price)}</p>}
     {data?.product && <p>Apple: {appleReviewStateLabel(data.apple_review_state)}</p>}
@@ -100,7 +100,7 @@ export function AppStorePreparation({ offeringId }: { offeringId: string }) {
       </button>
       {data?.product && <button type="button" className="button secondary" onClick={() => prepare.mutate({ item: data, action: 'sync' })} disabled={!data.enabled || active || prepare.isPending}>Conferir na Apple</button>}
       <button type="button" className="button primary" onClick={() => data && prepare.mutate({ item: data, action: data.product ? 'publish' : 'prepare' })}
-        disabled={!data?.enabled || active || inReview || prepare.isPending || data.offering.price <= 0 || data.product?.status === 'ready' || Boolean(data.product && !metadataReady)}>
+        disabled={!data?.enabled || active || inReview || prepare.isPending || data.offering.price === null || data.offering.price <= 0 || data.product?.status === 'ready' || Boolean(data.product && !metadataReady)}>
         {prepare.isPending ? 'Solicitando…' : inReview ? 'Enviado para revisão' : data?.product ? 'Configurar e enviar à Apple' : 'Preparar na Apple'}
       </button>
     </div>

@@ -1747,9 +1747,9 @@ function OfferingCatalogPage() {
                           <span>{item.type_name ?? item.type}</span>
                         </td>
                         <td>{item.business_name}</td>
-                        <td>{item.billing_type === 'free' ? 'Grátis' : formatCurrencyExact(item.price)}</td>
+                        <td>{item.price === null ? 'Sem preço' : item.billing_type === 'free' ? 'Grátis' : formatCurrencyExact(item.price)}</td>
                         <td>
-                          <strong>{item.native_products.length > 0 ? formatCurrencyExact(item.price) : '—'}</strong>
+                          <strong>{item.native_products.length > 0 && item.price !== null ? formatCurrencyExact(item.price) : '—'}</strong>
                           <span title={nativeStoreMonetization(item).reason}>{nativeStoreMonetization(item).label}</span>
                         </td>
                         <td>

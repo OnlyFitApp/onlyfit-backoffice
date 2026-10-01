@@ -8,6 +8,12 @@ const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarg
 const { nativeStoreMonetization, appleReviewStateLabel } = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
 const offer = { type: 'standalone_workout', billing_type: 'one_time', price: 30 };
 
+test('an unpriced draft is neither free nor ready for native monetization', () => {
+  const result = nativeStoreMonetization({ ...offer, price: null });
+  assert.equal(result.label, 'Sem preço');
+  assert.equal(result.canPrepare, false);
+});
+
 test('all digital categories use native products while services and physical goods stay external', () => {
   for (const type of ['standalone_workout', 'standalone_diet', 'courses', 'community_access', 'challenge']) {
     assert.equal(nativeStoreMonetization({ ...offer, type }).productType, 'non_consumable');

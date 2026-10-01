@@ -4,6 +4,9 @@ import ReactDOM from 'react-dom/client';
 import { AuthProvider } from './contexts/AuthContext';
 import { App } from './App';
 import './styles.css';
+import packageMetadata from '../package.json';
+import { initializeApiRouting } from './api/apiRouting';
+import { PlatformStatusGate } from './components/PlatformStatusGate';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,12 +20,19 @@ const queryClient = new QueryClient({
   },
 });
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </QueryClientProvider>
-  </React.StrictMode>,
-);
+async function renderApplication() {
+  await initializeApiRouting(packageMetadata.version);
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <PlatformStatusGate>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </QueryClientProvider>
+      </PlatformStatusGate>
+    </React.StrictMode>,
+  );
+}
+
+void renderApplication();

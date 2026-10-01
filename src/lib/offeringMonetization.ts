@@ -3,7 +3,7 @@ export type NativeStoreProductType = 'auto_renewable_subscription' | 'non_consum
 type Offer = {
   type: string | null;
   billing_type: string;
-  price: number;
+  price: number | null;
 };
 type Monetization = { label: string; productType: NativeStoreProductType | null; canPrepare: boolean; reason: string };
 
@@ -29,6 +29,7 @@ export function nativeStoreMonetization(offer: Offer): Monetization {
   ].includes(offer.type ?? '')) {
     return unavailable('Não habilitado', 'Este tipo não está habilitado para compra digital nas lojas.');
   }
+  if (offer.price === null) return unavailable('Sem preço', 'Configure o preço antes de preparar o produto.');
   if (offer.billing_type === 'free' || offer.price === 0) return unavailable('Gratuito', 'Aquisição sem produto ou cobrança da Apple.');
   if (!Number.isFinite(offer.price) || offer.price < 0) return unavailable('Preço inválido', 'Confira o preço da oferta.');
   let productType: NativeStoreProductType;

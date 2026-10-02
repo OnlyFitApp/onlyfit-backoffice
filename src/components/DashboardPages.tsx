@@ -1,11 +1,12 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useDashboardSnapshot } from '../hooks/useDashboardSnapshot';
-import { formatCurrencyExact, formatDateTime, formatNumber } from '../lib/format';
+import { formatCurrencyExact, formatDateTime, formatNumber, parseSnapshotDay } from '../lib/format';
+import { dashboardMetricCards } from '../lib/dashboardPresentation';
 import type { DashboardSectionId } from '../lib/networkHealth';
 
 const COPY: Record<DashboardSectionId, { title: string; subtitle: string }> = {
   'health-overview': { title: 'Visão geral', subtitle: 'Indicadores canônicos do OnlyFit Core' },
-  'health-growth': { title: 'Crescimento', subtitle: 'Aquisição, ativação e retenção' },
+  'health-growth': { title: 'Crescimento', subtitle: 'Cadastros na base do Core' },
   'health-engagement': { title: 'Engajamento', subtitle: 'Atividade e recorrência da rede' },
   'health-business': { title: 'Negócio', subtitle: 'Receita e monetização' },
   'health-operations': { title: 'Operação', subtitle: 'Filas e saúde operacional' },
@@ -19,7 +20,7 @@ const CORE_SECTION: Record<DashboardSectionId, 'overview' | 'acquisition' | 'eng
 };
 
 function Metric({ label, value, money = false }: { label: string; value: number; money?: boolean }) {
-  return <article className="report-metric"><span>{label}</span><strong>{money ? formatCurrencyExact(value) : formatNumber(value)}</strong></article>;
+  return <article className="report-metric"><div><span>{label}</span></div><strong>{money ? formatCurrencyExact(value) : formatNumber(value)}</strong></article>;
 }
 
 export function DashboardPage({ section }: {
@@ -30,6 +31,13 @@ export function DashboardPage({ section }: {
   const query = useDashboardSnapshot(CORE_SECTION[section]);
   const data = query.data;
   const copy = COPY[section];
+  const cards = data ? dashboardMetricCards({
+    totals: data.totals,
+    overview: data.overview,
+    app_activity: data.appActivity,
+    finance: data.finance,
+    outbox: data.outbox,
+  }, section) : [];
   return <>
     <header className="page-header"><div><p className="section-label">Dashboard</p><h1>{copy.title}</h1>
       <span>{data ? `${copy.subtitle} · atualizado em ${formatDateTime(new Date(data.generatedAt))}` : copy.subtitle}</span></div>
@@ -39,18 +47,39 @@ export function DashboardPage({ section }: {
       {query.isError ? <div className="inline-alert danger" role="alert"><AlertTriangle size={18} /> Não foi possível carregar o dashboard do Core.</div>
         : query.isLoading || !data ? <div className="skeleton staff-skeleton" /> : <>
           <div className="reports-grid">
-            <Metric label="Contas" value={data.totals.accounts} />
-            <Metric label="Negócios" value={data.totals.businesses} />
-            <Metric label="Itens na fila" value={data.totals.open_queue} />
-            <Metric label="Receita bruta" value={data.finance.gross_revenue_total} money />
-            <Metric label="Comissão OnlyFit" value={data.finance.platform_commission_total} money />
-            <Metric label="Sessões concluídas hoje" value={data.overview.workout_sessions_completed_today} />
-            <Metric label="Autores ativos" value={data.appActivity.active_authors_total} />
-            <Metric label="Falhas operacionais" value={data.outbox.failed} />
+            {cards.map((card) => <Metric key={card.label} label={card.label} value={card.value} money={card.format === 'money'} />)}
           </div>
-          {data.metrics.length ? <div className="table-wrap"><table><thead><tr><th>Data</th><th>Indicador</th><th>Escopo</th><th>Valor</th></tr></thead><tbody>
-            {data.metrics.map((metric) => <tr key={`${metric.date}:${metric.name}:${metric.scope}:${metric.scope_id}`}><td>{metric.date}</td><td>{metric.name}</td><td>{metric.scope}</td><td>{formatNumber(metric.value)}</td></tr>)}
-          </tbody></table></div> : null}
+          {(section === 'health-overview' || section === 'health-engagement') ? (
+            <section className="staff-list-section" aria-labelledby="dashboard-activity-title">
+              <h2 id="dashboard-activity-title">Atividade nos últimos sete dias</h2>
+              <div className="table-wrapper"><table>
+                <thead><tr><th>Dia</th><th>Sessões concluídas</th><th>Publicações</th><th>Comentários</th></tr></thead>
+                <tbody>{data.weeklyActivity.map((day) => (
+                  <tr key={day.date}>
+                    <td>{parseSnapshotDay(day.date)?.toLocaleDateString('pt-BR') ?? '—'}</td>
+                    <td>{formatNumber(day.completed_sessions)}</td>
+                    <td>{formatNumber(day.posts_created)}</td>
+                    <td>{formatNumber(day.comments_created)}</td>
+                  </tr>
+                ))}</tbody>
+              </table></div>
+            </section>
+          ) : null}
+          {section === 'health-business' ? (
+            <section className="staff-list-section" aria-labelledby="dashboard-finance-title">
+              <h2 id="dashboard-finance-title">Financeiro nos últimos sete dias</h2>
+              <div className="table-wrapper"><table>
+                <thead><tr><th>Dia</th><th>Receita bruta</th><th>Comissão OnlyFit</th></tr></thead>
+                <tbody>{data.weeklyFinance.map((day) => (
+                  <tr key={day.date}>
+                    <td>{parseSnapshotDay(day.date)?.toLocaleDateString('pt-BR') ?? '—'}</td>
+                    <td>{formatCurrencyExact(day.gross_value)}</td>
+                    <td>{formatCurrencyExact(day.platform_commission)}</td>
+                  </tr>
+                ))}</tbody>
+              </table></div>
+            </section>
+          ) : null}
           {data.notes.length ? <div className="inline-alert soft" role="status">{data.notes.join(' · ')}</div> : null}
         </>}
     </section>

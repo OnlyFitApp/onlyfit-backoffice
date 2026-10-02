@@ -10,9 +10,7 @@
     "core:check-sdk": "node scripts/sync-core-sdk.mjs --check",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "node --test tests/*.test.mjs",
-    "api:check-sdk": "node scripts/sync-onlyfit-api-sdk.mjs --check",
-    "api:sync-sdk": "node scripts/sync-onlyfit-api-sdk.mjs"
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",

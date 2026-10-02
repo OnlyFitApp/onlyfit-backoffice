@@ -11,6 +11,9 @@ export function PlatformStatusGate({ children }: { children: ReactNode }) {
     staleTime: 60_000,
     retry: 1,
   });
+  // Availability is checked in the background, not as a startup screen.
+  // Authentication and MFA remain enforced by the application and the Core.
+  if (status.isPending) return <>{children}</>;
   // A failed background check is not evidence of maintenance. Keep the mounted
   // application (including MFA and unsaved forms), while the Core still
   // authorizes every operation and rejects traffic during actual maintenance.
@@ -28,9 +31,9 @@ export function PlatformStatusGate({ children }: { children: ReactNode }) {
     <main className="login-shell">
       <section className="access-panel" aria-live="polite">
         <RefreshCw size={28} />
-        <h1>{status.isPending ? 'Verificando disponibilidade' : status.isError ? 'Não foi possível conectar' : 'OnlyFit em manutenção'}</h1>
+        <h1>{status.isError ? 'Não foi possível conectar' : 'OnlyFit em manutenção'}</h1>
         <p>
-          {status.isPending ? 'Aguarde um instante.' : status.isError
+          {status.isError
             ? 'Confira sua conexão e tente novamente.'
             : 'A operação está temporariamente pausada. Tente novamente em instantes.'}
         </p>

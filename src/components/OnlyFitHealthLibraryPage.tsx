@@ -130,7 +130,6 @@ function editorFrom(item: StaffHealthLibraryItem): EditorState {
           fat_g: food.fat_g,
           fiber_g: food.fiber_g,
           notes: food.notes,
-          swap_group: food.swap_group,
         })),
       })),
     },

@@ -42,7 +42,7 @@ import {
   type EmailMessage,
   type EmailThread,
 } from '../lib/emailCenter';
-import { isValidEmail, splitEmailList } from '../lib/outboundEmail';
+import { isValidEmail, outboundEmailErrorMessage, splitEmailList } from '../lib/outboundEmail';
 
 const PAGE_SIZE = 40;
 const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
@@ -198,10 +198,9 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
   const editorRef = useRef<HTMLDivElement>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
-  const [mailboxId, setMailboxId] = useState(defaultMailbox?.id ?? '');
-  const selectedMailbox = mailboxes.find((mailbox) => mailbox.id === mailboxId) ?? defaultMailbox;
+  const [from, setFrom] = useState(defaultMailbox?.email ?? 'contato@onlyfitapp.com');
   const [senderName, setSenderName] = useState(defaultMailbox?.displayName ?? '');
-  const effectiveSenderName = senderName || selectedMailbox?.displayName || 'OnlyFit';
+  const effectiveSenderName = senderName;
   const [toInput, setToInput] = useState(thread ? replyAddresses.join(', ') : initialTo);
   const [ccInput, setCcInput] = useState('');
   const [bccInput, setBccInput] = useState('');
@@ -219,7 +218,14 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
   }), [bccInput, ccInput, toInput]);
   const invalid = [...recipients.to, ...recipients.cc, ...recipients.bcc].find((email) => !isValidEmail(email));
   const plainBody = html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-  const canSend = Boolean(selectedMailbox && effectiveSenderName.trim() && recipients.to.length && !invalid && subject.trim() && plainBody && !sendMutation.isPending);
+  const validSender = isValidEmail(from) && from.trim().toLowerCase().endsWith('@onlyfitapp.com');
+  const canSend = Boolean(validSender && effectiveSenderName.trim() && recipients.to.length && !invalid && subject.trim() && plainBody && !sendMutation.isPending);
+  const validationHint = !validSender ? 'Informe um remetente @onlyfitapp.com.'
+    : !effectiveSenderName.trim() ? 'Informe o nome do remetente.'
+    : !recipients.to.length ? 'Informe pelo menos um destinatário.'
+    : invalid ? 'Corrija os endereços inválidos.'
+    : !subject.trim() ? 'Informe o assunto.'
+    : !plainBody ? 'Escreva a mensagem para habilitar o envio.' : null;
 
   const syncHtml = () => setHtml(editorRef.current?.innerHTML ?? '');
   const runCommand = (command: string, value?: string) => {
@@ -254,10 +260,10 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setFeedback(null);
-    if (!canSend || !selectedMailbox) return;
+    if (!canSend) return;
     try {
       const result = await sendMutation.mutateAsync({
-        from: selectedMailbox.email,
+        from: from.trim().toLowerCase(),
         senderName: effectiveSenderName.trim(),
         ...recipients,
         subject: subject.trim(),
@@ -268,8 +274,8 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
         replyToMessageId: latestMessage?.id,
       });
       onSent(result.threadId);
-    } catch {
-      setFeedback('Não foi possível enviar. Revise os dados e tente novamente.');
+    } catch (error) {
+      setFeedback(await outboundEmailErrorMessage(error));
     }
   };
 
@@ -281,11 +287,7 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
       </div>
       <section className="email-address-panel">
         <div className="email-compose-row">
-          <label><span>De</span><select value={selectedMailbox?.id ?? ''} onChange={(event) => {
-            setMailboxId(event.target.value);
-            const mailbox = mailboxes.find((item) => item.id === event.target.value);
-            if (mailbox) setSenderName(mailbox.displayName);
-          }} disabled={Boolean(thread)}>{mailboxes.map((mailbox) => <option key={mailbox.id} value={mailbox.id}>{mailbox.email}</option>)}</select></label>
+          <label><span>De</span><input type="email" value={from} maxLength={254} onChange={(event) => setFrom(event.target.value)} readOnly={Boolean(thread)} placeholder="remetente@onlyfitapp.com" aria-describedby="email-sender-help" /></label>
           <label><span>Nome</span><input value={effectiveSenderName} maxLength={80} onChange={(event) => setSenderName(event.target.value)} /></label>
         </div>
         <div className="email-recipient-row">
@@ -297,6 +299,7 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
           <label><span>Cco</span><input value={bccInput} onChange={(event) => setBccInput(event.target.value)} /></label>
         </div>}
         <div className="email-subject-row"><span>Assunto</span><input value={subject} maxLength={200} onChange={(event) => setSubject(event.target.value)} /></div>
+        <p id="email-sender-help" className={validSender ? undefined : 'email-field-error'}>Use qualquer remetente do domínio @onlyfitapp.com.</p>
         {invalid && <p className="email-field-error">Endereço inválido: {invalid}</p>}
       </section>
       <section className="email-editor-panel">
@@ -315,13 +318,13 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
           <button className="email-tool-button image-button" type="button" onClick={() => attachmentInputRef.current?.click()}><Paperclip size={16} /> Anexar</button>
           <input ref={attachmentInputRef} className="sr-only" type="file" multiple onChange={addAttachments} />
         </div>
-        <div className="email-editor" ref={editorRef} contentEditable suppressContentEditableWarning role="textbox" aria-multiline="true" data-placeholder="Escreva sua mensagem…" onInput={syncHtml} />
+        <div className="email-editor" ref={editorRef} contentEditable={!sendMutation.isPending} suppressContentEditableWarning role="textbox" aria-label="Mensagem" aria-multiline="true" data-placeholder="Escreva sua mensagem…" onInput={syncHtml} />
       </section>
       {attachments.length > 0 && <div className="email-draft-attachments">{attachments.map((attachment) => (
         <span key={attachment.id}><Paperclip size={14} /><strong>{attachment.filename}</strong><small>{sizeLabel(attachment.size)}</small><button type="button" onClick={() => setAttachments((items) => items.filter((item) => item.id !== attachment.id))}><X size={14} /></button></span>
       ))}</div>}
       <div className="email-send-bar">
-        <div aria-live="polite">{feedback ? <span className="email-field-error">{feedback}</span> : <span>{recipients.to.length + recipients.cc.length + recipients.bcc.length} destinatário(s)</span>}</div>
+        <div aria-live="polite">{feedback ? <span className="email-field-error">{feedback}</span> : <span>{sendMutation.isPending ? 'Aguardando confirmação do provedor…' : validationHint ?? `${recipients.to.length + recipients.cc.length + recipients.bcc.length} destinatário(s)`}</span>}</div>
         <button className="button primary email-send-button" type="submit" disabled={!canSend}>{sendMutation.isPending ? <RefreshCw className="spin" size={16} /> : <Send size={16} />}{sendMutation.isPending ? 'Enviando…' : 'Enviar'}</button>
       </div>
     </form>

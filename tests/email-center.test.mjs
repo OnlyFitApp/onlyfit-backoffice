@@ -34,3 +34,12 @@ test('renderiza HTML recebido isolado e baixa anexos por autorização temporár
   assert.match(api, /coreApi\.staff\.emailThread/);
   assert.doesNotMatch(api + sendApi, /service_role|SUPABASE_SERVICE_ROLE_KEY|RESEND_API_KEY/);
 });
+
+test('remetente livre mantém domínio autorizado e mostra falhas específicas', () => {
+  assert.match(page, /type="email" value=\{from\}/);
+  assert.match(page, /endsWith\('@onlyfitapp.com'\)/);
+  assert.match(page, /from: from.trim\(\).toLowerCase\(\)/);
+  assert.match(page, /await outboundEmailErrorMessage\(error\)/);
+  assert.match(sendApi, /error.context.clone\(\).json\(\)/);
+  assert.match(sendApi, /staff.email_provider_unavailable/);
+});

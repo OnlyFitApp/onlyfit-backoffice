@@ -1404,6 +1404,12 @@ svg text {
   background: rgb(var(--color-surface-container-low));
 }
 
+.platform-status-notice {
+  border-radius: 0;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
 .inline-alert.danger svg {
   color: rgb(var(--color-error));
 }

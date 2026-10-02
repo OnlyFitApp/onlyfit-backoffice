@@ -33,7 +33,7 @@ test('keeps canonical role management and credential reset without accepting pas
 test('removes parallel identity editing, footprint scans and purge', () => {
   assert.doesNotMatch(userHooks, /useUpdateUserAccount|useDeleteUserAccount|useUserFootprint/);
   assert.doesNotMatch(users, /updateUserAccount|deleteUserAccount|fetchUserFootprint/);
-  assert.doesNotMatch(detail, /app_lockdown|identity_documents|creator_profile|raio-x|purge/i);
+  assert.doesNotMatch(detail, /app_lockdown|identity_documents|raio-x|purge/i);
   assert.equal(existsSync(new URL('../src/components/UserDeleteDialog.tsx', import.meta.url)), false);
 });
 

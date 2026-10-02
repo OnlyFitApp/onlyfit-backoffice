@@ -32,9 +32,9 @@ export type ApiErrorCode =
   | 'commerce.card_setup_not_found'
   | 'commerce.card_state_failed'
   | 'commerce.charge_not_found'
+  | 'commerce.club_not_found'
   | 'commerce.confirmed_purchase_required'
   | 'commerce.consultancy_action_required'
-  | 'commerce.content_not_found'
   | 'commerce.course_action_not_found'
   | 'commerce.course_asset_contract_mismatch'
   | 'commerce.course_asset_download_forbidden'
@@ -43,8 +43,10 @@ export type ApiErrorCode =
   | 'commerce.course_asset_upload_conflict'
   | 'commerce.course_asset_upload_incomplete'
   | 'commerce.course_changed'
+  | 'commerce.course_club_unavailable'
   | 'commerce.course_comment_not_found'
   | 'commerce.course_cover_not_found'
+  | 'commerce.course_lesson_in_use'
   | 'commerce.course_not_found'
   | 'commerce.course_not_ready'
   | 'commerce.forbidden'
@@ -54,6 +56,7 @@ export type ApiErrorCode =
   | 'commerce.google_play_purchase_not_found'
   | 'commerce.google_play_state_failed'
   | 'commerce.google_play_unavailable'
+  | 'commerce.group_required'
   | 'commerce.idempotency_conflict'
   | 'commerce.idempotency_required'
   | 'commerce.insufficient_balance'
@@ -70,8 +73,10 @@ export type ApiErrorCode =
   | 'commerce.invalid_course_asset_state'
   | 'commerce.invalid_course_comment'
   | 'commerce.invalid_course_filter'
+  | 'commerce.invalid_course_member_action'
   | 'commerce.invalid_course_offer'
   | 'commerce.invalid_course_state'
+  | 'commerce.invalid_cursor'
   | 'commerce.invalid_google_play_purchase'
   | 'commerce.invalid_market_filter'
   | 'commerce.invalid_member_filter'
@@ -88,19 +93,22 @@ export type ApiErrorCode =
   | 'commerce.invalid_physical_filter'
   | 'commerce.invalid_physical_media'
   | 'commerce.invalid_physical_product'
+  | 'commerce.invalid_product'
   | 'commerce.invalid_progress'
   | 'commerce.invalid_purchase_filter'
   | 'commerce.invalid_purchase_payload'
   | 'commerce.invalid_return_url'
   | 'commerce.invalid_review'
   | 'commerce.invalid_review_report'
+  | 'commerce.invalid_start_date'
   | 'commerce.invalid_storefront_cursor'
   | 'commerce.invalid_storefront_filter'
   | 'commerce.invalid_subscription_transition'
+  | 'commerce.lesson_locked'
+  | 'commerce.library_item_unavailable'
   | 'commerce.media_upload_conflict'
   | 'commerce.media_upload_contract_mismatch'
   | 'commerce.media_upload_incomplete'
-  | 'commerce.member_hub_not_found'
   | 'commerce.native_product_mismatch'
   | 'commerce.native_product_unavailable'
   | 'commerce.native_transaction_mismatch'
@@ -112,7 +120,10 @@ export type ApiErrorCode =
   | 'commerce.offer_delivery_invalid'
   | 'commerce.offer_delivery_locked'
   | 'commerce.offer_delivery_not_found'
+  | 'commerce.offer_delivery_required'
+  | 'commerce.offer_delivery_unavailable'
   | 'commerce.offer_delivery_unsupported'
+  | 'commerce.offer_limit_reached'
   | 'commerce.offer_locked'
   | 'commerce.offer_not_found'
   | 'commerce.offer_type_unavailable'
@@ -123,13 +134,14 @@ export type ApiErrorCode =
   | 'commerce.physical_media_not_found'
   | 'commerce.physical_product_changed'
   | 'commerce.physical_product_not_found'
+  | 'commerce.price_required'
   | 'commerce.professional_required'
   | 'commerce.provider_action_failed'
   | 'commerce.provider_bind_failed'
   | 'commerce.provider_invalid_response'
   | 'commerce.provider_not_configured'
-  | 'commerce.purchase_changed'
   | 'commerce.purchase_not_found'
+  | 'commerce.quiz_invalid'
   | 'commerce.review_changed'
   | 'commerce.review_not_found'
   | 'commerce.storage_unavailable'
@@ -199,6 +211,7 @@ export type ApiErrorCode =
   | 'identity.professional_profile_required'
   | 'identity.professional_specialty_invalid'
   | 'identity.professional_vertical_required'
+  | 'identity.recovery_rate_limited'
   | 'identity.resend_too_soon'
   | 'identity.signup_expired'
   | 'identity.signup_failed'
@@ -360,34 +373,57 @@ export type ApiErrorCode =
   | 'social.access_immutable'
   | 'social.access_required'
   | 'social.adult_required'
+  | 'social.attachment_immutable'
   | 'social.blocked'
+  | 'social.challenge_closed'
+  | 'social.challenge_full'
+  | 'social.checkin_duplicate'
+  | 'social.checkin_photo_required'
+  | 'social.checkin_required'
+  | 'social.club_community_exists'
+  | 'social.club_required'
   | 'social.container_inactive'
   | 'social.container_read_only'
+  | 'social.contest_closed'
+  | 'social.contest_open'
+  | 'social.event_closed'
+  | 'social.event_not_started'
   | 'social.forbidden'
   | 'social.group_not_found'
   | 'social.idempotency_required'
   | 'social.invalid_account_ids'
   | 'social.invalid_action'
+  | 'social.invalid_activity'
+  | 'social.invalid_affinity'
+  | 'social.invalid_attachment'
   | 'social.invalid_challenge'
+  | 'social.invalid_checkin'
   | 'social.invalid_classification'
   | 'social.invalid_community'
   | 'social.invalid_composition'
   | 'social.invalid_container'
+  | 'social.invalid_contest'
   | 'social.invalid_cover'
   | 'social.invalid_cursor'
+  | 'social.invalid_event'
   | 'social.invalid_group'
   | 'social.invalid_hosted_challenge'
   | 'social.invalid_media'
   | 'social.invalid_member'
   | 'social.invalid_message'
   | 'social.invalid_offer'
+  | 'social.invalid_poll'
+  | 'social.invalid_poll_option'
   | 'social.invalid_post'
   | 'social.invalid_posts'
   | 'social.invalid_relation'
   | 'social.invalid_report'
+  | 'social.invalid_resource'
+  | 'social.invalid_resource_state'
   | 'social.invalid_scope'
   | 'social.invalid_search'
   | 'social.invalid_showcase'
+  | 'social.invalid_space'
   | 'social.invalid_sport'
   | 'social.invalid_state'
   | 'social.invalid_story'
@@ -398,10 +434,22 @@ export type ApiErrorCode =
   | 'social.message_not_found'
   | 'social.message_rate_limit'
   | 'social.paid_offer_required'
+  | 'social.platform_membership_required'
+  | 'social.points_rules_required'
+  | 'social.poll_closed'
+  | 'social.poll_locked'
   | 'social.post_not_found'
   | 'social.prize_terms_required'
   | 'social.profile_not_found'
   | 'social.report_target_not_found'
+  | 'social.resource_contract_mismatch'
+  | 'social.resource_not_found'
+  | 'social.resource_not_ready'
+  | 'social.resource_unavailable'
+  | 'social.resource_upload_conflict'
+  | 'social.resource_upload_incomplete'
+  | 'social.rules_immutable'
+  | 'social.storage_unavailable'
   | 'social.story_expired'
   | 'social.story_too_long'
   | 'social.version_conflict'
@@ -447,6 +495,8 @@ export type ApiErrorCode =
   | 'staff.course_comment_report_changed'
   | 'staff.course_comment_report_not_found'
   | 'staff.credential_reset_failed'
+  | 'staff.dispute_not_found'
+  | 'staff.dispute_state_changed'
   | 'staff.email_attachment_not_found'
   | 'staff.email_attachment_unavailable'
   | 'staff.email_box_invalid'
@@ -503,6 +553,8 @@ export type ApiErrorCode =
   | 'staff.invalid_credential_status'
   | 'staff.invalid_cursor'
   | 'staff.invalid_dashboard'
+  | 'staff.invalid_dispute_action'
+  | 'staff.invalid_dispute_filter'
   | 'staff.invalid_exercise'
   | 'staff.invalid_exercise_action'
   | 'staff.invalid_exercise_filter'
@@ -711,6 +763,15 @@ export interface Activity {
   /** Corrigir atividade: todo treino do dia, inclusive retirado da agenda. */
   link_candidates: LinkCandidate[];
   origin: ActivityOrigin;
+  /** Desafios em que a atividade contou e com quanto (J16/J20). */
+  counted_in: ActivityCountedIn[];
+}
+
+export interface ActivityCountedIn {
+  challenge_id: string;
+  name: string;
+  metric: "active_days" | "streak" | "activities" | "calories" | "distance" | "minutes" | "points";
+  amount: number;
 }
 
 export interface ActivityItem {
@@ -979,7 +1040,7 @@ export interface CalendarDay {
   items: CalendarItem[];
   /** Minutos de atividade real no dia (J16.58); execução vinculada conta uma vez. */
   minutes: number;
-  /** Atividades importadas ou manuais do dia, incluindo seus vínculos canônicos com o treino. */
+  /** Execuções concluídas sem ocorrência visível e atividades importadas ou manuais do dia, incluindo seus vínculos canônicos com o treino. */
   activities: CalendarActivity[];
 }
 
@@ -998,6 +1059,7 @@ export interface CalendarItem {
 }
 
 export interface Catalogs {
+  challenge_templates: ChallengeTemplate[];
   affinity_groups: AffinityGroup[];
   sports: Sport[];
   session_types: SessionType[];
@@ -1025,6 +1087,16 @@ export interface CatalogsResponse {
   version: string;
   changed: boolean;
   catalogs: Catalogs | null;
+}
+
+export interface ChallengeTemplate {
+  id: string;
+  name_key: string;
+  metric: "active_days" | "streak" | "activities" | "calories" | "distance" | "minutes" | "steps" | "points";
+  duration_days: number;
+  access_mode: "open" | "approval" | "invite";
+  icon: string;
+  target: number | null;
 }
 
 export interface CombatPrescription {
@@ -1258,11 +1330,45 @@ export interface CommerceCheckoutResult {
   expires_at: string | null;
 }
 
-export interface CommerceContent {
-  purchase_id: string;
-  course: CommerceCourse;
-  progress: CommerceCourseProgress;
-  version: number;
+export interface CommerceClub {
+  offer: CommerceClubOffer;
+  professional: SocialProfileReadCard;
+  exclusive_post_count: number;
+  exclusive_story_count: number;
+  community: CommerceClubCommunity | null;
+  community_enabled: boolean;
+  benefits: string[];
+  access: CommerceClubAccess;
+  courses: CommerceClubCourse[];
+}
+
+export interface CommerceClubAccess {
+  state: "none" | "active" | "past_due" | "owner";
+  valid_until: string | null;
+}
+
+export interface CommerceClubCommunity {
+  id: string;
+  name: string;
+  image_url: string | null;
+  members: number;
+}
+
+export interface CommerceClubCourse {
+  course_id: string;
+  title: string;
+  content_kind: "course" | "video" | "pdf" | "article";
+  lesson_count: number;
+}
+
+export interface CommerceClubOffer {
+  id: string;
+  name: string;
+  description: string;
+  price: number | null;
+  currency: string;
+  billing_interval: string | null;
+  status: "draft" | "ready" | "published" | "paused" | "archived";
 }
 
 export interface CommerceCourse {
@@ -1271,7 +1377,7 @@ export interface CommerceCourse {
   business_id: string;
   title: string;
   description: string | null;
-  content_kind: "course" | "video" | "pdf" | "article" | "bundle";
+  content_kind: "course" | "video" | "pdf" | "article";
   comments_enabled: boolean;
   cover_file_id: string | null;
   settings: CommerceCourseSettings;
@@ -1285,19 +1391,23 @@ export interface CommerceCourse {
 
 export interface CommerceCourseAction {
   id: string;
-  action_type: "exercise" | "protocol" | "diet";
+  action_type: "workout" | "program" | "diet" | "exercise" | "protocol" | "challenge" | "community";
   reference_id: string;
   title: string;
-  position: number;
   course_id: string;
   lesson_id: string;
   organization: CommerceBusinessCard;
-  resource: CommerceCourseExerciseResource | CommerceCourseProtocolResource | CommerceCourseDietResource;
+  resource: CommerceCourseActionResource;
+  target_id: string | null;
 }
+
+export type CommerceCourseActionResource = CommerceCourseExerciseResource | CommerceCourseWorkoutResource | CommerceCourseProgramResource | CommerceCourseDietResource | CommerceCourseProtocolResource | CommerceCourseChallengeResource | CommerceCourseCommunityResource;
 
 export interface CommerceCourseAsset {
   url: string;
   expires_in: number;
+  format: "hls" | "file";
+  transcript: CommerceTranscriptCue[] | null;
 }
 
 export interface CommerceCourseAssetComplete {
@@ -1324,14 +1434,6 @@ export interface CommerceCourseAssetPrepare {
   bytes: number;
 }
 
-export interface CommerceCourseAssetProgress {
-  asset_id: string;
-  ratio: number;
-  position_seconds: number | null;
-  page: number | null;
-  total_pages: number | null;
-}
-
 export interface CommerceCourseAssetReady {
   file_id: string;
   status: "ready";
@@ -1347,6 +1449,17 @@ export interface CommerceCourseAssetUploadHeaders {
 }
 
 export type CommerceCourseAssetUploadInput = CommerceCourseAssetPrepare | CommerceCourseAssetComplete;
+
+export interface CommerceCourseChallengeResource {
+  kind: "challenge";
+  id: string;
+  name: string;
+  image_url: string | null;
+  access_mode: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  members: number;
+}
 
 export interface CommerceCourseComment {
   id: string;
@@ -1368,16 +1481,32 @@ export interface CommerceCourseComments {
   items: CommerceCourseComment[];
 }
 
+export interface CommerceCourseCommunityResource {
+  kind: "community";
+  id: string;
+  name: string;
+  image_url: string | null;
+  access_mode: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  members: number;
+}
+
 export interface CommerceCourseDietResource {
   kind: "diet";
   id: string;
   title: string;
-  objective: string;
+  objective: string | null;
+  kcal: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  meal_count: number;
 }
 
 export interface CommerceCourseEmbeddedAction {
   id: string;
-  action_type: "exercise" | "protocol" | "diet";
+  action_type: "workout" | "program" | "diet" | "exercise" | "protocol" | "challenge" | "community";
   reference_id: string;
   title: string;
   position: number;
@@ -1394,7 +1523,7 @@ export interface CommerceCourseExerciseResource {
 export interface CommerceCourseInput {
   title: string;
   description: string | null;
-  content_kind: "course" | "video" | "pdf" | "article" | "bundle";
+  content_kind: "course" | "video" | "pdf" | "article";
   comments_enabled: boolean;
   cover_file_id: string | null;
   settings: CommerceCourseInputSettings;
@@ -1402,15 +1531,21 @@ export interface CommerceCourseInput {
 }
 
 export interface CommerceCourseInputSettings {
-  certificate_enabled: boolean;
   sequential_access: boolean;
+  club_included: boolean;
+}
+
+export interface CommerceCourseInsights {
+  learners: number;
+  completed: number;
+  lessons: CommerceCourseLessonInsight[];
 }
 
 export interface CommerceCourseLesson {
   id: string;
   title: string;
   summary: string | null;
-  lesson_type: "mixed" | "text" | "video" | "audio" | "document" | "live";
+  lesson_type: "mixed" | "text" | "video" | "audio" | "document";
   position: number;
   body: string | null;
   duration_seconds: number | null;
@@ -1423,6 +1558,8 @@ export interface CommerceCourseLesson {
   archived: boolean;
   assets: CommerceCourseLessonAsset[];
   actions: CommerceCourseEmbeddedAction[];
+  quiz: CommerceCourseQuiz | null;
+  transcript_enabled: boolean;
 }
 
 export interface CommerceCourseLessonAsset {
@@ -1440,20 +1577,135 @@ export interface CommerceCourseLessonAsset {
   component_total_pages: number | null;
 }
 
-export interface CommerceCourseLessonProgress {
+export interface CommerceCourseLessonInsight {
   lesson_id: string;
-  status: "in_progress" | "completed";
-  position_seconds: number;
-  body_ratio: number;
-  assets: CommerceCourseAssetProgress[];
+  started: number;
+  completed: number;
+  quiz_attempts: number;
+  quiz_average_percent: number | null;
 }
 
-export interface CommerceCourseMemberDetail {
-  purchase_id: string;
-  course: CommerceCourse;
-  progress: CommerceCourseProgress;
-  version: number;
+export interface CommerceCourseLessonLock {
+  reason: "purchase" | "scheduled" | "prerequisite" | "sequence";
+  available_at: string | null;
+  prerequisite_lesson_id: string | null;
+}
+
+export interface CommerceCourseMemberAccess {
+  source: "purchase" | "club" | "professional" | "preview";
+  started_at: string | null;
   expires_at: string | null;
+}
+
+export interface CommerceCourseMemberActInput {
+  lesson_id: string;
+  action_id?: string;
+  start_date?: string | null;
+  activate?: boolean;
+  answers?: Record<string, string>;
+  idempotency_key?: string;
+}
+
+export interface CommerceCourseMemberAction {
+  id: string;
+  action_type: "workout" | "program" | "diet" | "exercise" | "protocol" | "challenge" | "community";
+  reference_id: string;
+  title: string;
+  target_id: string | null;
+}
+
+export interface CommerceCourseMemberAsset {
+  id: string;
+  asset_type: "video" | "audio" | "pdf" | "image" | "link" | "file";
+  title: string;
+  external_url: string | null;
+  file_name: string | null;
+  mime_type: string | null;
+  downloadable: boolean;
+  is_required: boolean;
+  duration_seconds: number | null;
+  component_total_pages: number | null;
+  progress: CommerceCourseMemberAssetProgress;
+}
+
+export interface CommerceCourseMemberAssetProgress {
+  ratio: number;
+  position_seconds: number | null;
+  page: number | null;
+  total_pages: number | null;
+}
+
+export interface CommerceCourseMemberLesson {
+  id: string;
+  title: string;
+  summary: string | null;
+  lesson_type: "mixed" | "text" | "video" | "audio" | "document";
+  duration_seconds: number | null;
+  is_preview: boolean;
+  is_required: boolean;
+  comments_enabled: boolean;
+  thumbnail_url: string | null;
+  transcript_enabled: boolean;
+  status: "not_started" | "in_progress" | "completed";
+  position_seconds: number;
+  body_ratio: number;
+  lock: CommerceCourseLessonLock | null;
+  body: string | null;
+  assets: CommerceCourseMemberAsset[];
+  actions: CommerceCourseMemberAction[];
+  quiz: CommerceCourseMemberQuiz | null;
+}
+
+export interface CommerceCourseMemberModule {
+  id: string;
+  title: string;
+  description: string | null;
+  lessons: CommerceCourseMemberLesson[];
+}
+
+export interface CommerceCourseMemberProgress {
+  percent: number;
+  completed_lessons: number;
+  total_lessons: number;
+  last_lesson_id: string | null;
+  last_position_seconds: number;
+  last_opened_at: string | null;
+}
+
+export interface CommerceCourseMemberQuiz {
+  required: boolean;
+  pass_percent: number;
+  questions: CommerceCourseMemberQuizQuestion[];
+  result: CommerceCourseQuizResult | null;
+}
+
+export interface CommerceCourseMemberQuizOption {
+  id: string;
+  text: string;
+}
+
+export interface CommerceCourseMemberQuizQuestion {
+  id: string;
+  prompt: string;
+  options: CommerceCourseMemberQuizOption[];
+}
+
+export interface CommerceCourseMemberView {
+  course_id: string;
+  offer_id: string | null;
+  access: CommerceCourseMemberAccess;
+  title: string;
+  description: string | null;
+  content_kind: "course" | "video" | "pdf" | "article";
+  cover_url: string | null;
+  comments_enabled: boolean;
+  sequential_access: boolean;
+  club_included: boolean;
+  organization: CommerceBusinessCard;
+  presenter: CommerceProfessionalCard;
+  progress: CommerceCourseMemberProgress;
+  saved_lesson_ids: string[];
+  modules: CommerceCourseMemberModule[];
 }
 
 export interface CommerceCourseModule {
@@ -1463,6 +1715,28 @@ export interface CommerceCourseModule {
   position: number;
   archived: boolean;
   lessons: CommerceCourseLesson[];
+}
+
+export interface CommerceCourseOutline {
+  course_id: string;
+  lesson_count: number;
+  duration_seconds: number;
+  club_included: boolean;
+  modules: CommerceCourseOutlineModule[];
+}
+
+export interface CommerceCourseOutlineLesson {
+  id: string;
+  title: string;
+  lesson_type: "mixed" | "text" | "video" | "audio" | "document";
+  duration_seconds: number | null;
+  is_preview: boolean;
+}
+
+export interface CommerceCourseOutlineModule {
+  id: string;
+  title: string;
+  lessons: CommerceCourseOutlineLesson[];
 }
 
 export interface CommerceCoursePlayback {
@@ -1476,24 +1750,65 @@ export interface CommerceCoursePresenter {
   avatar_url: string | null;
 }
 
-export interface CommerceCourseProgress {
-  percent: number;
-  last_lesson_id: string | null;
-  last_position_seconds: number;
-  lessons: CommerceCourseLessonProgress[];
+export interface CommerceCourseProgramResource {
+  kind: "program";
+  id: string;
+  title: string;
+  sport_id: string;
+  description: string | null;
+  weeks: number;
+  workouts_per_week: number;
+  estimated_minutes_per_week: number | null;
 }
 
 export interface CommerceCourseProtocolResource {
   kind: "protocol";
   id: string;
   title: string;
-  sport_id: string;
-  weeks: number;
+  description: string | null;
+  step_count: number;
+  category: string | null;
+  icon_key: string | null;
+}
+
+export interface CommerceCourseQuiz {
+  required: boolean;
+  pass_percent: number;
+  questions: CommerceCourseQuizQuestion[];
+}
+
+export interface CommerceCourseQuizAnswer {
+  question_id: string;
+  option_id: string | null;
+  correct: boolean;
+  correct_option_id: string;
+  explanation: string | null;
+}
+
+export interface CommerceCourseQuizOption {
+  id: string;
+  text: string;
+}
+
+export interface CommerceCourseQuizQuestion {
+  id: string;
+  prompt: string;
+  options: CommerceCourseQuizOption[];
+  correct_option_id: string;
+  explanation: string | null;
+}
+
+export interface CommerceCourseQuizResult {
+  best_percent: number;
+  last_percent: number;
+  passed: boolean;
+  answered_at: string;
+  answers: CommerceCourseQuizAnswer[];
 }
 
 export interface CommerceCourseSettings {
-  certificate_enabled: boolean;
   sequential_access: boolean;
+  club_included: boolean;
 }
 
 export interface CommerceCourseStudio {
@@ -1501,6 +1816,22 @@ export interface CommerceCourseStudio {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface CommerceCourseStudioDetail {
+  course: CommerceCourse;
+  club_available: boolean;
+  ready: boolean;
+  insights: CommerceCourseInsights;
+}
+
+export interface CommerceCourseWorkoutResource {
+  kind: "workout";
+  id: string;
+  title: string;
+  sport_id: string;
+  notes: string | null;
+  step_count: number;
 }
 
 export interface CommerceDeliveryAddress {
@@ -1536,7 +1867,7 @@ export interface CommerceFeaturedStore {
 }
 
 export interface CommerceFulfillment {
-  kind?: "contract" | "community" | "challenge" | "course" | "club" | "workout" | "diet" | "physical_product" | "platform_membership";
+  kind?: "contract" | "community" | "challenge" | "course" | "club" | "workout" | "program" | "protocol" | "diet" | "physical_product" | "platform_membership";
   id?: string;
   offer_id?: string;
   status?: "confirmed" | "preparing" | "shipped" | "delivered" | "cancelled";
@@ -1572,43 +1903,61 @@ export interface CommerceMarket {
   featured_stores: CommerceFeaturedStore[];
 }
 
-export interface CommerceMemberContentSummary {
+export interface CommerceMemberArea {
+  continue: CommerceMemberItem | null;
+  items: CommerceMemberItem[];
+  total: number;
+  limit: number;
+  offset: number;
+  ended: CommerceMemberItem[];
+  saved: CommerceMemberSavedLesson[];
+  professionals: CommerceProfessionalCard[];
+  trending: CommerceMemberTrending[];
+}
+
+export interface CommerceMemberItem {
   course_id: string;
-  purchase_id: string;
+  offer_id: string | null;
   title: string;
-  description: string | null;
-  content_kind: "course" | "video" | "pdf" | "article" | "bundle";
-  cover_file_id: string | null;
+  content_kind: "course" | "video" | "pdf" | "article";
   cover_url: string | null;
   organization: CommerceBusinessCard;
   presenter: CommerceProfessionalCard;
+  access: CommerceMemberItemAccess;
   progress_percent: number;
+  completed_lessons: number;
+  total_lessons: number;
   last_lesson_id: string | null;
-  last_position_seconds: number;
+  last_opened_at: string | null;
+}
+
+export interface CommerceMemberItemAccess {
+  source: "purchase" | "club" | null;
   expires_at: string | null;
+  active: boolean;
 }
 
-export interface CommerceMemberHub {
+export interface CommerceMemberSavedLesson {
+  course_id: string;
+  course_title: string;
+  lesson_id: string;
+  lesson_title: string;
+  saved_at: string;
+}
+
+export interface CommerceMemberTrending {
+  offer_id: string;
+  course_id: string;
+  title: string;
+  image_url: string | null;
+  content_kind: "course" | "video" | "pdf" | "article";
+  presenter: CommerceProfessionalCard;
   organization: CommerceBusinessCard;
-  principal_creator: CommerceProfessionalCard;
-  fallback_cover_file_id: string | null;
-  fallback_cover_url: string | null;
-  active_content_count: number;
-}
-
-export interface CommerceMemberHubContents {
-  organization_id: string;
-  items: CommerceMemberContentSummary[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-export interface CommerceMemberHubs {
-  items: CommerceMemberHub[];
-  total: number;
-  limit: number;
-  offset: number;
+  price: number;
+  currency: string;
+  rating: number | null;
+  reviews: number;
+  learners: number;
 }
 
 export interface CommerceMyPhysicalOrder {
@@ -1644,6 +1993,7 @@ export interface CommerceNativeProduct {
 }
 
 export interface CommerceOffer {
+  delivery_resource_id?: string | null;
   id: string;
   business_id: string;
   professional_id: string;
@@ -1657,7 +2007,7 @@ export interface CommerceOffer {
   product_category_id?: string | null;
   product_category_label?: string | null;
   status: "draft" | "ready" | "published" | "paused" | "archived";
-  price: number;
+  price: number | null;
   currency: string;
   billing_type: "free" | "one_time" | "recurring";
   billing_interval?: "week" | "month" | "2month" | "quarter" | "semester" | "year" | null;
@@ -1669,18 +2019,34 @@ export interface CommerceOffer {
   created_at?: string;
   updated_at?: string;
   can_edit: boolean;
+  course_outline?: CommerceCourseOutline;
 }
 
-export type CommerceOfferDelivery = CommerceWorkoutOfferDelivery | CommerceDietOfferDelivery;
+export type CommerceOfferDelivery = CommerceProtocolOfferDelivery | CommerceProgramOfferDelivery | CommerceWorkoutOfferDelivery | CommerceDietOfferDelivery;
+
+export interface CommerceOfferSale {
+  id: string;
+  buyer: OrgAccountCard;
+  amount: number;
+  currency: string;
+  status: "pending" | "confirmed" | "failed" | "cancelled" | "refunded";
+  created_at: string;
+}
+
+export interface CommerceOfferSales {
+  items: CommerceOfferSale[];
+  next_cursor: string | null;
+}
 
 export interface CommerceOfferSaveInput {
+  delivery_resource_id?: string | null;
   id: string | null;
   business_id: string;
   type: string;
   name: string;
   description: string;
   image_url: string | null;
-  price: number;
+  price: number | null;
   currency: string;
   billing_type: "free" | "one_time" | "recurring";
   billing_interval: string | null;
@@ -2191,6 +2557,17 @@ export interface CommerceProfessionalCard {
   avatar_url?: string | null;
 }
 
+export interface CommerceProgramOfferDelivery {
+  offer_id: string;
+  business_id: string;
+  offer_type: "standalone_program";
+  resource_id: string;
+  resource: TrainingProfessionalProgram;
+  version: number;
+  offer_version: number;
+  updated_at: string;
+}
+
 export interface CommerceProgressInput {
   lesson: string;
   component_key: string;
@@ -2203,13 +2580,26 @@ export interface CommerceProgressInput {
 }
 
 export interface CommerceProgressResult {
-  purchase_id: string;
-  progress: CommerceCourseProgress;
-  version: number;
+  course_id: string;
+  lesson_id: string;
+  status: "in_progress" | "completed";
+  completed: boolean;
+  progress: CommerceCourseMemberProgress;
 }
 
 export interface CommercePromotedOffers {
   items: CommerceOffer[];
+}
+
+export interface CommerceProtocolOfferDelivery {
+  offer_id: string;
+  business_id: string;
+  offer_type: "standalone_protocol";
+  resource_id: string;
+  resource: TrainingProfessionalProtocolTemplate;
+  version: number;
+  offer_version: number;
+  updated_at: string;
 }
 
 export interface CommercePurchase {
@@ -2225,6 +2615,7 @@ export interface CommercePurchase {
   billing_interval?: string | null;
   provider_reference?: string | null;
   contract_id?: string | null;
+  subscription_id?: string | null;
   confirmed_at?: string | null;
   created_at?: string;
   fulfillment: CommerceFulfillment;
@@ -2271,6 +2662,7 @@ export interface CommercePurchaseSummary {
   billing_interval?: string | null;
   provider_reference?: string | null;
   contract_id?: string | null;
+  subscription_id?: string | null;
   confirmed_at?: string | null;
   created_at: string;
   fulfillment: CommerceFulfillment;
@@ -2339,6 +2731,12 @@ export interface CommerceSubscriptionRecoveryResult {
   subscription_id: string;
   provider_action_reference: string;
   recovery_url: string | null;
+}
+
+export interface CommerceTranscriptCue {
+  start_seconds: number;
+  end_seconds: number;
+  text: string;
 }
 
 export interface CommerceWallet {
@@ -2475,42 +2873,6 @@ export interface CoverUpload {
   expiresIn: number;
 }
 
-export interface CreatorShowcase {
-  is_owner: boolean;
-  has_content: boolean;
-  categories: CreatorShowcaseCategory[];
-  challenges: SocialShowcaseGroup[];
-  communities: SocialShowcaseGroup[];
-}
-
-export interface CreatorShowcaseCategory {
-  slug: string;
-  name: string;
-  icon?: string | null;
-  items: CreatorShowcaseItem[];
-}
-
-export interface CreatorShowcaseConfig {
-  category_order: string[];
-  featured_offering_id: string | null;
-}
-
-export interface CreatorShowcaseItem {
-  id: string;
-  title: string;
-  description?: string | null;
-  price: number;
-  currency: string;
-  billing_type: "one_time" | "recurring" | "free";
-  billing_interval?: string | null;
-  cover_url?: string | null;
-  stock_available?: number | null;
-  sold_out: boolean;
-  featured: boolean;
-  owned: boolean;
-  owner_net?: number | null;
-}
-
 export interface CrossfitPrescription {
   engine: "crossfit";
   blocks: WorkoutBlock[];
@@ -2533,7 +2895,7 @@ export interface Diet {
   source_diet_id: string | null;
   active: boolean;
   prescriber: AccountCard | null;
-  /** Só a dieta própria (não copiada) é editável; as demais ajustam só horários (J16.52). */
+  /** Dieta própria e cópia comprada são editáveis pelo dono. Templates, versão adquirida e cópias de outros usuários permanecem intactos. */
   editable: boolean;
   targets: DietTargets;
   meals: DietMeal[];
@@ -3930,6 +4292,10 @@ export interface IdentityPublicPatch {
   professional_vertical?: string | null;
 }
 
+export interface IdentityRecoveryResult {
+  ok: boolean;
+}
+
 export interface IdentitySession {
   access_token: string;
   refresh_token: string;
@@ -3959,12 +4325,16 @@ export interface IdentitySocialLinks {
   instagram?: string | null;
   tiktok?: string | null;
   whatsapp?: string | null;
+  youtube?: string | null;
+  website?: string | null;
 }
 
 export interface IdentitySocialLinksPatch {
   instagram?: string | null;
   tiktok?: string | null;
   whatsapp?: string | null;
+  youtube?: string | null;
+  website?: string | null;
 }
 
 export interface ImportedActivityInput {
@@ -4218,7 +4588,6 @@ export interface NutritionDietItem {
   fat_g?: number | null;
   fiber_g?: number | null;
   notes?: string | null;
-  swap_group?: string | null;
   order: number;
 }
 
@@ -4235,7 +4604,6 @@ export interface NutritionDietItemInput {
   fat_g?: number | null;
   fiber_g?: number | null;
   notes?: string | null;
-  swap_group?: string | null;
 }
 
 export interface NutritionDietMeal {
@@ -4420,7 +4788,7 @@ export interface OfferType {
   unique_per_owner_profile: boolean;
   requires_affinity_group: boolean;
   requires_product_category: boolean;
-  delivery: "club" | "consultancy" | "workout" | "diet" | "physical_product" | "course" | "challenge" | "community" | "platform_membership";
+  delivery: "club" | "consultancy" | "workout" | "program" | "protocol" | "diet" | "physical_product" | "course" | "challenge" | "community" | "platform_membership";
 }
 
 export interface OfficialWorkout {
@@ -4892,6 +5260,42 @@ export interface ProfessionalSettings {
   rejection_reason: string | null;
 }
 
+export interface ProfessionalShowcase {
+  is_owner: boolean;
+  has_content: boolean;
+  categories: ProfessionalShowcaseCategory[];
+  challenges: SocialShowcaseGroup[];
+  communities: SocialShowcaseGroup[];
+}
+
+export interface ProfessionalShowcaseCategory {
+  slug: string;
+  name: string;
+  icon?: string | null;
+  items: ProfessionalShowcaseItem[];
+}
+
+export interface ProfessionalShowcaseConfig {
+  category_order: string[];
+  featured_offering_id: string | null;
+}
+
+export interface ProfessionalShowcaseItem {
+  id: string;
+  title: string;
+  description?: string | null;
+  price: number;
+  currency: string;
+  billing_type: "one_time" | "recurring" | "free";
+  billing_interval?: string | null;
+  cover_url?: string | null;
+  stock_available?: number | null;
+  sold_out: boolean;
+  featured: boolean;
+  owned: boolean;
+  owner_net?: number | null;
+}
+
 export interface ProfessionalSpecialty {
   id: string;
   name_key: string;
@@ -5210,7 +5614,13 @@ export interface SessionType {
   sports: string[];
 }
 
-export type SocialChallengeActionCommand = SocialChallengePublish | SocialChallengeCancel | SocialChallengeEnd | SocialChallengeJoin | SocialChallengeLeave | SocialChallengeApprove | SocialChallengeReject | SocialChallengeBan;
+export interface SocialActivityShareInput {
+  type: "activity";
+  activity_id: string;
+  show_route: boolean;
+}
+
+export type SocialChallengeActionCommand = SocialChallengePublish | SocialChallengeCancel | SocialChallengeEnd | SocialChallengeJoin | SocialChallengeLeave | SocialChallengeApprove | SocialChallengeReject | SocialChallengeBan | SocialChallengeContest;
 
 export interface SocialChallengeApprove {
   action: "approve";
@@ -5230,6 +5640,31 @@ export interface SocialChallengeCancel {
   action: "cancel";
   id: string;
   expected_version: number;
+  idempotency_key: string;
+}
+
+export interface SocialChallengeCard {
+  id: string;
+  name: string;
+  image_url: string | null;
+  starts_at: string;
+  ends_at: string;
+  metric: string;
+  members_only: boolean;
+  participants: number;
+  status: string;
+  phase: "draft" | "upcoming" | "running" | "provisional" | "final" | "cancelled";
+  joined: boolean;
+}
+
+export interface SocialChallengeCheckinRule {
+  photo_required: boolean;
+}
+
+export interface SocialChallengeContest {
+  action: "contest";
+  id: string;
+  reason: string;
   idempotency_key: string;
 }
 
@@ -5271,12 +5706,41 @@ export interface SocialChallengeLeave {
   idempotency_key: string;
 }
 
+export interface SocialChallengeProgress {
+  value: number;
+  streak: number;
+  active_days: number;
+  activities: number;
+  counted_today: boolean;
+  position: number | null;
+  contest: "none" | "open" | "resolved";
+}
+
 export interface SocialChallengePublish {
   action: "publish";
   id: string;
   expected_version: number;
   idempotency_key: string;
   accept_prize_responsibility: boolean;
+}
+
+export interface SocialChallengeRanking {
+  metric: "active_days" | "streak" | "activities" | "calories" | "distance" | "minutes" | "steps" | "points";
+  tiebreak: "streak" | "active_days";
+  phase: "draft" | "upcoming" | "running" | "provisional" | "final" | "cancelled";
+  day_index: number;
+  day_total: number;
+  total: number;
+  me: SocialChallengeRankingRow | null;
+  items: SocialChallengeRankingRow[];
+  next_cursor: number | null;
+}
+
+export interface SocialChallengeRankingRow {
+  position: number;
+  profile: SocialProfileReadCard;
+  value: number;
+  streak: number;
 }
 
 export interface SocialChallengeReject {
@@ -5287,6 +5751,11 @@ export interface SocialChallengeReject {
 }
 
 export type SocialChallengeSaveCommand = SocialChallengeCreate | SocialChallengeUpdate;
+
+export interface SocialChallengeSportPoints {
+  sport: string;
+  points: number;
+}
 
 export interface SocialChallengeUpdate {
   action: "update";
@@ -5314,12 +5783,38 @@ export interface SocialChallenges {
   next_cursor: string | null;
 }
 
+export interface SocialCheckinActivity {
+  activity_id: string;
+  available: boolean;
+  sport: string | null;
+  title: string | null;
+  distance_m: number | null;
+  duration_s: number | null;
+  pace_s_per_km: number | null;
+  calories: number | null;
+  source: "app" | "watch" | "health" | "manual" | null;
+  provider: string | null;
+  route_shape: SocialRoutePoint[] | null;
+}
+
+export interface SocialCheckinInput {
+  type: "checkin";
+  title?: string | null;
+  sport?: string | null;
+  activity_id?: string | null;
+}
+
 export interface SocialCommunities {
   items: SocialGroup[];
   next_cursor: string | null;
 }
 
-export type SocialCommunityActionCommand = SocialCommunityPublish | SocialCommunityPauseEntry | SocialCommunityResumeEntry | SocialCommunityArchive | SocialCommunityJoin | SocialCommunityLeave | SocialCommunityApprove | SocialCommunityReject | SocialCommunityBan;
+export type SocialCommunityActionCommand = SocialCommunityPublish | SocialCommunityPauseEntry | SocialCommunityResumeEntry | SocialCommunityArchive | SocialCommunityJoin | SocialCommunityLeave | SocialCommunityApprove | SocialCommunityReject | SocialCommunityBan | SocialCommunityPinPost | SocialCommunityUnpinPost | SocialCommunitySetPreview | SocialCommunityClearPreview;
+
+export interface SocialCommunityAgenda {
+  items: SocialPost[];
+  next_cursor: string | null;
+}
 
 export interface SocialCommunityApprove {
   action: "approve";
@@ -5342,6 +5837,13 @@ export interface SocialCommunityBan {
   idempotency_key: string;
 }
 
+export interface SocialCommunityClearPreview {
+  action: "clearPreview";
+  id: string;
+  expected_version: number;
+  idempotency_key: string;
+}
+
 export interface SocialCommunityCreate {
   action: "create";
   idempotency_key: string;
@@ -5351,7 +5853,7 @@ export interface SocialCommunityCreate {
   description: string;
   image_url?: string | null;
   visibility?: "listed" | "hidden";
-  access_mode: "open" | "approval" | "invite" | "paid";
+  access_mode: "open" | "approval" | "invite" | "paid" | "club";
   publishing?: "admins" | "team" | "members";
   publish: boolean;
   config: SocialGroupConfig;
@@ -5369,6 +5871,11 @@ export interface SocialCommunityLeave {
   idempotency_key: string;
 }
 
+export interface SocialCommunityLibrary {
+  items: SocialPost[];
+  next_cursor: string | null;
+}
+
 export interface SocialCommunityPauseEntry {
   action: "pauseEntry";
   id: string;
@@ -5376,11 +5883,43 @@ export interface SocialCommunityPauseEntry {
   idempotency_key: string;
 }
 
+export interface SocialCommunityPinPost {
+  action: "pinPost";
+  id: string;
+  post_id: string;
+  expected_version: number;
+  idempotency_key: string;
+}
+
+export interface SocialCommunityPoints {
+  total: number;
+  month: string;
+  month_points: number;
+  level: number;
+  level_floor: number;
+  next_level_at: number;
+}
+
 export interface SocialCommunityPublish {
   action: "publish";
   id: string;
   expected_version: number;
   idempotency_key: string;
+}
+
+export interface SocialCommunityRanking {
+  month: string;
+  total: number;
+  me: SocialCommunityRankingRow | null;
+  items: SocialCommunityRankingRow[];
+  next_cursor: number | null;
+}
+
+export interface SocialCommunityRankingRow {
+  position: number;
+  profile: SocialProfileReadCard;
+  month_points: number;
+  level: number;
 }
 
 export interface SocialCommunityReject {
@@ -5399,6 +5938,21 @@ export interface SocialCommunityResumeEntry {
 
 export type SocialCommunitySaveCommand = SocialCommunityCreate | SocialCommunityUpdate;
 
+export interface SocialCommunitySetPreview {
+  action: "setPreview";
+  id: string;
+  post_id: string;
+  expected_version: number;
+  idempotency_key: string;
+}
+
+export interface SocialCommunityUnpinPost {
+  action: "unpinPost";
+  id: string;
+  expected_version: number;
+  idempotency_key: string;
+}
+
 export interface SocialCommunityUpdate {
   action: "update";
   id: string;
@@ -5410,7 +5964,7 @@ export interface SocialCommunityUpdate {
   description: string;
   image_url?: string | null;
   visibility?: "listed" | "hidden";
-  access_mode: "open" | "approval" | "invite" | "paid";
+  access_mode: "open" | "approval" | "invite" | "paid" | "club";
   publishing?: "admins" | "team" | "members";
   publish: boolean;
   config: SocialGroupConfig;
@@ -5432,6 +5986,16 @@ export interface SocialConversationSummary {
   connection: boolean;
 }
 
+export interface SocialEventInput {
+  type: "event";
+  title: string;
+  starts_at: string;
+  ends_at?: string | null;
+  timezone: string;
+  location?: string | null;
+  online: boolean;
+}
+
 export interface SocialExplore {
   items: SocialPost[];
   people: SocialProfileReadCard[];
@@ -5447,7 +6011,7 @@ export interface SocialFeed {
 export interface SocialGroup {
   id: string;
   kind: "community" | "challenge";
-  creator_id: string;
+  owner_id: string;
   business_id: string | null;
   community_id: string | null;
   offer_id: string | null;
@@ -5456,7 +6020,7 @@ export interface SocialGroup {
   description: string;
   image_url: string | null;
   visibility: "listed" | "hidden";
-  access_mode: "open" | "approval" | "invite" | "paid" | "inherited";
+  access_mode: "open" | "approval" | "invite" | "paid" | "inherited" | "club";
   publishing: "admins" | "team" | "members";
   starts_at: string | null;
   ends_at: string | null;
@@ -5464,8 +6028,23 @@ export interface SocialGroup {
   version: number;
   members: number;
   my_membership: SocialGroupMembership | null;
-  creator?: SocialProfileReadCard;
+  owner?: SocialProfileReadCard;
   participants?: SocialGroupParticipant[];
+  capabilities: SocialGroupCapabilities;
+  offer?: SocialGroupOffer;
+  phase?: "draft" | "upcoming" | "running" | "provisional" | "final" | "cancelled";
+  provisional_ends_at?: string;
+  community?: SocialGroupHost;
+  pinned_post?: SocialPost;
+  preview_post?: SocialPost;
+}
+
+export interface SocialGroupCapabilities {
+  can_manage: boolean;
+  can_edit: boolean;
+  can_moderate: boolean;
+  can_post_materials: boolean;
+  can_publish: boolean;
 }
 
 export interface SocialGroupConfig {
@@ -5474,8 +6053,22 @@ export interface SocialGroupConfig {
   rules_text?: string;
   participant_limit?: number;
   completion_threshold?: number;
-  metric?: string;
+  metric?: "active_days" | "streak" | "activities" | "calories" | "distance" | "minutes" | "steps" | "points";
   prize?: SocialGroupPrize;
+  spaces?: SocialGroupSpace[];
+  pinned_post_id?: string;
+  preview_post_id?: string;
+  timezone?: string;
+  template?: string;
+  target?: number;
+  points_by_sport?: SocialChallengeSportPoints[];
+  checkin?: SocialChallengeCheckinRule;
+}
+
+export interface SocialGroupHost {
+  id: string;
+  name: string;
+  image_url: string | null;
 }
 
 export interface SocialGroupMembership {
@@ -5484,6 +6077,21 @@ export interface SocialGroupMembership {
   score: number | null;
   streak: number | null;
   team: string | null;
+  entitled?: boolean;
+  points?: SocialCommunityPoints;
+  progress?: SocialChallengeProgress;
+}
+
+export interface SocialGroupOffer {
+  id: string;
+  role: "sale" | "club";
+  name: string;
+  price: number | null;
+  currency: string;
+  billing_type: "one_time" | "recurring" | "free";
+  billing_interval: string | null;
+  access_duration: string | null;
+  status: "draft" | "ready" | "published" | "paused" | "archived";
 }
 
 export interface SocialGroupParticipant {
@@ -5495,6 +6103,12 @@ export interface SocialGroupParticipant {
 
 export interface SocialGroupPrize {
   text: string;
+  image_url?: string;
+}
+
+export interface SocialGroupSpace {
+  id: string;
+  name: string;
 }
 
 export interface SocialImageOverlay {
@@ -5528,7 +6142,14 @@ export interface SocialInboxSearchHit {
   message: SocialMessage;
 }
 
-export type SocialInteractionCommand = SocialInteractionLike | SocialInteractionUnlike | SocialInteractionDislike | SocialInteractionUndislike | SocialInteractionComment | SocialInteractionReply | SocialInteractionEdit | SocialInteractionDelete | SocialInteractionReport;
+export interface SocialInteractionAttend {
+  action: "attend";
+  target_id: string;
+  account_id: string;
+  idempotency_key: string;
+}
+
+export type SocialInteractionCommand = SocialInteractionLike | SocialInteractionUnlike | SocialInteractionDislike | SocialInteractionUndislike | SocialInteractionComment | SocialInteractionReply | SocialInteractionEdit | SocialInteractionDelete | SocialInteractionReport | SocialInteractionVote | SocialInteractionUnvote | SocialInteractionRsvp | SocialInteractionUnrsvp | SocialInteractionAttend | SocialInteractionUnattend;
 
 export interface SocialInteractionComment {
   action: "comment";
@@ -5579,6 +6200,19 @@ export interface SocialInteractionReport {
   idempotency_key: string;
 }
 
+export interface SocialInteractionRsvp {
+  action: "rsvp";
+  target_id: string;
+  idempotency_key: string;
+}
+
+export interface SocialInteractionUnattend {
+  action: "unattend";
+  target_id: string;
+  account_id: string;
+  idempotency_key: string;
+}
+
 export interface SocialInteractionUndislike {
   action: "undislike";
   target_id: string;
@@ -5588,6 +6222,25 @@ export interface SocialInteractionUndislike {
 export interface SocialInteractionUnlike {
   action: "unlike";
   target_id: string;
+  idempotency_key: string;
+}
+
+export interface SocialInteractionUnrsvp {
+  action: "unrsvp";
+  target_id: string;
+  idempotency_key: string;
+}
+
+export interface SocialInteractionUnvote {
+  action: "unvote";
+  target_id: string;
+  idempotency_key: string;
+}
+
+export interface SocialInteractionVote {
+  action: "vote";
+  target_id: string;
+  option_id: string;
   idempotency_key: string;
 }
 
@@ -5607,6 +6260,7 @@ export interface SocialMedia {
   text_overlays: SocialTextOverlay[];
   image_overlay?: SocialImageOverlay | null;
   user_tags: SocialUserTag[];
+  blurhash?: string | null;
 }
 
 export interface SocialMediaFraming {
@@ -5634,10 +6288,17 @@ export interface SocialMediaInput {
   duration_seconds?: number | null;
   aspect_ratio?: number | null;
   audio_mode?: "preserve" | "remove" | "absent" | null;
+  blurhash?: string | null;
   framing?: SocialMediaFramingInput | null;
   text_overlays: SocialTextOverlayInput[];
   image_overlay?: SocialImageOverlayInput | null;
   user_tags: SocialUserTagInput[];
+}
+
+export interface SocialMediaPreview {
+  kind: "image" | "video";
+  aspect_ratio: number | null;
+  blurhash: string | null;
 }
 
 export interface SocialMessage {
@@ -5748,6 +6409,19 @@ export interface SocialPeople {
   next_cursor: string | null;
 }
 
+export interface SocialPollInput {
+  type: "poll";
+  question: string;
+  options: string[];
+  closes_at?: string | null;
+}
+
+export interface SocialPollOption {
+  id: string;
+  label: string;
+  votes: number;
+}
+
 export interface SocialPost {
   id: string;
   kind: "post" | "story" | "comment";
@@ -5778,9 +6452,46 @@ export interface SocialPost {
   version: number;
   created_at: string;
   updated_at: string;
+  space_id?: string | null;
+  attachment?: SocialPostAttachment;
+  club?: SocialPostClub;
+  author_club_member?: boolean;
 }
 
-export type SocialPostActionCommand = SocialPostCaptionAction | SocialPostCommentsAction | SocialPostCoverAction | SocialPostDeleteAction;
+export type SocialPostActionCommand = SocialPostCaptionAction | SocialPostCommentsAction | SocialPostCoverAction | SocialPostDeleteAction | SocialPostCancelEventAction | SocialPostModerateAction | SocialPostApproveCheckinAction | SocialPostRejectCheckinAction;
+
+export interface SocialPostActivity {
+  type: "activity";
+  activity_id: string;
+  available: boolean;
+  sport: string | null;
+  title: string | null;
+  distance_m: number | null;
+  duration_s: number | null;
+  pace_s_per_km: number | null;
+  calories: number | null;
+  source: "app" | "watch" | "health" | "manual" | null;
+  provider: string | null;
+  route_shape: SocialRoutePoint[] | null;
+}
+
+export interface SocialPostApproveCheckinAction {
+  action: "approveCheckin";
+  id: string;
+  expected_version: number;
+  idempotency_key: string;
+}
+
+export type SocialPostAttachment = SocialPostEvent | SocialPostPoll | SocialPostResource | SocialPostActivity | SocialPostChallengeRef | SocialPostCheckin;
+
+export type SocialPostAttachmentInput = SocialEventInput | SocialPollInput | SocialResourceInput | SocialActivityShareInput | SocialCheckinInput;
+
+export interface SocialPostCancelEventAction {
+  action: "cancelEvent";
+  id: string;
+  expected_version: number;
+  idempotency_key: string;
+}
 
 export interface SocialPostCaptionAction {
   action: "updateCaption";
@@ -5788,6 +6499,30 @@ export interface SocialPostCaptionAction {
   body: string;
   expected_version: number;
   idempotency_key: string;
+}
+
+export interface SocialPostChallengeRef {
+  type: "challenge";
+  challenge: SocialChallengeCard;
+}
+
+export interface SocialPostCheckin {
+  type: "checkin";
+  title: string | null;
+  sport: string | null;
+  activity: SocialCheckinActivity | null;
+  review: "pending" | "counted";
+}
+
+export interface SocialPostClub {
+  offer_id: string;
+  name: string;
+  price: number | null;
+  currency: string;
+  billing_interval: string | null;
+  subscribed: boolean;
+  locked: boolean;
+  previews: SocialMediaPreview[];
 }
 
 export interface SocialPostCommentsAction {
@@ -5830,6 +6565,8 @@ export interface SocialPostCreate {
   comments_enabled: boolean;
   container_type?: "community" | "challenge" | null;
   container_id?: string | null;
+  space_id?: string | null;
+  attachment?: SocialPostAttachmentInput;
 }
 
 export interface SocialPostDeleteAction {
@@ -5839,9 +6576,59 @@ export interface SocialPostDeleteAction {
   idempotency_key: string;
 }
 
+export interface SocialPostEvent {
+  type: "event";
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  timezone: string;
+  location: string | null;
+  online: boolean;
+  cancelled: boolean;
+  going_count: number;
+  going: SocialProfileReadCard[];
+  attended_count: number;
+  my_rsvp: boolean;
+  my_attended: boolean;
+}
+
 export interface SocialPostLookup {
   found: boolean;
   id?: string | null;
+}
+
+export interface SocialPostModerateAction {
+  action: "moderate";
+  id: string;
+  expected_version: number;
+  idempotency_key: string;
+}
+
+export interface SocialPostPoll {
+  type: "poll";
+  question: string;
+  options: SocialPollOption[];
+  total_votes: number;
+  my_vote: string | null;
+  closes_at: string | null;
+  closed: boolean;
+}
+
+export interface SocialPostRejectCheckinAction {
+  action: "rejectCheckin";
+  id: string;
+  expected_version: number;
+  idempotency_key: string;
+}
+
+export interface SocialPostResource {
+  type: "resource";
+  title: string;
+  description: string;
+  file_id: string;
+  filename: string;
+  mime: string;
+  bytes: number;
 }
 
 export type SocialPostSaveCommand = SocialPostCreate | SocialPostUpdate;
@@ -5862,6 +6649,8 @@ export interface SocialPostUpdate {
   comments_enabled: boolean;
   container_type?: "community" | "challenge" | null;
   container_id?: string | null;
+  space_id?: string | null;
+  attachment?: SocialPostAttachmentInput;
 }
 
 export interface SocialPosts {
@@ -5891,6 +6680,7 @@ export interface SocialProfileReadCard {
   display_name: string;
   avatar_url?: string | null;
   bio?: string | null;
+  social_links?: IdentitySocialLinks;
   is_professional: boolean;
   following: boolean;
   followed_by: boolean;
@@ -5925,19 +6715,78 @@ export interface SocialReportResult {
   reported: boolean;
 }
 
+export interface SocialResourceAccess {
+  url: string;
+  expires_in: number;
+  filename: string;
+  mime: string;
+}
+
+export interface SocialResourceComplete {
+  action: "complete";
+  request_id: string;
+  community_id: string;
+  idempotency_key: string;
+}
+
+export interface SocialResourceInput {
+  type: "resource";
+  title: string;
+  description?: string | null;
+  file_id: string;
+}
+
+export interface SocialResourcePending {
+  file_id: string;
+  status: "pending";
+  upload_url: string;
+  upload_headers: SocialResourceUploadHeaders;
+  expires_in: number;
+}
+
+export interface SocialResourcePrepare {
+  action: "prepare";
+  request_id: string;
+  community_id: string;
+  filename: string;
+  mime: "application/pdf" | "video/mp4" | "video/webm" | "audio/mpeg" | "audio/mp4" | "image/jpeg" | "image/png" | "image/webp";
+  bytes: number;
+}
+
+export interface SocialResourceReady {
+  file_id: string;
+  status: "ready";
+  mime: string;
+  bytes: number;
+}
+
+export type SocialResourceUpload = SocialResourcePending | SocialResourceReady;
+
+export interface SocialResourceUploadHeaders {
+  "Content-Type": string;
+  "Content-Length": string;
+}
+
+export type SocialResourceUploadInput = SocialResourcePrepare | SocialResourceComplete;
+
+export interface SocialRoutePoint {
+  x: number;
+  y: number;
+}
+
 export interface SocialSharedContent {
   available: boolean;
   kind: "post" | "community_post" | null;
   id: string | null;
   container_id: string | null;
   title: string | null;
-  creator_id: string | null;
-  creator_name: string | null;
-  creator_username: string | null;
-  creator_avatar_url: string | null;
-  creator_network_classification: "professional" | "associate" | "ambassador" | null;
-  creator_badge_label: string | null;
-  creator_affinity_group_key: string | null;
+  author_id: string | null;
+  author_name: string | null;
+  author_username: string | null;
+  author_avatar_url: string | null;
+  author_network_classification: "professional" | "associate" | "ambassador" | null;
+  author_badge_label: string | null;
+  author_affinity_group_key: string | null;
   body: string | null;
   thumbnail_url: string | null;
   media_kind: "image" | "video" | null;
@@ -5972,7 +6821,7 @@ export interface SocialStoryActionResult {
 export interface SocialStoryInput {
   id?: string | null;
   idempotency_key?: string | null;
-  visibility: "public" | "followers";
+  visibility: "public" | "followers" | "paid";
   body: string;
   media: SocialMediaInput;
   comments_enabled: boolean;
@@ -6352,7 +7201,7 @@ export interface StaffAppStoreMetadataInput {
 export interface StaffAppStoreOffering {
   id: string;
   name: string;
-  price: number;
+  price: number | null;
   currency: string;
   readiness: string;
   version: number;
@@ -6638,6 +7487,23 @@ export interface StaffCatalogReordered {
 
 export type StaffCatalogSaveItem = StaffAffinityGroupSave | StaffSportSave | StaffSessionTypeSave | StaffFightTechniqueSave | StaffProtocolTemplateSave | StaffBusinessNicheSave | StaffProfessionalSpecialtySave | StaffProductCategorySave | StaffOfferTypeSave | StaffPaymentProviderSave | StaffFoodSourceSave | StaffNutrientSave;
 
+export interface StaffChallengeDispute {
+  id: string;
+  status: "open" | "in_review" | "resolved" | "rejected";
+  reason: string;
+  value: number;
+  created_at: string;
+  resolved_at: string | null;
+  resolution_note: string | null;
+  challenge: StaffDisputeChallenge;
+  participant: StaffDisputeParticipant;
+}
+
+export interface StaffChallengeDisputes {
+  items: StaffChallengeDispute[];
+  total: number;
+}
+
 export interface StaffChannelCostPolicy {
   id: string;
   provider: "apple" | "google" | "stripe" | "asaas";
@@ -6819,7 +7685,7 @@ export interface StaffDashboardAppActivity {
   post_likes_total: number;
   post_comments_total: number;
   workout_sessions_total: number;
-  active_creators_total: number;
+  active_authors_total: number;
 }
 
 export interface StaffDashboardFinance {
@@ -6874,6 +7740,19 @@ export interface StaffDashboardWeeklyFinance {
   date: string;
   gross_value: number;
   platform_commission: number;
+}
+
+export interface StaffDisputeChallenge {
+  id: string;
+  name: string;
+  ends_at: string;
+  metric: string;
+}
+
+export interface StaffDisputeParticipant {
+  id: string;
+  username: string;
+  display_name: string;
 }
 
 export interface StaffEmailAttachment {
@@ -7111,7 +7990,7 @@ export interface StaffFinancialOffering {
   status: string;
   billing_type: string;
   billing_interval: string | null;
-  price: number;
+  price: number | null;
   currency: string;
   readiness: "ready" | "not_ready" | "pricing_required" | "configuration_required";
   native_products: StaffNativeProductSummary[];
@@ -7641,7 +8520,7 @@ export interface StaffOfferTypeItem {
   active: boolean;
   position: number;
   version: number;
-  delivery: "club" | "consultancy" | "workout" | "diet" | "physical_product" | "course" | "challenge" | "community" | "platform_membership" | "advertising";
+  delivery: "club" | "consultancy" | "workout" | "program" | "protocol" | "diet" | "physical_product" | "course" | "challenge" | "community" | "platform_membership" | "advertising";
   billing_type: "one_time" | "recurring" | "free";
   billing_interval: string | null;
   allowed_billing_intervals: ("week" | "month" | "2month" | "quarter" | "semester" | "year")[];
@@ -7664,7 +8543,7 @@ export interface StaffOfferTypeSave {
   description: string;
   icon: string | null;
   position: number;
-  delivery: "club" | "consultancy" | "workout" | "diet" | "physical_product" | "course" | "challenge" | "community" | "platform_membership" | "advertising";
+  delivery: "club" | "consultancy" | "workout" | "program" | "protocol" | "diet" | "physical_product" | "course" | "challenge" | "community" | "platform_membership" | "advertising";
   billing_type: "one_time" | "recurring" | "free";
   billing_interval: string | null;
   allowed_billing_intervals: ("week" | "month" | "2month" | "quarter" | "semester" | "year")[];
@@ -8491,6 +9370,11 @@ export interface TrainingOwnedProtocolTemplate {
   updated_at: string;
 }
 
+export interface TrainingPersonalProgramSaved {
+  kind: "personal_program";
+  program: TrainingProgram;
+}
+
 export interface TrainingPlatformProtocolTemplate {
   catalog_key: string;
   kind: "platform";
@@ -8595,6 +9479,8 @@ export interface TrainingProgram {
   weeks: number;
   version: number;
   status: "active" | "removed" | "draft" | "released" | "hidden" | "ended";
+  /** Whether this account can save this personal aggregate through training.programSave with business_id null. The server rechecks ownership, state and version when saving. */
+  editable: boolean;
   applied: boolean;
   start_date: string | null;
   progress: TrainingProgramProgress | null;
@@ -8602,10 +9488,40 @@ export interface TrainingProgram {
   days: TrainingProgramDay[];
 }
 
+export interface TrainingProgramActionDay {
+  week: number;
+  weekday: number;
+  workout_id: string;
+  title: string;
+  notes: string;
+  scheduled_id: string | null;
+  date: string | null;
+  state: "planned" | "in_progress" | "done" | "incomplete" | "missed" | "not_done" | null;
+}
+
+/** Immutable result of a program action, including exact replays. Read training.program for current editing capability and canonical calendar positions; do not cache this receipt as that read response. */
+export interface TrainingProgramActionResult {
+  id: string;
+  title: string;
+  description: string;
+  estimated_minutes_per_week: number | null;
+  equipment: string[];
+  sport_id: string;
+  weeks: number;
+  version: number;
+  status: "active" | "removed" | "draft" | "released" | "hidden" | "ended";
+  applied: boolean;
+  start_date: string | null;
+  progress: TrainingProgramProgress | null;
+  active_application: string | null;
+  days: TrainingProgramActionDay[];
+}
+
 export interface TrainingProgramDay {
   week: number;
   weekday: number;
   workout_id: string;
+  order_index: number;
   title: string;
   notes: string;
   scheduled_id: string | null;
@@ -8627,7 +9543,7 @@ export interface TrainingProgramProgress {
 
 export interface TrainingProgramSaveInput {
   id?: string;
-  business_id: string;
+  business_id: string | null;
   title: string;
   description: string;
   estimated_minutes_per_week: number | null;
@@ -8638,6 +9554,8 @@ export interface TrainingProgramSaveInput {
   expected_version: number | null;
   idempotency_key: string;
 }
+
+export type TrainingProgramSaveResult = TrainingProfessionalProgram | TrainingPersonalProgramSaved;
 
 /** Parciais nomeadas com valores escalares, sem documentos arbitrários aninhados. */
 export type TrainingScalarMap = Record<string, string | number | boolean | null>;
@@ -8690,10 +9608,11 @@ export interface UploadFailureRecorded {
 
 export interface VideoFinalized {
   fileId: string;
-  publicUrl: string;
+  publicUrl: string | null;
   objectKey: string;
   contentType: string;
   audioMode: string;
+  destination: "post" | "story";
   hasAudio: boolean;
   container: "iso-bmff" | "webm" | "ogg";
   attested: boolean;
@@ -8706,7 +9625,7 @@ export interface VideoPreloadSettings {
   native_engine: boolean;
   feed: boolean;
   explore: boolean;
-  creator: boolean;
+  profile: boolean;
   stories: boolean;
   refresh_interval_seconds: number;
 }
@@ -8717,6 +9636,7 @@ export interface VideoUpload {
   contentType: string;
   contentLength: number;
   audioMode: string;
+  destination: "post" | "story";
   /** Cabeçalhos de upload definidos pelo provedor, com valores textuais. */
   uploadHeaders: Record<string, string>;
   expiresIn: number;
@@ -8870,11 +9790,11 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       chargeRefund: (input: { chargeId: string; idempotencyKey: string }) => invoke('worker', '/commerce/charge-refund', { charge_id: input.chargeId, idempotency_key: input.idempotencyKey }) as Promise<CommerceChargeRefundResult>,
       /** Congela a oferta e inicia o canal permitido: loja nativa para digital no app, Stripe Elements no desktop ou Pix/Asaas para pagamento externo elegível. (command; contract/commerce/checkout.v1.json) */
       checkout: (input: { offerId: string; channel: "free" | "app_store" | "google_play" | "stripe_card" | "asaas_pix"; idempotencyKey: string; acceptances: CommerceAcceptance[]; returnUrl?: string; physical?: CommercePhysicalCheckoutInput | null }) => invoke('worker', '/commerce/checkout', { offer_id: input.offerId, channel: input.channel, idempotency_key: input.idempotencyKey, acceptances: input.acceptances, return_url: input.returnUrl, physical: input.physical }) as Promise<CommerceCheckoutResult>,
-      /** Entrega o curso comprado e progresso com DTO fechado. (query; contract/commerce/content.v1.json) */
-      content: (input: { purchaseId: string }) => call('commerce_content_v1', { p_purchase_id: input.purchaseId }) as Promise<CommerceContent>,
-      /** Resolve uma ação incorporada a uma aula comprada. (query; contract/commerce/course_action.v1.json) */
-      courseAction: (input: { purchaseId: string; lessonId: string; actionId: string }) => call('commerce_course_action_v1', { p_purchase_id: input.purchaseId, p_lesson_id: input.lessonId, p_action_id: input.actionId }) as Promise<CommerceCourseAction>,
-      /** Gera uma URL curta para um asset de curso comprado. (query; contract/commerce/course_asset.v1.json) */
+      /** Página do Clube de um profissional: o que a assinatura libera, preço e o acesso de quem vê. (query; contract/commerce/club.v1.json) */
+      club: (input: { professionalId: string }) => call('commerce_club_v1', { p_professional_id: input.professionalId }) as Promise<CommerceClub>,
+      /** Prévia de um item da plataforma ligado a uma aula liberada. (query; contract/commerce/course_action.v1.json) */
+      courseAction: (input: { courseId: string; lessonId: string; actionId: string }) => call('commerce_course_action_v1', { p_course_id: input.courseId, p_lesson_id: input.lessonId, p_action_id: input.actionId }) as Promise<CommerceCourseAction>,
+      /** Link curto para um material de aula liberada: HLS assinado com transcrição para vídeo pronto no Stream, arquivo original nos demais casos. (query; contract/commerce/course_asset.v1.json) */
       courseAsset: (input: { assetId: string; download?: boolean }) => invoke('worker', '/commerce/course-asset', { asset_id: input.assetId, download: input.download }) as Promise<CommerceCourseAsset>,
       /** Prepara e confirma upload privado de asset de curso após validar objeto e vídeo. (command; contract/commerce/course_asset_upload.v1.json) */
       courseAssetUpload: (input: { upload: CommerceCourseAssetUploadInput }) => invoke('worker', '/commerce/course-asset-upload', { upload: input.upload }) as Promise<CommerceCourseAssetUpload>,
@@ -8882,26 +9802,26 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       courseCommentAct: (input: { action: "create" | "delete" | "report"; lessonId?: string | null; commentId?: string | null; body?: string | null; parentId?: string | null }) => call('commerce_course_comment_act_v1', { p_action: input.action, p_lesson_id: input.lessonId, p_comment_id: input.commentId, p_body: input.body, p_parent_id: input.parentId }) as Promise<CommerceCourseCommentAction>,
       /** Lista a conversa de uma aula acessível. (query; contract/commerce/course_comments.v1.json) */
       courseComments: (input: { lessonId: string }) => call('commerce_course_comments_v1', { p_lesson_id: input.lessonId }) as Promise<CommerceCourseComments>,
-      /** Abre um curso por seu identificador e devolve o direito e o progresso canônicos da conta. (query; contract/commerce/course_member_detail.v1.json) */
-      courseMemberDetail: (input: { courseId: string }) => call('commerce_course_member_detail_v1', { p_course_id: input.courseId }) as Promise<CommerceCourseMemberDetail>,
+      /** Adiciona item da aula à biblioteca, corrige o quiz e salva ou tira aula dos salvos. Devolve a tela do curso. (command; contract/commerce/course_member_act.v1.json) */
+      courseMemberAct: (input: { courseId: string; action: "addToLibrary" | "answerQuiz" | "saveLesson" | "unsaveLesson"; input: CommerceCourseMemberActInput }) => invoke('worker', '/commerce/course-member-act', { course_id: input.courseId, action: input.action, input: input.input }) as Promise<CommerceCourseMemberView>,
+      /** Tela do curso e da aula: acesso, bloqueios, progresso, itens da plataforma e quiz sem a resposta. (query; contract/commerce/course_member_detail.v1.json) */
+      courseMemberDetail: (input: { courseId: string }) => invoke('worker', '/commerce/course-member-detail', { course_id: input.courseId }) as Promise<CommerceCourseMemberView>,
       /** Adquire, renova ou libera o lease de reprodução de uma aula comprada. (command; contract/commerce/course_playback_act.v1.json) */
       coursePlaybackAct: (input: { lessonId: string; clientId: string; action: "acquire" | "release" }) => call('commerce_course_playback_act_v1', { p_lesson_id: input.lessonId, p_client_id: input.clientId, p_action: input.action }) as Promise<CommerceCoursePlayback>,
       /** Lista cursos do negócio, ligados ou não a uma oferta. (query; contract/commerce/course_studio.v1.json) */
       courseStudio: (input: { businessId: string; status?: string | null; limit?: number; offset?: number }) => call('commerce_course_studio_v1', { p_business_id: input.businessId, p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<CommerceCourseStudio>,
       /** Publica, arquiva ou restaura um curso após validar prontidão. (command; contract/commerce/course_studio_act.v1.json) */
       courseStudioAct: (input: { businessId: string; courseId: string; action: "publish" | "archive" | "restore"; expectedVersion: number; idempotencyKey: string }) => call('commerce_course_studio_act_v1', { p_business_id: input.businessId, p_course_id: input.courseId, p_action: input.action, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<CommerceCourse>,
-      /** Lê o agregado completo de um curso no estúdio. (query; contract/commerce/course_studio_detail.v1.json) */
-      courseStudioDetail: (input: { businessId: string; courseId: string }) => call('commerce_course_studio_detail_v1', { p_business_id: input.businessId, p_course_id: input.courseId }) as Promise<CommerceCourse>,
+      /** Lê o curso no estúdio com prontidão, disponibilidade do Clube e os números de alunos, conclusão e quiz. (query; contract/commerce/course_studio_detail.v1.json) */
+      courseStudioDetail: (input: { businessId: string; courseId: string }) => call('commerce_course_studio_detail_v1', { p_business_id: input.businessId, p_course_id: input.courseId }) as Promise<CommerceCourseStudioDetail>,
       /** Cria ou salva atomicamente o agregado versionado do curso. (command; contract/commerce/course_studio_save.v1.json) */
       courseStudioSave: (input: { businessId: string; courseId: string | null; offerId: string | null; course: CommerceCourseInput; expectedVersion: number | null; idempotencyKey: string }) => call('commerce_course_studio_save_v1', { p_business_id: input.businessId, p_course_id: input.courseId, p_offer_id: input.offerId, p_course: input.course, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<CommerceCourse>,
       /** Reconsulta o Google Play, vincula a compra à conta autenticada e concede acesso antes do reconhecimento no provedor. (command; contract/commerce/google_play_verify.v1.json) */
       googlePlayVerify: (input: { offerId?: string; productId: string; purchaseToken: string }) => invoke('worker', '/commerce/google-play/verify', { offer_id: input.offerId, product_id: input.productId, purchase_token: input.purchaseToken }) as Promise<CommerceGooglePlayVerification>,
       /** Lista ofertas publicadas e lojas em destaque com filtros e ordenação aplicados pelo Core. (query; contract/commerce/market.v1.json) */
       market: (input: { query?: string | null; type?: string | null; subcategory?: string | null; sort?: "relevance" | "newest" | "popular" | "price_asc" | "price_desc"; limit?: number } = {}) => call('commerce_market_v1', { p_query: input.query, p_type: input.type, p_subcategory: input.subcategory, p_sort: input.sort, p_limit: input.limit }) as Promise<CommerceMarket>,
-      /** Lista conteúdos comprados e acessíveis dentro de um negócio. (query; contract/commerce/member_hub_contents.v1.json) */
-      memberHubContents: (input: { businessId: string; kind?: "all" | "course" | "video" | "pdf" | "article" | "bundle"; query?: string | null; limit?: number; offset?: number }) => invoke('worker', '/commerce/member-hub-contents', { business_id: input.businessId, kind: input.kind, query: input.query, limit: input.limit, offset: input.offset }) as Promise<CommerceMemberHubContents>,
-      /** Lista negócios que possuem cursos atualmente acessíveis pela conta. (query; contract/commerce/member_hubs.v1.json) */
-      memberHubs: (input: { query?: string | null; limit?: number; offset?: number } = {}) => invoke('worker', '/commerce/member-hubs', { query: input.query, limit: input.limit, offset: input.offset }) as Promise<CommerceMemberHubs>,
+      /** Área de membros da plataforma: tudo o que a conta acessa, de qualquer profissional, com continuar, salvos e a faixa Em alta. (query; contract/commerce/member_area.v1.json) */
+      memberArea: (input: { kind?: "all" | "course" | "video" | "pdf" | "article"; club?: boolean; professionalId?: string | null; query?: string | null; limit?: number; offset?: number } = {}) => invoke('worker', '/commerce/member-area', { kind: input.kind, club: input.club, professional_id: input.professionalId, query: input.query, limit: input.limit, offset: input.offset }) as Promise<CommerceMemberArea>,
       /** Pagina os pedidos físicos da conta autenticada sem expor dados de outros compradores. (query; contract/commerce/my_physical_orders.v1.json) */
       myPhysicalOrders: (input: { cursor?: string | null; limit?: number } = {}) => call('commerce_my_physical_orders_v1', { p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommerceMyPhysicalOrders>,
       /** Resolve o produto da loja nativa vinculado a uma oferta digital publicada. (query; contract/commerce/native_product.v1.json) */
@@ -8914,6 +9834,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       offerDelivery: (input: { offerId: string }) => call('commerce_offer_delivery_v1', { p_offer_id: input.offerId }) as Promise<CommerceOfferDelivery>,
       /** Liga uma oferta avulsa ao modelo profissional entregue ao comprador. (command; contract/commerce/offer_delivery_save.v1.json) */
       offerDeliverySave: (input: { offerId: string; resourceId: string; expectedVersion: number | null; idempotencyKey: string }) => call('commerce_offer_delivery_save_v1', { p_offer_id: input.offerId, p_resource_id: input.resourceId, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<CommerceOfferDelivery>,
+      /** Aquisições da oferta, somente para o dono do negócio; identidade pública do comprador, valor, situação e data, sem vínculo clínico. Ordenação decrescente por data e ID, páginas de 1 a 50 itens (padrão 30). (query; contract/commerce/offer_sales.v1.json) */
+      offerSales: (input: { offerId: string; cursor?: string | null; limit?: number }) => call('commerce_offer_sales_v1', { p_offer_id: input.offerId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommerceOfferSales>,
       /** Cria ou altera qualquer oferta segundo seu tipo configurado. (command; contract/commerce/offer_save.v1.json) */
       offerSave: (input: { offer: CommerceOfferSaveInput }) => call('commerce_offer_save_v1', { p_offer: input.offer }) as Promise<CommerceOffer>,
       /** Liga ou desliga uma ferramenta da oferta com concorrência otimista. (command; contract/commerce/offering_tool_save.v1.json) */
@@ -8948,8 +9870,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       physicalProductSave: (input: { product: CommercePhysicalProductInput }) => call('commerce_physical_product_save_v1', { p_product: input.product }) as Promise<CommercePhysicalProduct>,
       /** Calcula total e entrega a partir do estoque e frete atuais, sem criar reserva. (query; contract/commerce/physical_quote.v1.json) */
       physicalQuote: (input: { productId: string; quantity: number; shippingMethod: "shipping" | "pickup"; stateCode?: string | null }) => call('commerce_physical_quote_v1', { p_product_id: input.productId, p_quantity: input.quantity, p_shipping_method: input.shippingMethod, p_state_code: input.stateCode }) as Promise<CommercePhysicalQuote>,
-      /** Salva progresso estruturado do curso com concorrência otimista. (command; contract/commerce/progress_save.v1.json) */
-      progressSave: (input: { purchaseId: string; progress: CommerceProgressInput; expectedVersion: number }) => call('commerce_progress_save_v1', { p_purchase_id: input.purchaseId, p_progress: input.progress, p_expected_version: input.expectedVersion }) as Promise<CommerceProgressResult>,
+      /** Salva o progresso de um componente da aula, liberada, no curso da conta e devolve a conclusão decidida pelo servidor. (command; contract/commerce/progress_save.v1.json) */
+      progressSave: (input: { courseId: string; progress: CommerceProgressInput }) => call('commerce_progress_save_v1', { p_course_id: input.courseId, p_progress: input.progress }) as Promise<CommerceProgressResult>,
       /** Lista ofertas promovidas em uma posição cuja reserva foi aprovada pela staff e está vigente. (query; contract/commerce/promoted_offers.v1.json) */
       promotedOffers: (input: { placement: "sponsor_carousel" | "featured_products"; sessionSeed: string }) => call('commerce_promoted_offers_v1', { p_placement: input.placement, p_session_seed: input.sessionSeed }) as Promise<CommercePromotedOffers>,
       /** Lê compra, entrega, progresso e cobranças autorizadas. (query; contract/commerce/purchase.v1.json) */
@@ -9052,6 +9974,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       professionalSettingsSave: (input: { specialty: string; jurisdiction: string; registration: string }) => call('identity_professional_settings_save_v1', { p_specialty: input.specialty, p_jurisdiction: input.jurisdiction, p_registration: input.registration }) as Promise<ProfessionalSettings>,
       /** Salva blocos tipados do perfil em uma transação e devolve o bootstrap atualizado. (command; contract/identity/profile_save.v1.json) */
       profileSave: (input: { profile: IdentityProfilePatch }) => call('identity_profile_save_v1', { p_profile: input.profile }) as Promise<IdentityBootstrap>,
+      /** Solicita a recuperação de senha sem revelar se o e-mail possui conta no Core. (command; contract/identity/recover.v1.json) */
+      recover: (input: { email: string }) => invoke('auth', '/recover', { email: input.email }) as Promise<IdentityRecoveryResult>,
       /** Entra com e-mail ou @usuário sem expor o endereço resolvido quando a credencial é inválida. (command; contract/identity/sign_in.v1.json) */
       signIn: (input: { identifier: string; password: string }) => invoke('auth', '/sign-in', { identifier: input.identifier, password: input.password }) as Promise<IdentitySignInResult>,
       /** Cria a conta no Core, valida idade e aceites vigentes e inicia a confirmação de e-mail. (command; contract/identity/sign_up.v1.json) */
@@ -9067,14 +9991,14 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Publica, substitui, arquiva ou restaura uma dieta prescrita. (command; contract/nutrition/client_diet_act.v1.json) */
       clientDietAct: (input: { businessId: string; clientId: string; dietId: string; action: "publish" | "replace" | "archive" | "restore"; expectedVersion: number; idempotencyKey: string }) => call('nutrition_client_diet_act_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_diet_id: input.dietId, p_action: input.action, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<NutritionProfessionalDiet>,
       /** Cria ou salva o rascunho de dieta prescrita de um cliente autorizado. (command; contract/nutrition/client_diet_save.v1.json) */
-      clientDietSave: (input: { businessId: string; clientId: string; dietId: string | null; sourceDietId: string | null; title: string | null; objective: string | null; meals: NutritionDietMeal[]; expectedVersion: number | null; idempotencyKey: string }) => call('nutrition_client_diet_save_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_diet_id: input.dietId, p_source_diet_id: input.sourceDietId, p_title: input.title, p_objective: input.objective, p_meals: input.meals, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<NutritionProfessionalDiet>,
+      clientDietSave: (input: { businessId: string; clientId: string; dietId: string | null; sourceDietId: string | null; title: string | null; objective: string | null; meals: NutritionDietMealInput[]; expectedVersion: number | null; idempotencyKey: string }) => call('nutrition_client_diet_save_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_diet_id: input.dietId, p_source_diet_id: input.sourceDietId, p_title: input.title, p_objective: input.objective, p_meals: input.meals, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<NutritionProfessionalDiet>,
       /** O dia de Nutrição: dieta ativa, marcação e edição de cada refeição no dia e refeições livres. (query; contract/nutrition/day.v1.json) */
       day: (input: { date?: string } = {}) => call('nutrition_day_v1', { p_date: input.date }) as Promise<NutritionDay>,
       /** apply (ativa; da OnlyFit Health cria a cópia uma vez, J16.50/88) · remove (tira da biblioteca) · mealTime (horário, J16.52). Devolve a biblioteca. (command; contract/nutrition/diet_act.v1.json) */
       dietAct: (input: { dietId: string; action: "apply" | "remove" | "mealTime"; input?: DietActionInput }) => call('nutrition_diet_act_v1', { p_diet_id: input.dietId, p_action: input.action, p_input: input.input }) as Promise<DietLibrary>,
       /** Gera ou ajusta uma proposta estruturada de dieta para revisão profissional obrigatória. (command; contract/nutrition/diet_assistant.v1.json) */
       dietAssistant: (input: { businessId: string; clientId: string | null; mode: "generate" | "adjust"; instruction: string; currentDiet?: NutritionDietProposalInput }) => invoke('worker', '/nutrition/diet-assistant', { business_id: input.businessId, client_id: input.clientId, mode: input.mode, instruction: input.instruction, current_diet: input.currentDiet }) as Promise<NutritionDietAssistantResult>,
-      /** Salva a dieta própria inteira (cria com idempotency_key ou substitui). Metas somadas dos itens. (command; contract/nutrition/diet_save.v1.json) */
+      /** Salva a dieta própria ou personaliza a cópia comprada, sem alterar o conteúdo adquirido ou o template. Metas somadas dos itens. (command; contract/nutrition/diet_save.v1.json) */
       dietSave: (input: { diet: DietSaveInput }) => call('nutrition_diet_save_v1', { p_diet: input.diet }) as Promise<Diet>,
       /** Cria, altera ou remove alimento pessoal validado. (command; contract/nutrition/food_save.v1.json) */
       foodSave: (input: { food: FoodSaveInput }) => call('nutrition_food_save_v1', { p_food: input.food }) as Promise<NutritionFoodSaveResult>,
@@ -9094,10 +10018,10 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       photoUpload: (input: { photo: NutritionPhotoUploadInput }) => invoke('worker', '/nutrition/photo-upload', { photo: input.photo }) as Promise<NutritionPhotoUpload>,
       /** Publica, arquiva ou restaura um modelo de dieta do negócio. (command; contract/nutrition/professional_diet_act.v1.json) */
       professionalDietAct: (input: { businessId: string; dietId: string; action: "publish" | "archive" | "restore"; expectedVersion: number; idempotencyKey: string }) => call('nutrition_professional_diet_act_v1', { p_business_id: input.businessId, p_diet_id: input.dietId, p_action: input.action, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<NutritionProfessionalDiet>,
-      /** Cria ou salva um modelo de dieta versionado do negócio. (command; contract/nutrition/professional_diet_save.v1.json) */
+      /** Cria ou salva um modelo de dieta versionado do negócio. Rascunhos podem começar sem refeições; conteúdo publicado não pode ser esvaziado. (command; contract/nutrition/professional_diet_save.v1.json) */
       professionalDietSave: (input: { businessId: string; dietId: string | null; title: string; objective: string; meals: NutritionDietMealInput[]; expectedVersion: number | null; idempotencyKey: string }) => call('nutrition_professional_diet_save_v1', { p_business_id: input.businessId, p_diet_id: input.dietId, p_title: input.title, p_objective: input.objective, p_meals: input.meals, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<NutritionProfessionalDiet>,
       /** Lista modelos de dieta compartilhados pela equipe do negócio. (query; contract/nutrition/professional_library.v1.json) */
-      professionalLibrary: (input: { businessId: string; status?: string | null; limit?: number; offset?: number }) => call('nutrition_professional_library_v1', { p_business_id: input.businessId, p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<NutritionProfessionalLibrary>,
+      professionalLibrary: (input: { businessId: string; status?: "all" | "draft" | "published" | "archived" | null; limit?: number; offset?: number }) => call('nutrition_professional_library_v1', { p_business_id: input.businessId, p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<NutritionProfessionalLibrary>,
     },
     org: {
       /** Lista os negócios, compõe perfil e equipe e pesquisa profissionais elegíveis para convite. (query; contract/org/business.v1.json) */
@@ -9144,6 +10068,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       challenge: (input: { id: string }) => call('social_challenge_v1', { p_id: input.id }) as Promise<SocialGroup>,
       /** Executa uma ação discriminada e versionada no desafio. (command; contract/social/challenge_act.v1.json) */
       challengeAct: (input: { command: SocialChallengeActionCommand }) => call('social_challenge_act_v1', { p_command: input.command }) as Promise<SocialGroup>,
+      /** Ranking do desafio pela métrica declarada, com desempate e a posição de quem vê. (query; contract/social/challenge_ranking.v1.json) */
+      challengeRanking: (input: { id: string; cursor?: number; limit?: number }) => call('social_challenge_ranking_v1', { p_id: input.id, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialChallengeRanking>,
       /** Cria ou atualiza desafio com concorrência otimista e replay exato. (command; contract/social/challenge_save.v1.json) */
       challengeSave: (input: { challenge: SocialChallengeSaveCommand }) => call('social_challenge_save_v1', { p_challenge: input.challenge }) as Promise<SocialGroup>,
       /** Lista desafios por descoberta, participação ou histórico. (query; contract/social/challenges.v1.json) */
@@ -9154,6 +10080,12 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       community: (input: { id: string }) => call('social_community_v1', { p_id: input.id }) as Promise<SocialGroup>,
       /** Executa uma ação discriminada e versionada na comunidade. (command; contract/social/community_act.v1.json) */
       communityAct: (input: { command: SocialCommunityActionCommand }) => call('social_community_act_v1', { p_command: input.command }) as Promise<SocialGroup>,
+      /** Eventos da comunidade em ordem de data: próximos ou passados. (query; contract/social/community_agenda.v1.json) */
+      communityAgenda: (input: { id: string; scope?: "upcoming" | "past"; cursor?: string; limit?: number }) => call('social_community_agenda_v1', { p_id: input.id, p_scope: input.scope, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialCommunityAgenda>,
+      /** Acervo da comunidade: materiais publicados pela equipe. (query; contract/social/community_library.v1.json) */
+      communityLibrary: (input: { id: string; cursor?: string; limit?: number }) => call('social_community_library_v1', { p_id: input.id, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialCommunityLibrary>,
+      /** Membros mais ativos do mês na comunidade, com a posição de quem vê. (query; contract/social/community_ranking.v1.json) */
+      communityRanking: (input: { id: string; cursor?: number; limit?: number }) => call('social_community_ranking_v1', { p_id: input.id, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialCommunityRanking>,
       /** Cria ou atualiza comunidade com concorrência otimista e replay exato. (command; contract/social/community_save.v1.json) */
       communitySave: (input: { community: SocialCommunitySaveCommand }) => call('social_community_save_v1', { p_community: input.community }) as Promise<SocialGroup>,
       /** Mensagens privadas paginadas com uma pessoa. (query; contract/social/conversation.v1.json) */
@@ -9162,16 +10094,12 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       coverPrepare: (input: { uploadId: string; source: "frame" | "gallery"; frameTimeSeconds?: number }) => invoke('worker', '/media/cover-prepare', { upload_id: input.uploadId, source: input.source, frame_time_seconds: input.frameTimeSeconds }) as Promise<CoverPrepared>,
       /** Abre a quarentena de uma capa JPEG escolhida pelo autor. (command; contract/social/cover_upload.v1.json) */
       coverUpload: (input: { contentLength: number }) => invoke('worker', '/media/cover-upload', { content_length: input.contentLength }) as Promise<CoverUpload>,
-      /** Entrega a vitrine pública tipada de um profissional sem expor as tabelas de comércio e grupos. (query; contract/social/creator_showcase.v1.json) */
-      creatorShowcase: (input: { creatorId: string }) => call('social_creator_showcase_v1', { p_creator_id: input.creatorId }) as Promise<CreatorShowcase>,
-      /** Salva a ordem das categorias e a oferta destacada da própria vitrine profissional. (command; contract/social/creator_showcase_save.v1.json) */
-      creatorShowcaseSave: (input: { categoryOrder: string[]; featuredOfferingId?: string | null }) => call('social_creator_showcase_save_v1', { p_category_order: input.categoryOrder, p_featured_offering_id: input.featuredOfferingId }) as Promise<CreatorShowcaseConfig>,
       /** Lê em lote somente as credenciais profissionais aprovadas dos perfis públicos. (query; contract/social/credentials.v1.json) */
       credentials: (input: { accountIds: string[] }) => call('social_credentials_v1', { p_account_ids: input.accountIds }) as Promise<ProfessionalCredential[]>,
-      /** Explora conteúdo de criadores e busca pessoas com filtros canônicos. (query; contract/social/explore.v1.json) */
+      /** Descobre apenas profissionais, embaixadores e associados. Publicações mais recentes primeiro; em empate, embaixador, associado, profissional e UUID decrescente. (query; contract/social/explore.v1.json) */
       explore: (input: { search?: string; affinity?: string; classifications?: ("professional" | "associate" | "ambassador")[]; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_classifications: input.classifications, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
       /** Feed por cursor, com seguidos e descoberta sem duplicação. (query; contract/social/feed.v1.json) */
-      feed: (input: { affinities?: string[]; cursor?: string; limit?: number; containerType?: "community" | "challenge"; containerId?: string } = {}) => call('social_feed_v1', { p_affinities: input.affinities, p_cursor: input.cursor, p_limit: input.limit, p_container_type: input.containerType, p_container_id: input.containerId }) as Promise<SocialFeed>,
+      feed: (input: { affinities?: string[]; cursor?: string; limit?: number; containerType?: "community" | "challenge"; containerId?: string; spaceId?: string } = {}) => call('social_feed_v1', { p_affinities: input.affinities, p_cursor: input.cursor, p_limit: input.limit, p_container_type: input.containerType, p_container_id: input.containerId, p_space_id: input.spaceId }) as Promise<SocialFeed>,
       /** Segue, deixa de seguir, bloqueia ou desbloqueia e devolve o estado final. (command; contract/social/follow_act.v1.json) */
       followAct: (input: { accountId: string; action: "follow" | "unfollow" | "block" | "unblock" }) => call('social_follow_act_v1', { p_account_id: input.accountId, p_action: input.action }) as Promise<SocialRelationState>,
       /** Central paginada de conversas, busca privada ou notificações. (query; contract/social/inbox.v1.json) */
@@ -9180,8 +10108,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       messageAct: (input: { recipientIds: string[]; action: "send" | "share" | "markRead" | "delete"; data?: SocialMessageActionData }) => call('social_message_act_v1', { p_recipient_ids: input.recipientIds, p_action: input.action, p_data: input.data }) as Promise<SocialMessageActionResult>,
       /** Marca visualização ou leitura sem misturar as duas semânticas. (command; contract/social/notification_act.v1.json) */
       notificationAct: (input: { ids?: string[]; action?: "markRead" | "markAllRead" | "clearBadge" } = {}) => call('social_notification_act_v1', { p_ids: input.ids, p_action: input.action }) as Promise<SocialInbox>,
-      /** Lista descoberta, seguidores, perfis seguidos ou embaixadores com paginação determinística. (query; contract/social/people.v1.json) */
-      people: (input: { scope?: "discover" | "followers" | "following" | "subscribers" | "ambassadors"; accountId?: string; search?: string; affinity?: string; classifications?: ("professional" | "associate" | "ambassador")[]; cursor?: string; limit?: number } = {}) => call('social_people_v1', { p_scope: input.scope, p_account_id: input.accountId, p_search: input.search, p_affinity: input.affinity, p_classifications: input.classifications, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialPeople>,
+      /** Lista pessoas com paginação determinística. explore restringe o Descobrir a profissionais e rede pública; discover mantém a busca geral. (query; contract/social/people.v1.json) */
+      people: (input: { scope?: "discover" | "explore" | "followers" | "following" | "subscribers" | "ambassadors"; accountId?: string; search?: string; affinity?: string; classifications?: ("professional" | "associate" | "ambassador")[]; cursor?: string; limit?: number } = {}) => call('social_people_v1', { p_scope: input.scope, p_account_id: input.accountId, p_search: input.search, p_affinity: input.affinity, p_classifications: input.classifications, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialPeople>,
       /** Abre publicação visível com interação atual. (query; contract/social/post.v1.json) */
       post: (input: { id: string }) => call('social_post_v1', { p_id: input.id }) as Promise<SocialPost>,
       /** Executa uma alteração discriminada, versionada e idempotente em publicação própria. (command; contract/social/post_act.v1.json) */
@@ -9194,6 +10122,10 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       postSave: (input: { post: SocialPostSaveCommand }) => call('social_post_save_v1', { p_post: input.post }) as Promise<SocialPost>,
       /** Lê um conjunto ordenado de publicações visíveis sem acesso direto às tabelas. (query; contract/social/posts.v1.json) */
       posts: (input: { ids: string[] }) => call('social_posts_v1', { p_ids: input.ids }) as Promise<SocialPosts>,
+      /** Entrega a vitrine pública tipada de um profissional sem expor as tabelas de comércio e grupos. (query; contract/social/professional_showcase.v1.json) */
+      professionalShowcase: (input: { professionalId: string }) => call('social_professional_showcase_v1', { p_professional_id: input.professionalId }) as Promise<ProfessionalShowcase>,
+      /** Salva a ordem das categorias e a oferta destacada da própria vitrine profissional. (command; contract/social/professional_showcase_save.v1.json) */
+      professionalShowcaseSave: (input: { categoryOrder: string[]; featuredOfferingId?: string | null }) => call('social_professional_showcase_save_v1', { p_category_order: input.categoryOrder, p_featured_offering_id: input.featuredOfferingId }) as Promise<ProfessionalShowcaseConfig>,
       /** Perfil público, publicações e stories ativos. (query; contract/social/profile.v1.json) */
       profile: (input: { username: string; cursor?: string; limit?: number; scope?: "all" | "free" | "paid" | "owned" }) => call('social_profile_v1', { p_username: input.username, p_cursor: input.cursor, p_limit: input.limit, p_scope: input.scope }) as Promise<SocialProfile>,
       /** Executa uma ação moderável sobre um perfil público. (command; contract/social/profile_act.v1.json) */
@@ -9202,6 +10134,10 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       profileRelation: (input: { username: string }) => call('social_profile_relation_v1', { p_username: input.username }) as Promise<SocialProfileRelation>,
       /** Denuncia conteúdo, mensagem, perfil, oferta ou grupo visível sem acesso direto às tabelas. (command; contract/social/report.v1.json) */
       report: (input: { targetType: "post" | "post_comment" | "direct_message" | "challenge" | "challenge_run" | "product" | "user" | "community_post" | "story" | "story_comment"; targetId: string; reason: "nudity_sexual" | "violence" | "hate_harassment" | "dangerous_challenge" | "self_harm_eating_disorder" | "spam_scam" | "other"; description?: string | null }) => call('social_report_v1', { p_target_type: input.targetType, p_target_id: input.targetId, p_reason: input.reason, p_description: input.description }) as Promise<SocialReportResult>,
+      /** URL curta para ler ou baixar um material da comunidade; o acesso é revalidado a cada pedido. (query; contract/social/resource_access.v1.json) */
+      resourceAccess: (input: { postId: string; download?: boolean }) => invoke('worker', '/social/resource-access', { post_id: input.postId, download: input.download }) as Promise<SocialResourceAccess>,
+      /** Prepara e confirma o upload privado de um material da comunidade. (command; contract/social/resource_upload.v1.json) */
+      resourceUpload: (input: { upload: SocialResourceUploadInput }) => invoke('worker', '/social/resource-upload', { upload: input.upload }) as Promise<SocialResourceUpload>,
       /** Stories ativos e visíveis em ordem de exibição. (query; contract/social/stories.v1.json) */
       stories: (input: { authorId?: string; cursor?: string; limit?: number } = {}) => call('social_stories_v1', { p_author_id: input.authorId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialStories>,
       /** Registra visualizações ou altera um story de modo idempotente. (command; contract/social/story_act.v1.json) */
@@ -9216,16 +10152,16 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       uploadComplete: (input: { fileId: string }) => invoke('worker', '/media/upload-complete', { file_id: input.fileId }) as Promise<MediaUploadCompleted>,
       /** Relata uma falha de envio de mídia sem URL nem dado pessoal (telemetria). (command; contract/social/upload_failure.v1.json) */
       uploadFailure: (input: { uploadId?: string; stage: string; providerCode?: string; httpStatus?: number }) => invoke('worker', '/media/upload-failure', { upload_id: input.uploadId, stage: input.stage, provider_code: input.providerCode, http_status: input.httpStatus }) as Promise<UploadFailureRecorded>,
-      /** Inspeciona o vídeo em quarentena (trilhas de áudio), publica no bucket de mídia e agenda o Cloudflare Stream. Repetir devolve o mesmo resultado. (command; contract/social/video_finalize.v1.json) */
+      /** Inspeciona o vídeo em quarentena e o promove ao destino social registrado. Repetir devolve o mesmo resultado. (command; contract/social/video_finalize.v1.json) */
       videoFinalize: (input: { uploadId: string }) => invoke('worker', '/media/video-finalize', { upload_id: input.uploadId }) as Promise<VideoFinalized>,
-      /** Abre a quarentena de um vídeo de post e devolve a URL assinada para enviar o arquivo. (command; contract/social/video_upload.v1.json) */
-      videoUpload: (input: { filename: string; contentType: "video/mp4" | "video/webm" | "video/quicktime" | "video/x-m4v" | "video/ogg"; contentLength: number; audioMode: "preserve" | "remove" | "absent" }) => invoke('worker', '/media/video-upload', { filename: input.filename, content_type: input.contentType, content_length: input.contentLength, audio_mode: input.audioMode }) as Promise<VideoUpload>,
+      /** Abre a quarentena de um vídeo social e registra seu destino canônico antes do envio. (command; contract/social/video_upload.v1.json) */
+      videoUpload: (input: { filename: string; contentType: "video/mp4" | "video/webm" | "video/quicktime" | "video/x-m4v" | "video/ogg"; contentLength: number; audioMode: "preserve" | "remove" | "absent"; destination: "post" | "story" }) => invoke('worker', '/media/video-upload', { filename: input.filename, content_type: input.contentType, content_length: input.contentLength, audio_mode: input.audioMode, destination: input.destination }) as Promise<VideoUpload>,
     },
     interaction: {
       /** Executa reação, comentário, edição, remoção ou denúncia discriminada e idempotente. (command; contract/social/interaction_act.v1.json) */
       act: (input: { command: SocialInteractionCommand }) => call('interaction_act_v1', { p_command: input.command }) as Promise<SocialPost>,
-      /** Lista paginada de perfis que curtiram um conteúdo visível. (query; contract/social/interaction_likers.v1.json) */
-      likers: (input: { targetId: string; cursor?: number; limit?: number }) => call('interaction_likers_v1', { p_target_id: input.targetId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<InteractionLikers>,
+      /** Lista paginada de perfis que curtiram, confirmaram Vou ou estiveram presentes. (query; contract/social/interaction_likers.v1.json) */
+      likers: (input: { targetId: string; cursor?: number; limit?: number; kind?: "like" | "rsvp" | "attended" }) => call('interaction_likers_v1', { p_target_id: input.targetId, p_cursor: input.cursor, p_limit: input.limit, p_kind: input.kind }) as Promise<InteractionLikers>,
       /** Thread única e paginada para comentários de qualquer conteúdo. (query; contract/social/interaction_thread.v1.json) */
       thread: (input: { targetId: string; cursor?: string; limit?: number }) => call('interaction_thread_v1', { p_target_id: input.targetId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<InteractionThread>,
     },
@@ -9276,6 +10212,10 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       catalogReorder: (input: { kind: "affinity_groups" | "sports" | "session_types" | "fight_techniques" | "protocol_templates" | "business_niches" | "professional_specialties" | "product_categories" | "food_sources" | "nutrients" | "offer_types"; keys: string[] }) => call('staff_catalog_reorder_v1', { p_kind: input.kind, p_keys: input.keys }) as Promise<StaffCatalogReordered>,
       /** Salva item inteiro de um catálogo permitido, com concorrência otimista e validação específica. (command; contract/staff/catalog_save.v1.json) */
       catalogSave: (input: { item: StaffCatalogSaveItem }) => call('staff_catalog_save_v1', { p_item: input.item }) as Promise<StaffCatalogItem>,
+      /** Decide uma contestação; o resultado congela quando não restar contestação aberta. (command; contract/staff/challenge_dispute_act.v1.json) */
+      challengeDisputeAct: (input: { id: string; action: "uphold" | "dismiss"; note: string }) => call('staff_challenge_dispute_act_v1', { p_id: input.id, p_action: input.action, p_note: input.note }) as Promise<StaffChallengeDispute>,
+      /** Contestações de resultado de desafio para análise da staff. (query; contract/staff/challenge_disputes.v1.json) */
+      challengeDisputes: (input: { status?: "open" | "resolved"; limit?: number; offset?: number } = {}) => call('staff_challenge_disputes_v1', { p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<StaffChallengeDisputes>,
       /** Lista custos por canal como políticas normais, inclusive Apple. (query; contract/staff/channel_cost_policies.v1.json) */
       channelCostPolicies: (input: { status?: string | null; limit?: number; offset?: number } = {}) => call('staff_channel_cost_policies_v1', { p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<StaffChannelCostPolicyPage>,
       /** Cria e governa versões imutáveis de custo por canal. (command; contract/staff/channel_cost_policy_act.v1.json) */
@@ -9422,7 +10362,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       activity: (input: { activityId: string }) => call('training_activity_v1', { p_activity_id: input.activityId }) as Promise<Activity>,
       /** Atividade manual, edição de importada (título, modalidade, métricas; o tipo exato recebido não muda e o antes vai para a auditoria), correção de vínculo (vira manual; se o treino escolhido já foi executado no app ou no Watch, a importada vira observação dessa execução, que é devolvida) ou exclusão. (command; contract/training/activity_save.v1.json) */
       activitySave: (input: { activity: ActivitySaveInput }) => call('training_activity_save_v1', { p_activity: input.activity }) as Promise<ActivitySaved>,
-      /** Dias de um intervalo (até 62): treinos com estado, minutos de atividade e atividades importadas com vínculo quando existente. (query; contract/training/calendar.v1.json) */
+      /** Dias de um intervalo (até 62): treinos com estado, minutos de atividade e execuções concluídas no app, manuais ou importadas, com vínculo quando existente. (query; contract/training/calendar.v1.json) */
       calendar: (input: { from: string; to: string }) => call('training_calendar_v1', { p_from: input.from, p_to: input.to }) as Promise<CalendarDay[]>,
       /** Adiciona, remove, reposiciona ou troca uma atribuição do plano do cliente com concorrência otimista. (command; contract/training/client_assignment_act.v1.json) */
       clientAssignmentAct: (input: { businessId: string; clientId: string; programId: string; action: "add" | "remove" | "updateDays" | "swap"; assignmentId?: string | null; sourceWorkoutId?: string | null; weekNumber?: number | null; weekdays?: number[] | null; orderIndex?: number | null; expectedVersion: number; idempotencyKey: string }) => call('training_client_assignment_act_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_program_id: input.programId, p_action: input.action, p_assignment_id: input.assignmentId, p_source_workout_id: input.sourceWorkoutId, p_week_number: input.weekNumber, p_weekdays: input.weekdays, p_order_index: input.orderIndex, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingClientEditorResult>,
@@ -9442,6 +10382,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       clientProtocolStatusAct: (input: { businessId: string; clientId: string; protocolId: string; action: "activate" | "pause" | "resume" | "end"; expectedVersion: number; idempotencyKey: string }) => call('training_client_protocol_status_act_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_protocol_id: input.protocolId, p_action: input.action, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingClientProtocol>,
       /** Lista protocolos prescritos ao cliente dentro do contrato e consentimento vigentes. (query; contract/training/client_protocols.v1.json) */
       clientProtocols: (input: { businessId: string; clientId: string }) => call('training_client_protocols_v1', { p_business_id: input.businessId, p_client_id: input.clientId }) as Promise<TrainingClientProtocols>,
+      /** Personaliza a cópia do cliente, preservando o modelo e os outros clientes. (command; contract/training/client_workout_save.v1.json) */
+      clientWorkoutSave: (input: { businessId: string; clientId: string; programId: string; assignmentId: string; title: string; notes: string; steps: ProfessionalWorkoutStepSaveInput[]; expectedProgramVersion: number; expectedWorkoutVersion: number; idempotencyKey: string }) => call('training_client_workout_save_v1', { p_business_id: input.businessId, p_client_id: input.clientId, p_program_id: input.programId, p_assignment_id: input.assignmentId, p_title: input.title, p_notes: input.notes, p_steps: input.steps, p_expected_program_version: input.expectedProgramVersion, p_expected_workout_version: input.expectedWorkoutVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingClientEditorResult>,
       /** Treinos do dia com passos, mídia, execução no player, desfecho (feito, incompleto, não feito, perdido) e atividade vinculada. (query; contract/training/day.v1.json) */
       day: (input: { date?: string } = {}) => call('training_day_v1', { p_date: input.date }) as Promise<TrainingDay>,
       /** Define explicitamente se um exercício está nos favoritos. (command; contract/training/exercise_favorite_toggle.v1.json) */
@@ -9452,7 +10394,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       exerciseSearch: (input: { query?: string; sport?: string; muscle?: string; limit?: number; offset?: number } = {}) => call('training_exercise_search_v1', { p_query: input.query, p_sport: input.sport, p_muscle: input.muscle, p_limit: input.limit, p_offset: input.offset }) as Promise<TrainingExercise[]>,
       /** Marca ou desmarca uma etapa do protocolo (feito, não feito com motivo), registra consumo ou desfaz (só hoje e ontem); edita ou exclui a etapa só daquele dia (qualquer data). (command; contract/training/habit_act.v1.json) */
       habitAct: (input: { routineId: string; stepId: string; action: "mark" | "unmark" | "consume" | "undo" | "edit" | "remove"; date?: string; input?: HabitActionInput }) => call('training_habit_act_v1', { p_routine_id: input.routineId, p_step_id: input.stepId, p_action: input.action, p_date: input.date, p_input: input.input }) as Promise<Habits>,
-      /** Salva ou exclui um protocolo próprio (sem rascunho nem pausa; excluir é definitivo). Prescrito não é mexido pelo membro. (command; contract/training/habit_save.v1.json) */
+      /** Salva ou exclui protocolo pessoal, inclusive cópia adquirida. Não altera templates profissionais, protocolos de negócio ou prescrições. Excluir é definitivo. (command; contract/training/habit_save.v1.json) */
       habitSave: (input: { routine: RoutineSaveInput }) => call('training_habit_save_v1', { p_routine: input.routine }) as Promise<Habits>,
       /** Meus protocolos: etapas de hoje com a marcação e o histórico dos últimos dias. (query; contract/training/habits.v1.json) */
       habits: (input: { date?: string; historyDays?: number } = {}) => call('training_habits_v1', { p_date: input.date, p_history_days: input.historyDays }) as Promise<Habits>,
@@ -9464,7 +10406,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       professionalExerciseAct: (input: { exerciseId: string; action: "archive" | "restore"; expectedVersion: number; idempotencyKey: string }) => call('training_professional_exercise_act_v1', { p_exercise_id: input.exerciseId, p_action: input.action, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingExercise>,
       /** Cria ou altera um exercício próprio tipado, localizado e associado a um ou mais esportes. (command; contract/training/professional_exercise_save.v1.json) */
       professionalExerciseSave: (input: { exerciseId: string | null; sportIds: string[]; kind: "exercise" | "technique"; visibility: "private" | "public"; localizations: TrainingExerciseLocalizations; muscles: string[]; equipment: string | null; videoFileId: string | null; thumbFileId: string | null; expectedVersion: number | null; idempotencyKey: string }) => call('training_professional_exercise_save_v1', { p_exercise_id: input.exerciseId, p_sport_ids: input.sportIds, p_kind: input.kind, p_visibility: input.visibility, p_localizations: input.localizations, p_muscles: input.muscles, p_equipment: input.equipment, p_video_file_id: input.videoFileId, p_thumb_file_id: input.thumbFileId, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingExercise>,
-      /** Biblioteca de modelos de treino do profissional, distinguida e integralmente tipada por negócio. (query; contract/training/professional_library.v1.json) */
+      /** Biblioteca de modelos próprios da conta e da equipe do negócio atual, sem prescrições nem cópias adquiridas. (query; contract/training/professional_library.v1.json) */
       professionalLibrary: (input: { businessId: string }) => call('training_professional_library_v1', { p_business_id: input.businessId }) as Promise<TrainingProfessionalLibrary>,
       /** Lista separadamente modelos privados do negócio e modelos oficiais clonáveis. (query; contract/training/professional_protocol_library.v1.json) */
       professionalProtocolLibrary: (input: { businessId: string }) => call('training_professional_protocol_library_v1', { p_business_id: input.businessId }) as Promise<TrainingProfessionalProtocolLibrary>,
@@ -9479,9 +10421,9 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Um programa canônico, modelo ou aplicação da pessoa, com versão, ocorrências e progresso. (query; contract/training/program.v1.json) */
       program: (input: { programId: string }) => call('training_program_v1', { p_program_id: input.programId }) as Promise<TrainingProgram>,
       /** Aplica, reagenda ou remove um programa com concorrência otimista e replay exato. (command; contract/training/program_act.v1.json) */
-      programAct: (input: { programId: string; action: "apply" | "reschedule" | "remove"; startDate: string | null; expectedVersion: number; idempotencyKey: string }) => call('training_program_act_v1', { p_program_id: input.programId, p_action: input.action, p_start_date: input.startDate, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingProgram>,
-      /** Cria ou atualiza atomicamente um modelo de programa do negócio com concorrência otimista. (command; contract/training/program_save.v1.json) */
-      programSave: (input: { program: TrainingProgramSaveInput }) => call('training_program_save_v1', { p_program: input.program }) as Promise<TrainingProfessionalProgram>,
+      programAct: (input: { programId: string; action: "apply" | "reschedule" | "remove"; startDate: string | null; expectedVersion: number; idempotencyKey: string }) => call('training_program_act_v1', { p_program_id: input.programId, p_action: input.action, p_start_date: input.startDate, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingProgramActionResult>,
+      /** Salva o modelo do negócio ou a cópia comprada da biblioteca pessoal (business_id nulo e id obrigatório), sem alterar a versão adquirida ou aplicações existentes. (command; contract/training/program_save.v1.json) */
+      programSave: (input: { program: TrainingProgramSaveInput }) => call('training_program_save_v1', { p_program: input.program }) as Promise<TrainingProgramSaveResult>,
       /** Duplica, arquiva ou restaura um modelo profissional com concorrência otimista. (command; contract/training/program_template_act.v1.json) */
       programTemplateAct: (input: { businessId: string; programId: string; action: "duplicate" | "archive" | "restore"; expectedVersion: number; idempotencyKey: string }) => call('training_program_template_act_v1', { p_business_id: input.businessId, p_program_id: input.programId, p_action: input.action, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<TrainingProfessionalProgram>,
       /** Grava os passos realizados em lote e, com finish, encerra. Tudo ou nada; repetir dá o mesmo resultado. (command; contract/training/session_save.v1.json) */

@@ -45,7 +45,7 @@ export function DashboardPage({ section }: {
             <Metric label="Receita bruta" value={data.finance.gross_revenue_total} money />
             <Metric label="Comissão OnlyFit" value={data.finance.platform_commission_total} money />
             <Metric label="Sessões concluídas hoje" value={data.overview.workout_sessions_completed_today} />
-            <Metric label="Criadores ativos" value={data.appActivity.active_creators_total} />
+            <Metric label="Autores ativos" value={data.appActivity.active_authors_total} />
             <Metric label="Falhas operacionais" value={data.outbox.failed} />
           </div>
           {data.metrics.length ? <div className="table-wrap"><table><thead><tr><th>Data</th><th>Indicador</th><th>Escopo</th><th>Valor</th></tr></thead><tbody>

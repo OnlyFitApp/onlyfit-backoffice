@@ -25,6 +25,8 @@ test('uses only the typed Core operations for both official libraries', () => {
 });
 
 test('edits workout, diet and program with generated typed builders instead of JSON', () => {
+  assert.doesNotMatch(page, /bodybuilding/);
+  assert.match(page, /sport_id: 'strength'/);
   for (const type of ['ProfessionalWorkoutStepSaveInput', 'NutritionDietMealInput', 'StaffHealthProgramPayload']) assert.ok(page.includes(type));
   for (const label of ['Exercícios', 'Refeições e alimentos', 'Dias do programa']) assert.ok(page.includes(label));
   assert.doesNotMatch(page, /JSON\.parse|JSON\.stringify|Record<string,\s*unknown>|JsonField|primaryJson|secondaryJson/);

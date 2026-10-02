@@ -61,7 +61,7 @@ function newEditor(kind: LibraryKind): EditorState {
     kind,
     id: null,
     expectedVersion: null,
-    payload: { kind, title: '', sport_id: 'bodybuilding', notes: '', steps: [] },
+    payload: { kind, title: '', sport_id: 'strength', notes: '', steps: [] },
   };
   if (kind === 'diet') return {
     kind,
@@ -79,7 +79,7 @@ function newEditor(kind: LibraryKind): EditorState {
       description: '',
       estimated_minutes_per_week: null,
       equipment: [],
-      sport_id: 'bodybuilding',
+      sport_id: 'strength',
       weeks: 4,
       days: [],
     },

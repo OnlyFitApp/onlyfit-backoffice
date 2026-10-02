@@ -1,5 +1,6 @@
 import { createClient, processLock, type SupabaseClient } from '@supabase/supabase-js';
 import { createApi } from './core.gen';
+import { requestPublicSystemStatus } from './publicSystemStatus';
 
 const productionCoreUrl = 'https://rjwyfhfwhpwesfpdddkr.supabase.co';
 const productionCorePublishableKey = 'sb_publishable_lHf07wq2Z84Tt5csq2SNpA_k8KpeqQG';
@@ -50,6 +51,11 @@ export const coreApi = createApi(
     return data;
   },
   async (functionName, path, body) => {
+    // Only this contract is public. All other operations retain staff/session auth.
+    if (functionName === 'worker' && path === '/app/status') {
+      requireCoreClient();
+      return requestPublicSystemStatus(coreUrl, coreKey);
+    }
     const client = requireCoreClient();
     const { data, error } = await client.functions.invoke(`${functionName}${path}`, { body });
     if (error) throw error;

@@ -6,7 +6,8 @@ const gate = readFileSync(new URL('../src/components/PlatformStatusGate.tsx', im
 const main = readFileSync(new URL('../src/main.tsx', import.meta.url), 'utf8');
 test('startup uses the typed public Core status contract, never legacy routing', () => {
   assert.match(gate, /coreApi\.app\.systemStatus\(\)/u);
-  assert.match(gate, /status\.data && !status\.data\.maintenance && !status\.isError/u);
+  assert.match(gate, /if \(status\.data && !status\.data\.maintenance\) return/u);
+  assert.match(gate, /status\.isError && <div/u);
   assert.match(gate, /refetchInterval: 60_000/u);
   assert.match(gate, /status\.refetch\(\)/u);
   assert.doesNotMatch(main, /initializeApiRouting|apiRouting/u);

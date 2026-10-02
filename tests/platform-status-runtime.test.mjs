@@ -64,7 +64,7 @@ function renderStatus(state) {
     React.createElement('div', { 'data-testid': 'application' }, 'Protected application')));
 }
 for (const [label, state, application, message] of [
-  ['initial check', { isPending: true, isFetching: true }, false, 'Verificando disponibilidade'],
+  ['initial check', { isPending: true, isFetching: true }, true, null],
   ['initial failure', { isError: true }, false, 'Não foi possível conectar'],
   ['available', { data: available }, true, null],
   ['background check', { data: available, isFetching: true }, true, null],
@@ -75,6 +75,7 @@ for (const [label, state, application, message] of [
   test(`gate renders correctly during ${label}`, () => {
     const html = renderStatus({ refetch: () => Promise.resolve(), ...state });
     assert.equal(html.includes('data-testid="application"'), application);
+    assert.ok(!html.includes('Verificando disponibilidade'));
     if (message) assert.ok(html.includes(message));
     else assert.ok(!html.includes('login-shell'));
   });

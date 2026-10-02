@@ -28,6 +28,8 @@ test('presentation preserves zero and negative money instead of hiding accountin
 test('uses styled tables and civil-day series rather than raw technical telemetry', () => {
   const page = readFileSync(new URL('../src/components/DashboardPages.tsx', import.meta.url), 'utf8');
   assert.match(page, /className="table-wrapper"/);
+  assert.equal((page.match(/<table className="staff-table">/g) ?? []).length, 2);
+  assert.equal((page.match(/className="section-heading"><h2 id="dashboard-/g) ?? []).length, 2);
   assert.doesNotMatch(page, /data\.metrics\.map|className="table-wrap"/);
   assert.match(page, /parseSnapshotDay\(day\.date\)/);
 });

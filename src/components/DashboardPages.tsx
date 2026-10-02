@@ -51,8 +51,8 @@ export function DashboardPage({ section }: {
           </div>
           {(section === 'health-overview' || section === 'health-engagement') ? (
             <section className="staff-list-section" aria-labelledby="dashboard-activity-title">
-              <h2 id="dashboard-activity-title">Atividade nos últimos sete dias</h2>
-              <div className="table-wrapper"><table>
+              <div className="section-heading"><h2 id="dashboard-activity-title">Atividade nos últimos sete dias</h2></div>
+              <div className="table-wrapper"><table className="staff-table">
                 <thead><tr><th>Dia</th><th>Sessões concluídas</th><th>Publicações</th><th>Comentários</th></tr></thead>
                 <tbody>{data.weeklyActivity.map((day) => (
                   <tr key={day.date}>
@@ -67,8 +67,8 @@ export function DashboardPage({ section }: {
           ) : null}
           {section === 'health-business' ? (
             <section className="staff-list-section" aria-labelledby="dashboard-finance-title">
-              <h2 id="dashboard-finance-title">Financeiro nos últimos sete dias</h2>
-              <div className="table-wrapper"><table>
+              <div className="section-heading"><h2 id="dashboard-finance-title">Financeiro nos últimos sete dias</h2></div>
+              <div className="table-wrapper"><table className="staff-table">
                 <thead><tr><th>Dia</th><th>Receita bruta</th><th>Comissão OnlyFit</th></tr></thead>
                 <tbody>{data.weeklyFinance.map((day) => (
                   <tr key={day.date}>

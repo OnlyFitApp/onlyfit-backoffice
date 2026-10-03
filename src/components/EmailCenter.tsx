@@ -291,14 +291,14 @@ function EmailComposer({ mailboxes, initialTo = '', thread = null, onCancel, onS
           <label><span>Nome</span><input value={effectiveSenderName} maxLength={80} onChange={(event) => setSenderName(event.target.value)} /></label>
         </div>
         <div className="email-recipient-row">
-          <span>Para</span><input value={toInput} onChange={(event) => setToInput(event.target.value)} placeholder="email@exemplo.com" />
-          <button type="button" onClick={() => setShowCopies((value) => !value)}>Cc/Cco</button>
+          <span>Para</span><input aria-label="Destinatários" value={toInput} onChange={(event) => setToInput(event.target.value)} placeholder="email@exemplo.com" />
+          <button type="button" aria-expanded={showCopies} onClick={() => setShowCopies((value) => !value)}>Cc/Cco</button>
         </div>
         {showCopies && <div className="email-compose-row compact">
           <label><span>Cc</span><input value={ccInput} onChange={(event) => setCcInput(event.target.value)} /></label>
           <label><span>Cco</span><input value={bccInput} onChange={(event) => setBccInput(event.target.value)} /></label>
         </div>}
-        <div className="email-subject-row"><span>Assunto</span><input value={subject} maxLength={200} onChange={(event) => setSubject(event.target.value)} /></div>
+        <div className="email-subject-row"><span>Assunto</span><input aria-label="Assunto" value={subject} maxLength={200} onChange={(event) => setSubject(event.target.value)} /></div>
         <p id="email-sender-help" className={validSender ? undefined : 'email-field-error'}>Use qualquer remetente do domínio @onlyfitapp.com.</p>
         {invalid && <p className="email-field-error">Endereço inválido: {invalid}</p>}
       </section>
@@ -341,13 +341,12 @@ function ThreadDetail({ threadId, mailboxes, onClose, onSent }: {
   const markRead = useMarkEmailThreadRead();
   const [replying, setReplying] = useState(false);
   useEffect(() => { markRead.mutate(threadId); }, [threadId]); // eslint-disable-line react-hooks/exhaustive-deps
-  if (query.isLoading) return <section className="email-thread-detail"><div className="skeleton email-thread-skeleton" /></section>;
-  if (query.isError || !query.data) return <section className="email-thread-detail"><div className="inline-alert danger"><AlertTriangle size={17} /> Não foi possível abrir a conversa.</div></section>;
+  if (query.isLoading || query.isError || !query.data) return <section className="email-thread-detail"><button className="email-mobile-back" type="button" onClick={onClose}><ChevronLeft size={18} /> Voltar às conversas</button>{query.isLoading ? <div className="skeleton email-thread-skeleton" /> : <div className="email-empty-state"><AlertTriangle size={24} /><strong>Não foi possível abrir a conversa</strong><button className="button secondary" type="button" onClick={() => void query.refetch()}>Tentar novamente</button></div>}</section>;
   const thread = query.data;
   return (
     <section className="email-thread-detail">
       <header className="email-thread-head">
-        <div><button className="email-mobile-back" type="button" onClick={onClose}><ChevronLeft size={18} /> Voltar</button><h2>{thread.subject}</h2><span>{thread.externalParticipants.join(', ')}</span></div>
+        <div><button className="email-mobile-back" type="button" onClick={onClose}><ChevronLeft size={18} /> Voltar às conversas</button><h2>{thread.subject || '(Sem assunto)'}</h2><span>{thread.mailboxEmail} · {thread.messages.length} mensagem(ns)</span></div>
         <button className="button secondary compact" type="button" onClick={() => setReplying(true)}><Reply size={15} /> Responder</button>
       </header>
       <div className="email-thread-messages">{thread.messages.map((message) => <MessageCard key={message.id} message={message} />)}</div>
@@ -394,31 +393,33 @@ export function EmailCenterPage({ initialTo = '' }: { initialTo?: string }) {
       </header>
       <section className="content email-center-page">
         <div className="email-shell">
-          <aside className="email-sidebar">
-            <button className={box === 'all' && mailboxId === null ? 'active' : ''} type="button" onClick={() => { setBox('all'); setMailboxId(null); setPage(0); }}><Mail size={17} /><span>Todas</span>{totalUnread > 0 && <strong>{totalUnread}</strong>}</button>
-            <button className={box === 'inbox' && mailboxId === null ? 'active' : ''} type="button" onClick={() => { setBox('inbox'); setMailboxId(null); setPage(0); }}><Inbox size={17} /><span>Entrada</span></button>
-            <button className={box === 'sent' && mailboxId === null ? 'active' : ''} type="button" onClick={() => { setBox('sent'); setMailboxId(null); setPage(0); }}><Send size={17} /><span>Enviados</span></button>
-            <div className="email-sidebar-label">Contas</div>
-            {mailboxes.map((mailbox) => <button className={mailboxId === mailbox.id ? 'active' : ''} type="button" key={mailbox.id} onClick={() => { setMailboxId(mailbox.id); setPage(0); }}><span className="email-mailbox-dot" /><span>{mailbox.email}</span>{mailbox.unreadCount > 0 && <strong>{mailbox.unreadCount}</strong>}</button>)}
-          </aside>
+          <div className="email-navigation">
+            <nav className="email-folders" aria-label="Pastas de e-mail">
+              <button aria-pressed={box === 'all'} className={box === 'all' ? 'active' : ''} type="button" onClick={() => { setBox('all'); setSelectedThreadId(null); setPage(0); }}><Mail size={17} /><span>Todas</span></button>
+              <button aria-pressed={box === 'inbox'} className={box === 'inbox' ? 'active' : ''} type="button" onClick={() => { setBox('inbox'); setSelectedThreadId(null); setPage(0); }}><Inbox size={17} /><span>Entrada</span></button>
+              <button aria-pressed={box === 'sent'} className={box === 'sent' ? 'active' : ''} type="button" onClick={() => { setBox('sent'); setSelectedThreadId(null); setPage(0); }}><Send size={17} /><span>Enviados</span></button>
+            </nav>
+            <label className="email-account-filter"><span>Conta</span><select aria-label="Filtrar por conta" value={mailboxId ?? ''} disabled={mailboxesQuery.isLoading} onChange={(event) => { setMailboxId(event.target.value || null); setSelectedThreadId(null); setPage(0); }}><option value="">Todas as contas{totalUnread > 0 ? ` · ${totalUnread} não lidos` : ''}</option>{mailboxes.map((mailbox) => <option key={mailbox.id} value={mailbox.id}>{mailbox.email}{mailbox.unreadCount > 0 ? ` · ${mailbox.unreadCount} não lidos` : ''}</option>)}</select></label>
+          </div>
+          {mailboxesQuery.isError && <div className="inline-alert danger" role="alert">Não foi possível carregar as contas. <button type="button" className="button secondary compact" onClick={() => void mailboxesQuery.refetch()}>Tentar novamente</button></div>}
 
           <main className={`email-main ${selectedThreadId ? 'has-thread' : ''} ${composing ? 'is-composing' : ''}`}>
             {!composing && <section className={`email-thread-list ${selectedThreadId ? 'has-selection' : ''}`}>
               <div className="email-list-toolbar">
-                <div className="search-box"><Search size={16} /><input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Buscar conversa" />{searchInput && <button className="icon-button" type="button" onClick={() => setSearchInput('')}><X size={14} /></button>}</div>
-                <span>{total} conversa(s)</span>
+                <div className="search-box"><Search size={16} /><input aria-label="Buscar conversa" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Buscar conversa" />{searchInput && <button className="icon-button" type="button" aria-label="Limpar busca" onClick={() => setSearchInput('')}><X size={14} /></button>}</div>
+                <span role="status">{total} conversa(s)</span>
               </div>
               {threadsQuery.isLoading ? <div className="skeleton email-thread-skeleton" /> : threadsQuery.isError ? <div className="email-empty-state"><AlertTriangle size={24} /><strong>Não foi possível carregar</strong></div> : threads.length === 0 ? <div className="email-empty-state"><Archive size={28} /><strong>Nenhuma conversa</strong><span>As mensagens desta caixa aparecerão aqui.</span></div> : <div className="email-thread-rows">{threads.map((thread) => (
                 <button className={`email-thread-row ${selectedThreadId === thread.id ? 'selected' : ''} ${thread.isUnread ? 'unread' : ''}`} type="button" key={thread.id} onClick={() => { setSelectedThreadId(thread.id); setComposing(false); }}>
                   <span className="email-avatar">{(thread.externalParticipants[0] || thread.mailboxEmail).slice(0, 1).toUpperCase()}</span>
-                  <span className="email-thread-summary"><span><strong>{thread.externalParticipants[0] || 'Sem destinatário externo'}</strong><time>{dateLabel(thread.latestMessageAt)}</time></span><b>{thread.subject}</b><small>{thread.latestSnippet || 'Sem prévia'}</small><em>{thread.mailboxEmail}{thread.hasAttachments && <Paperclip size={12} />}{thread.messageCount > 1 && ` · ${thread.messageCount}`}</em></span>
+                  <span className="email-thread-summary"><span><strong title={thread.externalParticipants.join(', ') || thread.mailboxEmail}>{thread.externalParticipants[0] || thread.mailboxEmail}</strong><time dateTime={thread.latestMessageAt}>{dateLabel(thread.latestMessageAt)}</time></span><b>{thread.subject || '(Sem assunto)'}</b><small>{thread.latestSnippet || 'Sem prévia disponível'}</small><em><span title={thread.mailboxEmail}>{thread.mailboxEmail}</span>{thread.hasAttachments && <Paperclip aria-label="Com anexos" size={12} />}<span className={`email-delivery-status status-${thread.latestStatus}`}>{statusLabel(thread.latestStatus)}</span>{thread.messageCount > 1 && ` · ${thread.messageCount}`}</em></span>
                   {thread.isUnread && <span className="email-unread-dot" />}
                 </button>
               ))}</div>}
               {total > PAGE_SIZE && <footer className="email-pagination"><span>Página {page + 1} de {maxPage + 1}</span><div><button className="icon-button" type="button" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}><ChevronLeft size={18} /></button><button className="icon-button" type="button" disabled={page >= maxPage} onClick={() => setPage((value) => Math.min(maxPage, value + 1))}><ChevronRight size={18} /></button></div></footer>}
             </section>}
 
-            {composing ? <div className="email-compose-surface"><EmailComposer mailboxes={mailboxes} initialTo={initialTo} onCancel={() => setComposing(false)} onSent={(threadId) => { setComposing(false); setSelectedThreadId(threadId); void refresh(); }} /></div> : selectedThreadId ? <ThreadDetail threadId={selectedThreadId} mailboxes={mailboxes} onClose={() => setSelectedThreadId(null)} onSent={refresh} /> : <section className="email-no-selection"><Mail size={30} /><strong>Selecione uma conversa</strong><span>Ou crie um novo e-mail.</span></section>}
+            {composing ? <div className="email-compose-surface"><EmailComposer mailboxes={mailboxes} initialTo={initialTo} onCancel={() => setComposing(false)} onSent={(threadId) => { setComposing(false); setSelectedThreadId(threadId); void refresh(); }} /></div> : selectedThreadId ? <ThreadDetail key={selectedThreadId} threadId={selectedThreadId} mailboxes={mailboxes} onClose={() => setSelectedThreadId(null)} onSent={refresh} /> : <section className="email-no-selection"><Mail size={30} /><strong>Selecione uma conversa</strong><span>Ou crie um novo e-mail.</span></section>}
           </main>
         </div>
         {sync.isError && <div className="inline-alert danger"><AlertTriangle size={16} /> A sincronização com o Resend falhou. As mensagens já salvas continuam disponíveis.</div>}

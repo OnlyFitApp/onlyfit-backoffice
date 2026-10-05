@@ -1039,9 +1039,9 @@ function FeedDistributionPage() {
                   <label className="checkbox-row">
                     <input type="checkbox" checked={prioritizeFollowed} disabled={!canEdit || updateMutation.isPending}
                       onChange={(event) => setDraft({ followed, discovery, selectionMode, prioritizeFollowed: event.target.checked })} />
-                    Priorizar pessoas seguidas
+                    Priorizar pessoas seguidas entre os recentes
                   </label>
-                  <small>{prioritizeFollowed ? 'Seguidos primeiro; depois não seguidos. Mais recentes primeiro em cada parte.' : 'Mais recentes primeiro, independentemente de seguir.'}</small>
+                  <small>{prioritizeFollowed ? 'Nas faixas de 24 horas e 7 dias: seguidos primeiro em cada grupo, depois mais recentes em cada parte.' : 'Nas faixas recentes: mais recentes primeiro em cada grupo, independentemente de seguir.'}</small>
                 </div>}
               </div>
             </section>
@@ -1075,7 +1075,7 @@ function FeedDistributionPage() {
                 <Rss size={18} />
                 <div>
                   <h2>Quem pode aparecer</h2>
-                  <p>{globalGroups ? 'Posts públicos de pessoas seguidas e não seguidas, incluindo usuários comuns. Principais e Associados compartilham o primeiro grupo.' : 'Posts próprios e de seguidos; descoberta de profissionais e embaixadores.'}</p>
+                  <p>{globalGroups ? 'Últimas 24 horas → demais dos últimos 7 dias → histórico. Nos recentes: Embaixadores (Principais e Associados), Profissionais e Usuários comuns. No histórico, apenas mais recentes primeiro.' : 'Posts próprios e de seguidos; descoberta de profissionais e embaixadores.'}</p>
                   <p>O filtro de afinidade e as restrições de acesso continuam valendo.</p>
                 </div>
               </div>

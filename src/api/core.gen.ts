@@ -253,19 +253,25 @@ export type ApiErrorCode =
   | 'media.invalid_cover_size'
   | 'media.invalid_finalization'
   | 'media.invalid_upload'
+  | 'media.invalid_upload_action'
   | 'media.invalid_video_contract'
   | 'media.invalid_video_size'
   | 'media.mime_not_allowed'
   | 'media.object_mismatch'
   | 'media.ogg_silent_attestation_unsupported'
+  | 'media.processing'
   | 'media.quarantine_contract_mismatch'
   | 'media.rate_limited'
   | 'media.storage_unavailable'
   | 'media.story_forbidden'
   | 'media.story_not_found'
+  | 'media.upload_already_completed'
   | 'media.upload_busy'
   | 'media.upload_expired'
+  | 'media.upload_incomplete'
   | 'media.upload_not_found'
+  | 'media.video_duration_exceeded'
+  | 'media.video_duration_unverified'
   | 'media.video_requires_quarantine'
   | 'media.video_storage_unavailable'
   | 'nutrition.assistant_invalid_output'
@@ -467,6 +473,7 @@ export type ApiErrorCode =
   | 'social.story_expired'
   | 'social.story_too_long'
   | 'social.version_conflict'
+  | 'social.video_total_exceeded'
   | 'staff.account_email_not_found'
   | 'staff.account_not_found'
   | 'staff.app_store_catalog_changed'
@@ -6320,6 +6327,7 @@ export interface SocialInteractionVote {
 }
 
 export interface SocialMedia {
+  repeat_automatically?: boolean;
   file_id: string;
   kind: "image" | "video";
   url?: string;
@@ -6821,6 +6829,14 @@ export interface SocialProfileRelation {
   is_professional: boolean;
   blocked_by_me: boolean;
   blocked_me: boolean;
+}
+
+export interface SocialPublicationPolicy {
+  video_seconds: number;
+  story_seconds: number;
+  total_video_seconds: number;
+  media_count: number;
+  ambassador: boolean;
 }
 
 export interface SocialRelationState {
@@ -8051,6 +8067,7 @@ export interface StaffFeedSettings {
   version: number;
   selection_mode: "global_groups" | "followed_discovery";
   prioritize_followed: boolean;
+  publication_policy: SocialPublicationPolicy;
 }
 
 export interface StaffFightTechniqueData {
@@ -9740,6 +9757,8 @@ export interface VideoFinalized {
   hasAudio: boolean;
   container: "iso-bmff" | "webm" | "ogg";
   attested: boolean;
+  /** Duração real atestada pelo servidor. Zero somente para arquivos históricos sem atestado. */
+  durationSeconds?: number;
 }
 
 export interface VideoPreloadSettings {
@@ -9764,6 +9783,14 @@ export interface VideoUpload {
   /** Cabeçalhos de upload definidos pelo provedor, com valores textuais. */
   uploadHeaders: Record<string, string>;
   expiresIn: number;
+}
+
+export interface VideoUploadState {
+  uploadId: string;
+  stage: "uploading" | "uploaded" | "processing" | "promoted" | "cancelled";
+  partSize: number;
+  completedParts: number[];
+  partUrl?: string | null;
 }
 
 export interface Workout {
@@ -10274,6 +10301,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       storyMediaAccess: (input: { objectKey: string }) => invoke('worker', '/media/story-access', { object_key: input.objectKey }) as Promise<StoryMediaAccess>,
       /** Publica ou edita um story de mídia única que expira em 24 horas. (command; contract/social/story_save.v1.json) */
       storySave: (input: { story: SocialStoryInput }) => call('social_story_save_v1', { p_story: input.story }) as Promise<SocialPost>,
+      /** Lê os limites efetivos de publicação do Estúdio para a conta autenticada. Principais e associados ativos recebem o mesmo limite. (query; contract/social/studio.v1.json) */
+      studio: () => call('social_studio_v1', {}) as Promise<SocialPublicationPolicy>,
       /** URL assinada para enviar mídia ao R2; stories retornam objectKey privado e nunca uma URL pública permanente. (command; contract/social/upload.v1.json) */
       upload: (input: { filename: string; contentType: string; targetBucket?: "onlyfit-media" | "onlyfit-thumbnails" | "onlyfit-avatar" | "onlyfit-stories" | "onlyfit-private"; contentLength: number; requestId?: string; tenantId?: string; docKind?: string }) => invoke('worker', '/media/upload-url', { filename: input.filename, content_type: input.contentType, target_bucket: input.targetBucket, content_length: input.contentLength, request_id: input.requestId, tenant_id: input.tenantId, doc_kind: input.docKind }) as Promise<MediaUpload>,
       /** Confirma no R2 tamanho e MIME do upload direto antes de liberar o arquivo para publicação. (command; contract/social/upload_complete.v1.json) */
@@ -10284,6 +10313,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       videoFinalize: (input: { uploadId: string }) => invoke('worker', '/media/video-finalize', { upload_id: input.uploadId }) as Promise<VideoFinalized>,
       /** Abre a quarentena de um vídeo social e registra seu destino canônico antes do envio. (command; contract/social/video_upload.v1.json) */
       videoUpload: (input: { filename: string; contentType: "video/mp4" | "video/webm" | "video/quicktime" | "video/x-m4v" | "video/ogg"; contentLength: number; audioMode: "preserve" | "remove" | "absent"; destination: "post" | "story" }) => invoke('worker', '/media/video-upload', { filename: input.filename, content_type: input.contentType, content_length: input.contentLength, audio_mode: input.audioMode, destination: input.destination }) as Promise<VideoUpload>,
+      /** Retoma, assina partes, conclui ou cancela o envio da sessão privada de vídeo. (command; contract/social/video_upload_act.v1.json) */
+      videoUploadAct: (input: { uploadId: string; action: "status" | "signPart" | "complete" | "cancel"; partNumber?: number }) => invoke('worker', '/media/video-upload-act', { upload_id: input.uploadId, action: input.action, part_number: input.partNumber }) as Promise<VideoUploadState>,
     },
     interaction: {
       /** Executa reação, comentário, edição, remoção ou denúncia discriminada e idempotente. (command; contract/social/interaction_act.v1.json) */
@@ -10391,7 +10422,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Lê a seleção versionada do feed: modo, prioridade de seguidos e proporção. (query; contract/staff/feed_settings.v1.json) */
       feedSettings: () => call('staff_feed_settings_v1', {}) as Promise<StaffFeedSettings>,
       /** Atualiza modo, prioridade de seguidos e proporção do feed com concorrência otimista. (command; contract/staff/feed_settings_save.v1.json) */
-      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number; selectionMode?: "global_groups" | "followed_discovery"; prioritizeFollowed?: boolean }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion, p_selection_mode: input.selectionMode, p_prioritize_followed: input.prioritizeFollowed }) as Promise<StaffFeedSettings>,
+      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number; selectionMode?: "global_groups" | "followed_discovery"; prioritizeFollowed?: boolean; ambassadorVideoSeconds?: number }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion, p_selection_mode: input.selectionMode, p_prioritize_followed: input.prioritizeFollowed, p_ambassador_video_seconds: input.ambassadorVideoSeconds }) as Promise<StaffFeedSettings>,
       /** Lista ofertas financeiras e calcula sua prontidão no servidor. (query; contract/staff/financial_offerings.v1.json) */
       financialOfferings: (input: { type?: string | null; status?: string | null; limit?: number; offset?: number } = {}) => call('staff_financial_offerings_v1', { p_type: input.type, p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<StaffFinancialOfferingPage>,
       /** Retorna relatório financeiro tipado para uma moeda, sem mapas abertos. (query; contract/staff/financial_reports.v1.json) */

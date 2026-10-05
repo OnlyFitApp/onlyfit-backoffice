@@ -1,4 +1,5 @@
 import { coreApi } from '../api/core';
+import type { SocialPublicationPolicy } from '../api/core.gen';
 
 export type FeedDistributionSettings = {
   followed: number;
@@ -6,6 +7,7 @@ export type FeedDistributionSettings = {
   version: number;
   selectionMode: 'global_groups' | 'followed_discovery';
   prioritizeFollowed: boolean;
+  publicationPolicy: SocialPublicationPolicy;
 };
 
 export type FeedDistributionInput = {
@@ -14,6 +16,7 @@ export type FeedDistributionInput = {
   expectedVersion: number;
   selectionMode: 'global_groups' | 'followed_discovery';
   prioritizeFollowed: boolean;
+  ambassadorVideoSeconds?: number;
 };
 
 export async function getFeedDistributionSettings(): Promise<FeedDistributionSettings> {
@@ -24,6 +27,7 @@ export async function getFeedDistributionSettings(): Promise<FeedDistributionSet
     version: settings.version,
     selectionMode: settings.selection_mode,
     prioritizeFollowed: settings.prioritize_followed,
+    publicationPolicy: settings.publication_policy,
   };
 }
 
@@ -34,6 +38,7 @@ export async function updateFeedDistributionSettings(input: FeedDistributionInpu
     expectedVersion: input.expectedVersion,
     selectionMode: input.selectionMode,
     prioritizeFollowed: input.prioritizeFollowed,
+    ambassadorVideoSeconds: input.ambassadorVideoSeconds,
   });
   return {
     followed: settings.followed_slots,
@@ -41,5 +46,6 @@ export async function updateFeedDistributionSettings(input: FeedDistributionInpu
     version: settings.version,
     selectionMode: settings.selection_mode,
     prioritizeFollowed: settings.prioritize_followed,
+    publicationPolicy: settings.publication_policy,
   };
 }

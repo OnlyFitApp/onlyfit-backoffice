@@ -936,11 +936,14 @@ function FeedDistributionPage() {
   const canEdit = currentRole === 'super_admin' || currentRole === 'admin';
   const { data: settings, isLoading, isError, refetch, isFetching } = useFeedDistributionSettings(true);
   const updateMutation = useUpdateFeedDistributionSettings();
-  const [draft, setDraft] = useState<{ followed: string; discovery: string } | null>(null);
+  const [draft, setDraft] = useState<{ followed: string; discovery: string; selectionMode: 'global_groups' | 'followed_discovery'; prioritizeFollowed: boolean } | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const followed = draft?.followed ?? String(settings?.followed ?? 6);
   const discovery = draft?.discovery ?? String(settings?.discovery ?? 4);
+  const selectionMode = draft?.selectionMode ?? settings?.selectionMode ?? 'global_groups';
+  const prioritizeFollowed = draft?.prioritizeFollowed ?? settings?.prioritizeFollowed ?? true;
+  const globalGroups = selectionMode === 'global_groups';
   const followedCount = Number(followed);
   const discoveryCount = Number(discovery);
   const valid = Number.isInteger(followedCount) && followedCount >= 1 && followedCount <= 100
@@ -957,11 +960,11 @@ function FeedDistributionPage() {
       return;
     }
     updateMutation.mutate(
-      { slotsFollowed: followedCount, slotsDiscovery: discoveryCount, expectedVersion: settings.version },
+      { slotsFollowed: followedCount, slotsDiscovery: discoveryCount, expectedVersion: settings.version, selectionMode, prioritizeFollowed },
       {
         onSuccess: () => {
           setDraft(null);
-          setMessage({ type: 'success', text: 'Distribuição salva. O feed usa esta configuração na próxima atualização.' });
+          setMessage({ type: 'success', text: 'Configuração salva. O feed usa esta regra na próxima atualização.' });
         },
         onError: (error) => {
           if (error instanceof Error && error.message.includes('staff.settings_changed')) {
@@ -980,7 +983,7 @@ function FeedDistributionPage() {
         <div>
           <p className="section-label">Configuração</p>
           <h1>Feed</h1>
-          <span>Defina a participação de seguidos e descoberta no feed principal.</span>
+          <span>Configure quem aparece e a ordem do feed principal.</span>
         </div>
         <div className="header-actions">
           <button className="button secondary" type="button" onClick={() => { setDraft(null); setMessage(null); void refetch(); }} disabled={isFetching}>
@@ -1004,17 +1007,46 @@ function FeedDistributionPage() {
               <div className="feed-command-head">
                 <div>
                   <span>Ordenação</span>
-                  <h2>Prioridade dentro de cada origem</h2>
+                  <h2>{globalGroups ? 'Todos por grupos' : 'Seguidos e descoberta'}</h2>
                 </div>
               </div>
               <div className="feed-kpis">
-                <article><span>Seguidos</span><strong>{followedPercent}%</strong></article>
-                <article><span>Descoberta</span><strong>{discoveryPercent}%</strong></article>
-                <article><span>Bloco</span><strong>{total || '—'}</strong></article>
+                {globalGroups ? <>
+                  <article><span>1º grupo</span><strong>Embaixadores</strong></article>
+                  <article><span>2º grupo</span><strong>Profissionais</strong></article>
+                  <article><span>3º grupo</span><strong>Usuários comuns</strong></article>
+                </> : <>
+                  <article><span>Seguidos</span><strong>{followedPercent}%</strong></article>
+                  <article><span>Descoberta</span><strong>{discoveryPercent}%</strong></article>
+                  <article><span>Bloco</span><strong>{total || '—'}</strong></article>
+                </>}
               </div>
             </section>
 
             <section className="feed-tuning-section">
+              <div className="feed-grid">
+                <label className="feed-field-card">
+                  <span>Seleção do feed</span>
+                  <select value={selectionMode} disabled={!canEdit || updateMutation.isPending}
+                    onChange={(event) => setDraft({ followed, discovery, prioritizeFollowed,
+                      selectionMode: event.target.value as 'global_groups' | 'followed_discovery' })}>
+                    <option value="global_groups">Todos por grupos</option>
+                    <option value="followed_discovery">Seguidos e descoberta</option>
+                  </select>
+                </label>
+                {globalGroups && <div className="feed-field-card">
+                  <span>Prioridade dentro de cada grupo</span>
+                  <label className="checkbox-row">
+                    <input type="checkbox" checked={prioritizeFollowed} disabled={!canEdit || updateMutation.isPending}
+                      onChange={(event) => setDraft({ followed, discovery, selectionMode, prioritizeFollowed: event.target.checked })} />
+                    Priorizar pessoas seguidas
+                  </label>
+                  <small>{prioritizeFollowed ? 'Seguidos primeiro; depois não seguidos. Mais recentes primeiro em cada parte.' : 'Mais recentes primeiro, independentemente de seguir.'}</small>
+                </div>}
+              </div>
+            </section>
+
+            {!globalGroups && <section className="feed-tuning-section">
               <div className="feed-section-head">
                 <SlidersHorizontal size={18} />
                 <div>
@@ -1026,36 +1058,37 @@ function FeedDistributionPage() {
                 <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
                   <span>Posições de pessoas seguidas</span>
                   <input type="number" min="1" max="100" step="1" value={followed} disabled={!canEdit}
-                    onChange={(event) => setDraft({ followed: event.target.value, discovery })} />
+                    onChange={(event) => setDraft({ followed: event.target.value, discovery, selectionMode, prioritizeFollowed })} />
                   <small>Inclui profissionais e pessoas comuns que o usuário segue.</small>
                 </label>
                 <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
                   <span>Posições de descoberta</span>
                   <input type="number" min="1" max="100" step="1" value={discovery} disabled={!canEdit}
-                    onChange={(event) => setDraft({ followed, discovery: event.target.value })} />
+                    onChange={(event) => setDraft({ followed, discovery: event.target.value, selectionMode, prioritizeFollowed })} />
                   <small>Principal, Associado, Profissional e demais elegíveis; os mais recentes primeiro dentro de cada nível.</small>
                 </label>
               </div>
-            </section>
+            </section>}
 
             <section className="feed-tuning-section">
               <div className="feed-section-head">
                 <Rss size={18} />
                 <div>
                   <h2>Quem pode aparecer</h2>
-                  <p>O filtro de vertical escolhido no app vale para as duas origens. Bloqueios, denúncias e mídia indisponível continuam excluídos.</p>
+                  <p>{globalGroups ? 'Posts públicos de pessoas seguidas e não seguidas, incluindo usuários comuns. Principais e Associados compartilham o primeiro grupo.' : 'Posts próprios e de seguidos; descoberta de profissionais e embaixadores.'}</p>
+                  <p>O filtro de afinidade e as restrições de acesso continuam valendo.</p>
                 </div>
               </div>
             </section>
 
             {canEdit && (
               <div className="feed-actions">
-                <button className="button secondary" type="button" onClick={() => setDraft({ followed: '6', discovery: '4' })}>
+                {!globalGroups && <button className="button secondary" type="button" onClick={() => setDraft({ followed: '6', discovery: '4', selectionMode, prioritizeFollowed })}>
                   <RefreshCw size={16} /> Restaurar proporção inicial
-                </button>
+                </button>}
                 <button className="button primary" type="submit" disabled={updateMutation.isPending || !valid}>
                   {updateMutation.isPending ? <RefreshCw className="spin" size={16} /> : <CheckCircle2 size={16} />}
-                  Salvar distribuição
+                  Salvar configuração
                 </button>
               </div>
             )}

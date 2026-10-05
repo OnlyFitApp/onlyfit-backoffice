@@ -25,6 +25,8 @@ export type ApiErrorCode =
   | 'commerce.app_store_account_mismatch'
   | 'commerce.app_store_not_configured'
   | 'commerce.app_store_transaction_invalid'
+  | 'commerce.apple_fx_unavailable'
+  | 'commerce.apple_storefront_unavailable'
   | 'commerce.buyer_incomplete'
   | 'commerce.card_command_busy'
   | 'commerce.card_not_found'
@@ -63,6 +65,7 @@ export type ApiErrorCode =
   | 'commerce.insufficient_stock'
   | 'commerce.invalid_ad_booking'
   | 'commerce.invalid_ad_filter'
+  | 'commerce.invalid_apple_price'
   | 'commerce.invalid_card_command'
   | 'commerce.invalid_card_query'
   | 'commerce.invalid_channel'
@@ -141,6 +144,7 @@ export type ApiErrorCode =
   | 'commerce.provider_invalid_response'
   | 'commerce.provider_not_configured'
   | 'commerce.purchase_not_found'
+  | 'commerce.purchase_not_pending'
   | 'commerce.quiz_invalid'
   | 'commerce.review_changed'
   | 'commerce.review_not_found'
@@ -206,6 +210,7 @@ export type ApiErrorCode =
   | 'identity.missing_credentials'
   | 'identity.onboarding_incomplete'
   | 'identity.one_default_address'
+  | 'identity.paid_groups_active'
   | 'identity.preferences_conflict'
   | 'identity.professional_credential_invalid'
   | 'identity.professional_profile_required'
@@ -411,6 +416,8 @@ export type ApiErrorCode =
   | 'social.invalid_media'
   | 'social.invalid_member'
   | 'social.invalid_message'
+  | 'social.invalid_message_media'
+  | 'social.invalid_message_media_state'
   | 'social.invalid_offer'
   | 'social.invalid_poll'
   | 'social.invalid_poll_option'
@@ -431,6 +438,12 @@ export type ApiErrorCode =
   | 'social.invalid_tag'
   | 'social.media_not_owned'
   | 'social.media_not_ready'
+  | 'social.message_media_contract_mismatch'
+  | 'social.message_media_not_found'
+  | 'social.message_media_unavailable'
+  | 'social.message_media_upload_conflict'
+  | 'social.message_media_upload_expired'
+  | 'social.message_media_upload_incomplete'
   | 'social.message_not_found'
   | 'social.message_rate_limit'
   | 'social.paid_offer_required'
@@ -440,6 +453,7 @@ export type ApiErrorCode =
   | 'social.poll_locked'
   | 'social.post_not_found'
   | 'social.prize_terms_required'
+  | 'social.professional_required'
   | 'social.profile_not_found'
   | 'social.report_target_not_found'
   | 'social.resource_contract_mismatch'
@@ -1226,6 +1240,41 @@ export interface CommerceAppStoreVerification {
   status: "confirmed" | "refunded";
 }
 
+export interface CommerceAppleAdvancedCheckout {
+  product_id: string;
+  sku: string;
+  app_account_token: string;
+  request_reference_id: string;
+  storefront: string;
+  currency: string;
+  price_milliunits: number;
+  data: CommerceAppleAdvancedCommerceData;
+}
+
+export interface CommerceAppleAdvancedCommerceData {
+  signatureInfo: CommerceAppleAdvancedSignatureInfo;
+}
+
+export interface CommerceAppleAdvancedSignatureInfo {
+  token: string;
+}
+
+export interface CommerceAppleStorefrontCapability {
+  storefront: "BRA" | "PRT";
+  currency: "BRL" | "EUR";
+}
+
+export interface CommerceAppleStorefrontPrice {
+  storefront: "BRA" | "PRT";
+  price_mode: "automatic" | "manual";
+  /** Preço manual em unidades monetárias. Automático exige null; moeda e conversão são resolvidas pelo Core. */
+  price: number | null;
+  display_name?: string;
+  description?: string;
+  subscription_display_name?: string;
+  subscription_description?: string;
+}
+
 export interface CommerceBusinessCard {
   id: string;
   name: string;
@@ -1328,6 +1377,7 @@ export interface CommerceCheckoutResult {
   pix_qr_code_base64: string | null;
   invoice_url: string | null;
   expires_at: string | null;
+  apple_advanced_commerce: CommerceAppleAdvancedCheckout | null;
 }
 
 export interface CommerceClub {
@@ -1986,10 +2036,14 @@ export interface CommerceNativeProduct {
   offer_id: string;
   channel: "app_store" | "google_play";
   product_id: string;
-  product_type: "auto_renewable_subscription" | "non_consumable" | "non_renewing_subscription";
+  product_type: "auto_renewable_subscription" | "non_consumable" | "non_renewing_subscription" | "consumable";
   price: number;
   currency: string;
   subscription_group_reference: string | null;
+  advanced_commerce: boolean;
+  storefront: string | null;
+  /** SKU da oferta resolvido pelo Core. Produto genérico da Apple é compartilhado e não identifica a oferta. */
+  sku: string | null;
 }
 
 export interface CommerceOffer {
@@ -2080,6 +2134,7 @@ export interface CommerceOfferSettings {
   sku?: string;
   shipping_policy?: string;
   access_duration?: string;
+  apple_storefront_prices?: CommerceAppleStorefrontPrice[];
 }
 
 export interface CommerceOfferTarget {
@@ -2621,6 +2676,7 @@ export interface CommercePurchase {
   fulfillment: CommerceFulfillment;
   access_ended_at: string | null;
   subscription_status: string | null;
+  subscription_management: CommerceSubscriptionManagement | null;
   progress: CommercePurchaseProgress;
   version: number;
   charges: CommerceCharge[];
@@ -2723,6 +2779,21 @@ export interface CommerceSubscriptionCancelResult {
   action_id: string;
   status: "pending" | "processing" | "succeeded" | "failed";
   subscription_id: string;
+}
+
+export interface CommerceSubscriptionCancellationAction {
+  action_id: string;
+  status: "pending" | "processing" | "succeeded" | "failed";
+}
+
+export interface CommerceSubscriptionManagement {
+  subscription_id: string;
+  can_cancel: boolean;
+  status: string;
+  auto_renews: boolean;
+  current_period_end: string | null;
+  cancellation_effect: "period_end" | "immediate" | "unsupported";
+  cancellation_action: CommerceSubscriptionCancellationAction | null;
 }
 
 export interface CommerceSubscriptionRecoveryResult {
@@ -4784,6 +4855,8 @@ export interface OfferType {
   allowed_billing_intervals?: ("week" | "month" | "2month" | "quarter" | "semester" | "year")[];
   minimum_price?: number;
   minimum_monthly_price?: number;
+  /** Regiões configuráveis de ACA derivadas da política do Core. Não indicam produto Apple pronto, autorização de publicação ou disponibilidade de compra. Ausente em servidores anteriores: ocultar configuração, sem inferir por tipo de oferta. */
+  apple_commerce_storefronts?: CommerceAppleStorefrontCapability[];
   max_per_business: number | null;
   unique_per_owner_profile: boolean;
   requires_affinity_group: boolean;
@@ -5576,6 +5649,8 @@ export interface SessionReviewInput {
 export interface SessionSetActual {
   index: number;
   completed: boolean;
+  /** Identidade do exercício interno no snapshot do bloco composicional. */
+  execution_item_id?: string;
   reps?: number;
   load?: SessionSetLoad;
 }
@@ -6332,7 +6407,8 @@ export interface SocialMessageActionResult {
 export interface SocialMessageMedia {
   file_id: string;
   kind: "image" | "video" | "audio";
-  url: string;
+  /** Anexo privado: URL obtida por social.messageMediaAccess, nunca persistida na mensagem. */
+  url: string | null;
   mime: string;
   size: number;
   name: string | null;
@@ -6340,6 +6416,19 @@ export interface SocialMessageMedia {
   width: number | null;
   height: number | null;
   poster_url: string | null;
+}
+
+export interface SocialMessageMediaAccess {
+  url: string;
+  expires_in: number;
+  filename: string;
+  mime: string;
+}
+
+export interface SocialMessageMediaComplete {
+  action: "complete";
+  request_id: string;
+  idempotency_key: string;
 }
 
 export interface SocialMessageMediaInput {
@@ -6350,6 +6439,38 @@ export interface SocialMessageMediaInput {
   width?: number | null;
   height?: number | null;
 }
+
+export interface SocialMessageMediaPending {
+  file_id: string;
+  status: "pending";
+  upload_url: string;
+  upload_headers: SocialMessageMediaUploadHeaders;
+  expires_in: number;
+}
+
+export interface SocialMessageMediaPrepare {
+  action: "prepare";
+  request_id: string;
+  filename: string;
+  mime: "image/jpeg" | "image/png" | "image/webp" | "image/gif" | "image/avif" | "image/heic" | "image/heif" | "audio/webm" | "audio/mp4" | "audio/mpeg" | "audio/ogg" | "audio/aac" | "audio/wav" | "video/mp4" | "video/webm" | "video/quicktime";
+  bytes: number;
+}
+
+export interface SocialMessageMediaReady {
+  file_id: string;
+  status: "ready";
+  mime: string;
+  bytes: number;
+}
+
+export type SocialMessageMediaUpload = SocialMessageMediaPending | SocialMessageMediaReady;
+
+export interface SocialMessageMediaUploadHeaders {
+  "Content-Type": string;
+  "Content-Length": string;
+}
+
+export type SocialMessageMediaUploadInput = SocialMessageMediaPrepare | SocialMessageMediaComplete;
 
 export interface SocialNetworkIdentity {
   classification: "professional" | "associate" | "ambassador";
@@ -7928,6 +8049,8 @@ export interface StaffFeedSettings {
   followed_slots: number;
   discovery_slots: number;
   version: number;
+  selection_mode: "global_groups" | "followed_discovery";
+  prioritize_followed: boolean;
 }
 
 export interface StaffFightTechniqueData {
@@ -8436,7 +8559,7 @@ export interface StaffNativeProduct {
   offer_name: string;
   channel: "app_store" | "google_play";
   product_id: string;
-  product_type: "auto_renewable_subscription" | "non_consumable" | "non_renewing_subscription";
+  product_type: "auto_renewable_subscription" | "non_consumable" | "non_renewing_subscription" | "consumable";
   price: number;
   currency: string;
   status: "draft" | "ready" | "retired";
@@ -8460,7 +8583,7 @@ export interface StaffNativeProductSaved {
   offer_id: string;
   channel: "app_store" | "google_play";
   product_id: string;
-  product_type: "auto_renewable_subscription" | "non_consumable" | "non_renewing_subscription";
+  product_type: "auto_renewable_subscription" | "non_consumable" | "non_renewing_subscription" | "consumable";
   price: number;
   currency: string;
   status: "draft" | "ready" | "retired";
@@ -8472,7 +8595,7 @@ export interface StaffNativeProductSummary {
   offer_id: string;
   channel: "app_store" | "google_play";
   product_id: string;
-  product_type: "auto_renewable_subscription" | "non_consumable" | "non_renewing_subscription";
+  product_type: "auto_renewable_subscription" | "non_consumable" | "non_renewing_subscription" | "consumable";
   status: "draft" | "ready" | "retired";
   subscription_group_reference: string | null;
   price: number;
@@ -9574,6 +9697,7 @@ export interface TrainingSessionReview {
 export interface TrainingSessionSetActual {
   index: number;
   completed: boolean;
+  execution_item_id?: string;
   reps?: number;
   load?: TrainingSessionSetLoad;
 }
@@ -9789,7 +9913,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Estorna exatamente uma cobrança elegível e revoga o direito sustentado por ela. (command; contract/commerce/charge_refund.v1.json) */
       chargeRefund: (input: { chargeId: string; idempotencyKey: string }) => invoke('worker', '/commerce/charge-refund', { charge_id: input.chargeId, idempotency_key: input.idempotencyKey }) as Promise<CommerceChargeRefundResult>,
       /** Congela a oferta e inicia o canal permitido: loja nativa para digital no app, Stripe Elements no desktop ou Pix/Asaas para pagamento externo elegível. (command; contract/commerce/checkout.v1.json) */
-      checkout: (input: { offerId: string; channel: "free" | "app_store" | "google_play" | "stripe_card" | "asaas_pix"; idempotencyKey: string; acceptances: CommerceAcceptance[]; returnUrl?: string; physical?: CommercePhysicalCheckoutInput | null }) => invoke('worker', '/commerce/checkout', { offer_id: input.offerId, channel: input.channel, idempotency_key: input.idempotencyKey, acceptances: input.acceptances, return_url: input.returnUrl, physical: input.physical }) as Promise<CommerceCheckoutResult>,
+      checkout: (input: { offerId: string; channel: "free" | "app_store" | "google_play" | "stripe_card" | "asaas_pix"; storefront?: string | null; idempotencyKey: string; acceptances: CommerceAcceptance[]; returnUrl?: string; physical?: CommercePhysicalCheckoutInput | null }) => invoke('worker', '/commerce/checkout', { offer_id: input.offerId, channel: input.channel, storefront: input.storefront, idempotency_key: input.idempotencyKey, acceptances: input.acceptances, return_url: input.returnUrl, physical: input.physical }) as Promise<CommerceCheckoutResult>,
       /** Página do Clube de um profissional: o que a assinatura libera, preço e o acesso de quem vê. (query; contract/commerce/club.v1.json) */
       club: (input: { professionalId: string }) => call('commerce_club_v1', { p_professional_id: input.professionalId }) as Promise<CommerceClub>,
       /** Prévia de um item da plataforma ligado a uma aula liberada. (query; contract/commerce/course_action.v1.json) */
@@ -9824,8 +9948,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       memberArea: (input: { kind?: "all" | "course" | "video" | "pdf" | "article"; club?: boolean; professionalId?: string | null; query?: string | null; limit?: number; offset?: number } = {}) => invoke('worker', '/commerce/member-area', { kind: input.kind, club: input.club, professional_id: input.professionalId, query: input.query, limit: input.limit, offset: input.offset }) as Promise<CommerceMemberArea>,
       /** Pagina os pedidos físicos da conta autenticada sem expor dados de outros compradores. (query; contract/commerce/my_physical_orders.v1.json) */
       myPhysicalOrders: (input: { cursor?: string | null; limit?: number } = {}) => call('commerce_my_physical_orders_v1', { p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommerceMyPhysicalOrders>,
-      /** Resolve o produto da loja nativa vinculado a uma oferta digital publicada. (query; contract/commerce/native_product.v1.json) */
-      nativeProduct: (input: { offerId: string; channel: "app_store" | "google_play" }) => call('commerce_native_product_v1', { p_offer_id: input.offerId, p_channel: input.channel }) as Promise<CommerceNativeProduct>,
+      /** Resolve produto nativo e preço da oferta digital publicada. Na Apple ACA, storefront é obrigatório e o preço é do Core, não do placeholder genérico. (query; contract/commerce/native_product.v1.json) */
+      nativeProduct: (input: { offerId: string; channel: "app_store" | "google_play"; storefront?: string | null }) => call('commerce_native_product_v1', { p_offer_id: input.offerId, p_channel: input.channel, p_storefront: input.storefront }) as Promise<CommerceNativeProduct>,
       /** Lê uma oferta pública ou administrada. (query; contract/commerce/offer.v1.json) */
       offer: (input: { offerId: string }) => call('commerce_offer_v1', { p_offer_id: input.offerId }) as Promise<CommerceOffer>,
       /** Publica, pausa, retoma ou arquiva uma oferta. (command; contract/commerce/offer_act.v1.json) */
@@ -9888,8 +10012,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       reviews: (input: { offerId: string; cursor?: string | null; limit?: number }) => call('commerce_reviews_v1', { p_offer_id: input.offerId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommerceReviews>,
       /** Lista, com paginação estável, as ofertas públicas de um único negócio. (query; contract/commerce/storefront_offers.v1.json) */
       storefrontOffers: (input: { businessId: string; cursor?: string | null; limit?: number }) => call('commerce_storefront_offers_v1', { p_business_id: input.businessId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<CommerceStorefrontOffers>,
-      /** Cancela uma recorrência não-consultoria e encerra seu direito após confirmação do provedor. (command; contract/commerce/subscription_cancel.v1.json) */
-      subscriptionCancel: (input: { subscriptionId: string; idempotencyKey: string }) => invoke('worker', '/commerce/subscription-cancel', { subscription_id: input.subscriptionId, idempotency_key: input.idempotencyKey }) as Promise<CommerceSubscriptionCancelResult>,
+      /** Solicita cancelamento durável de recorrência não-consultoria; Apple conserva o período pago e os demais provedores encerram o direito após confirmação. (command; contract/commerce/subscription_cancel.v1.json) */
+      subscriptionCancel: (input: { subscriptionId: string; idempotencyKey: string }) => call('commerce_subscription_cancel_v1', { p_subscription_id: input.subscriptionId, p_idempotency_key: input.idempotencyKey }) as Promise<CommerceSubscriptionCancelResult>,
       /** Solicita ao provedor uma nova tentativa segura para a cobrança vencida da própria recorrência. (command; contract/commerce/subscription_recover.v1.json) */
       subscriptionRecover: (input: { subscriptionId: string; idempotencyKey: string }) => invoke('worker', '/commerce/subscription-recover', { subscription_id: input.subscriptionId, idempotency_key: input.idempotencyKey }) as Promise<CommerceSubscriptionRecoveryResult>,
       /** Consulta saldos derivados do razão e repasses. (query; contract/commerce/wallet.v1.json) */
@@ -10098,7 +10222,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       credentials: (input: { accountIds: string[] }) => call('social_credentials_v1', { p_account_ids: input.accountIds }) as Promise<ProfessionalCredential[]>,
       /** Descobre apenas profissionais, embaixadores e associados. Publicações mais recentes primeiro; em empate, embaixador, associado, profissional e UUID decrescente. (query; contract/social/explore.v1.json) */
       explore: (input: { search?: string; affinity?: string; classifications?: ("professional" | "associate" | "ambassador")[]; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_classifications: input.classifications, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
-      /** Feed por cursor, com seguidos e descoberta sem duplicação. (query; contract/social/feed.v1.json) */
+      /** Feed configurado no backoffice: todos por grupos com prioridade de seguidos ou proporção entre seguidos e descoberta. (query; contract/social/feed.v1.json) */
       feed: (input: { affinities?: string[]; cursor?: string; limit?: number; containerType?: "community" | "challenge"; containerId?: string; spaceId?: string } = {}) => call('social_feed_v1', { p_affinities: input.affinities, p_cursor: input.cursor, p_limit: input.limit, p_container_type: input.containerType, p_container_id: input.containerId, p_space_id: input.spaceId }) as Promise<SocialFeed>,
       /** Segue, deixa de seguir, bloqueia ou desbloqueia e devolve o estado final. (command; contract/social/follow_act.v1.json) */
       followAct: (input: { accountId: string; action: "follow" | "unfollow" | "block" | "unblock" }) => call('social_follow_act_v1', { p_account_id: input.accountId, p_action: input.action }) as Promise<SocialRelationState>,
@@ -10106,9 +10230,13 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       inbox: (input: { tab?: "messages" | "notifications"; cursor?: string; limit?: number; search?: string } = {}) => call('social_inbox_v1', { p_tab: input.tab, p_cursor: input.cursor, p_limit: input.limit, p_search: input.search }) as Promise<SocialInbox>,
       /** Envia, compartilha, lê ou exclui mensagem privada de modo idempotente. (command; contract/social/message_act.v1.json) */
       messageAct: (input: { recipientIds: string[]; action: "send" | "share" | "markRead" | "delete"; data?: SocialMessageActionData }) => call('social_message_act_v1', { p_recipient_ids: input.recipientIds, p_action: input.action, p_data: input.data }) as Promise<SocialMessageActionResult>,
+      /** Emite URL privada curta após validar a mensagem, participantes, bloqueios e integridade do anexo. (query; contract/social/message_media_access.v1.json) */
+      messageMediaAccess: (input: { download?: boolean; messageId: string }) => invoke('worker', '/social/message-media-access', { download: input.download, message_id: input.messageId }) as Promise<SocialMessageMediaAccess>,
+      /** Prepara e confirma anexos privados de mensagem com inspeção, dono e idempotência no Core. (command; contract/social/message_media_upload.v1.json) */
+      messageMediaUpload: (input: { upload: SocialMessageMediaUploadInput }) => invoke('worker', '/social/message-media-upload', { upload: input.upload }) as Promise<SocialMessageMediaUpload>,
       /** Marca visualização ou leitura sem misturar as duas semânticas. (command; contract/social/notification_act.v1.json) */
       notificationAct: (input: { ids?: string[]; action?: "markRead" | "markAllRead" | "clearBadge" } = {}) => call('social_notification_act_v1', { p_ids: input.ids, p_action: input.action }) as Promise<SocialInbox>,
-      /** Lista pessoas com paginação determinística. explore restringe o Descobrir a profissionais e rede pública; discover mantém a busca geral. (query; contract/social/people.v1.json) */
+      /** Lista pessoas com paginação determinística. discover e explore só retornam contas ativas com acesso liberado pela Plataforma, antes da busca, total e paginação; discover inclui usuários comuns, explore restringe a profissionais e rede pública. Relações históricas não mudam. (query; contract/social/people.v1.json) */
       people: (input: { scope?: "discover" | "explore" | "followers" | "following" | "subscribers" | "ambassadors"; accountId?: string; search?: string; affinity?: string; classifications?: ("professional" | "associate" | "ambassador")[]; cursor?: string; limit?: number } = {}) => call('social_people_v1', { p_scope: input.scope, p_account_id: input.accountId, p_search: input.search, p_affinity: input.affinity, p_classifications: input.classifications, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialPeople>,
       /** Abre publicação visível com interação atual. (query; contract/social/post.v1.json) */
       post: (input: { id: string }) => call('social_post_v1', { p_id: input.id }) as Promise<SocialPost>,
@@ -10178,7 +10306,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       ambassadorNetworkAct: (input: { id?: string | null; action: "saveRegion" | "setRegionActive" | "savePolicy" | "setProgram" | "saveAssignment" | "transitionAssignment" | "transferAssociate" | "decideRequest" | "transferRequest"; data?: StaffAmbassadorNetworkActionData }) => call('staff_ambassador_network_act_v1', { p_id: input.id, p_action: input.action, p_data: input.data }) as Promise<StaffAmbassadorNetworkActionResult>,
       /** Lista o estado operacional de produtos do App Store Connect. (query; contract/staff/app_store_catalog.v1.json) */
       appStoreCatalog: (input: { limit?: number; offset?: number } = {}) => call('staff_app_store_catalog_v1', { p_limit: input.limit, p_offset: input.offset }) as Promise<StaffAppStoreCatalogPage>,
-      /** Prepara, sincroniza, publica ou salva a configuração completa do catálogo Apple. (command; contract/staff/app_store_catalog_act.v1.json) */
+      /** Prepara, sincroniza, publica ou salva o catálogo Apple tradicional por oferta. Produtos genéricos Advanced Commerce não são editáveis por este fluxo. (command; contract/staff/app_store_catalog_act.v1.json) */
       appStoreCatalogAct: (input: { offerId: string; action: "prepare" | "sync" | "publish" | "saveMetadata"; metadata: StaffAppStoreMetadataInput | null; expectedVersion: number; idempotencyKey: string }) => call('staff_app_store_catalog_act_v1', { p_offer_id: input.offerId, p_action: input.action, p_metadata: input.metadata, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<StaffAppStoreCatalogItem>,
       /** Lista lotes mensais de conciliação Apple. (query; contract/staff/app_store_reconciliation_batches.v1.json) */
       appStoreReconciliationBatches: (input: { limit?: number; offset?: number } = {}) => call('staff_app_store_reconciliation_batches_v1', { p_limit: input.limit, p_offset: input.offset }) as Promise<StaffAppStoreReconciliationBatchPage>,
@@ -10260,10 +10388,10 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       exerciseCatalogSave: (input: { exerciseId: string | null; sportIds: string[]; kind: "exercise" | "technique"; localizations: TrainingExerciseLocalizations; muscles: string[]; equipment: string | null; videoFileId: string | null; thumbFileId: string | null; expectedVersion: number | null; idempotencyKey: string }) => call('staff_exercise_catalog_save_v1', { p_exercise_id: input.exerciseId, p_sport_ids: input.sportIds, p_kind: input.kind, p_localizations: input.localizations, p_muscles: input.muscles, p_equipment: input.equipment, p_video_file_id: input.videoFileId, p_thumb_file_id: input.thumbFileId, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<StaffExercise>,
       /** Prepara e conclui upload R2 inspecionado de vídeo ou miniatura de exercício oficial. (command; contract/staff/exercise_media_upload.v1.json) */
       exerciseMediaUpload: (input: { upload: StaffExerciseMediaUploadCommand }) => invoke('worker', '/staff/exercise-media-upload', { upload: input.upload }) as Promise<StaffExerciseMediaUploadResult>,
-      /** Lê a proporção versionada entre seguidos e descoberta do feed. (query; contract/staff/feed_settings.v1.json) */
+      /** Lê a seleção versionada do feed: modo, prioridade de seguidos e proporção. (query; contract/staff/feed_settings.v1.json) */
       feedSettings: () => call('staff_feed_settings_v1', {}) as Promise<StaffFeedSettings>,
-      /** Atualiza a proporção do feed com concorrência otimista. (command; contract/staff/feed_settings_save.v1.json) */
-      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion }) as Promise<StaffFeedSettings>,
+      /** Atualiza modo, prioridade de seguidos e proporção do feed com concorrência otimista. (command; contract/staff/feed_settings_save.v1.json) */
+      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number; selectionMode?: "global_groups" | "followed_discovery"; prioritizeFollowed?: boolean }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion, p_selection_mode: input.selectionMode, p_prioritize_followed: input.prioritizeFollowed }) as Promise<StaffFeedSettings>,
       /** Lista ofertas financeiras e calcula sua prontidão no servidor. (query; contract/staff/financial_offerings.v1.json) */
       financialOfferings: (input: { type?: string | null; status?: string | null; limit?: number; offset?: number } = {}) => call('staff_financial_offerings_v1', { p_type: input.type, p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<StaffFinancialOfferingPage>,
       /** Retorna relatório financeiro tipado para uma moeda, sem mapas abertos. (query; contract/staff/financial_reports.v1.json) */

@@ -2762,6 +2762,7 @@ svg text {
   border-color: rgb(var(--color-error));
 }
 
+.feed-field-card select,
 .feed-field-card input[type='number'] {
   width: 100%;
   min-height: 44px;
@@ -2774,6 +2775,7 @@ svg text {
   font-variant-numeric: tabular-nums;
 }
 
+.feed-field-card select:focus-visible,
 .feed-field-card input[type='number']:focus-visible {
   outline: 2px solid rgb(var(--color-primary));
   outline-offset: 2px;

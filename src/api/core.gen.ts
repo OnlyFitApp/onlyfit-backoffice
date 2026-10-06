@@ -7296,6 +7296,7 @@ export interface StaffAmbassadorRegion {
 
 export interface StaffAppStoreCatalogItem {
   enabled: boolean;
+  management?: StaffAppStoreManagement;
   offering: StaffAppStoreOffering;
   product: StaffAppStoreProduct | null;
   metadata: StaffAppStoreMetadata | null;
@@ -7311,6 +7312,11 @@ export interface StaffAppStoreCatalogPage {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface StaffAppStoreManagement {
+  mode: "advanced_commerce" | "per_offer";
+  actions: ("prepare" | "sync" | "publish" | "saveMetadata" | "editProduct")[];
 }
 
 export interface StaffAppStoreMetadata {

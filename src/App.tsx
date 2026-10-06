@@ -75,7 +75,7 @@ import {
   type OfferingTypeBilling,
 } from './lib/offeringTypes';
 import type { OfferingCatalogFilters, OfferingCatalogItem, OfferingCatalogStatus } from './lib/offeringCatalog';
-import { nativeStoreMonetization } from './lib/offeringMonetization';
+import { nativeStoreProductTypeLabel } from './lib/offeringMonetization';
 import { MfaGate } from './components/MfaGate';
 import { CredentialResetDialog } from './components/CredentialResetDialog';
 import type { CredentialResetAction } from './lib/credentialReset';
@@ -1803,7 +1803,7 @@ function OfferingCatalogPage() {
                         <td>{item.price === null ? 'Sem preço' : item.billing_type === 'free' ? 'Grátis' : formatCurrencyExact(item.price)}</td>
                         <td>
                           <strong>{item.native_products.length > 0 && item.price !== null ? formatCurrencyExact(item.price) : '—'}</strong>
-                          <span title={nativeStoreMonetization(item).reason}>{nativeStoreMonetization(item).label}</span>
+                          <span>{item.native_products.map(product => nativeStoreProductTypeLabel(product.product_type)).join(' · ') || 'Sem vínculo nas lojas'}</span>
                         </td>
                         <td>
                           <span className={`role-badge role-${item.status}`}>{offeringStatusLabel(item.status)}</span>
@@ -1811,19 +1811,14 @@ function OfferingCatalogPage() {
                         </td>
                         <td>
                           <div className="header-actions">
-                            {nativeStoreMonetization(item).canPrepare ? (
                                 <button
                                   className="button secondary compact"
                                   type="button"
                                   disabled={!canEdit}
                                   onClick={() => setNativeStoreItem(item)}
                                 >
-                                  Lojas {item.native_products.filter(product => product.status === 'ready').length}/2
+                                  Ver vínculos nas lojas
                                 </button>
-                              ) : null}
-                            {!['premium_content', 'standalone_workout', 'standalone_diet', 'courses'].includes(item.type)
-                              ? <span>{item.id.slice(0, 8)}</span>
-                              : null}
                           </div>
                         </td>
                       </tr>

@@ -7,11 +7,12 @@ type Offer = {
 };
 type Monetization = { label: string; productType: NativeStoreProductType | null; canPrepare: boolean; reason: string };
 
-export function nativeStoreProductTypeLabel(type: NativeStoreProductType): string {
+export function nativeStoreProductTypeLabel(type: NativeStoreProductType | 'consumable'): string {
   return {
     auto_renewable_subscription: 'Assinatura renovável',
     non_consumable: 'Compra única · sem expiração',
     non_renewing_subscription: 'Compra única · acesso com prazo',
+    consumable: 'Compra única · Advanced Commerce',
   }[type];
 }
 

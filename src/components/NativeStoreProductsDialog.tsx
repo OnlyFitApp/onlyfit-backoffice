@@ -26,14 +26,12 @@ function storeName(channel: NativeStoreChannel): string {
   return channel === 'app_store' ? 'App Store' : 'Google Play';
 }
 
-function NativeProductForm({
+function GooglePlayProductForm({
   item,
-  channel,
   current,
   onSaved,
 }: {
   item: OfferingCatalogItem;
-  channel: NativeStoreChannel;
   current?: StaffNativeProductSummary;
   onSaved: () => void;
 }) {
@@ -45,7 +43,7 @@ function NativeProductForm({
   const [group, setGroup] = useState(current?.subscription_group_reference ?? '');
   const [error, setError] = useState('');
   const mutation = useSaveNativeStoreProduct();
-  const name = storeName(channel);
+  const name = 'Google Play';
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -63,7 +61,7 @@ function NativeProductForm({
     try {
       await mutation.mutateAsync({
         offer_id: item.id,
-        channel,
+        channel: 'google_play',
         product_id: productId.trim(),
         product_type: expectedType,
         status,
@@ -92,9 +90,7 @@ function NativeProductForm({
         value={productId}
         autoComplete="off"
         spellCheck={false}
-        placeholder={channel === 'app_store'
-          ? 'com.onlyfitapp.app.oferta'
-          : 'onlyfit_oferta'}
+        placeholder="onlyfit_oferta"
         onChange={(event) => setProductId(event.target.value)}
       />
     </label>
@@ -113,7 +109,7 @@ function NativeProductForm({
     </label>
     {expectedType === 'auto_renewable_subscription' && (
       <label className="user-dialog-field">
-        <span>{channel === 'app_store' ? 'Grupo de assinatura' : 'Assinatura-base'}</span>
+        <span>Assinatura-base</span>
         <input value={group} onChange={(event) => setGroup(event.target.value)} />
       </label>
     )}
@@ -123,10 +119,8 @@ function NativeProductForm({
         value={status}
         onChange={(event) => setStatus(nativeProductStatus(event.target.value))}
       >
-        <option value="draft">{channel === 'app_store' ? 'Aguardando aprovação' : 'Rascunho'}</option>
-        <option value="ready" disabled={channel === 'app_store' && current?.status !== 'ready'}>
-          {channel === 'app_store' ? 'Aprovado pela Apple' : 'Disponível no app'}
-        </option>
+        <option value="draft">Rascunho</option>
+        <option value="ready">Disponível no app</option>
         <option value="retired">Retirado</option>
       </select>
     </label>
@@ -177,13 +171,12 @@ export function NativeStoreProductsDialog({ item, onCancel, onSaved }: Props) {
             <option value="google_play">Google Play</option>
           </select>
         </label>
-        <NativeProductForm
+        {channel === 'google_play' && <GooglePlayProductForm
           key={`${item.id}:${channel}:${current?.version ?? 0}`}
           item={item}
-          channel={channel}
           current={current}
           onSaved={onSaved}
-        />
+        />}
         {channel === 'app_store' && <AppStorePreparation offeringId={item.id} />}
         {channel === 'google_play' && <p>
           O Core confere a compra diretamente no Google Play antes de liberar o acesso.

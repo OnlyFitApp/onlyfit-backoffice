@@ -4,6 +4,7 @@ import { catalogKeyFromLabel } from './catalogKey';
 
 export type ProfessionalSpecialty = {
   key: string;
+  version: number;
   label: string;
   council: string;
   regulated: boolean;
@@ -17,6 +18,7 @@ export type ProfessionalSpecialty = {
 function specialty(item: StaffProfessionalSpecialtyItem): ProfessionalSpecialty {
   return {
     key: item.key,
+    version: item.version,
     label: item.data.label,
     council: item.data.council,
     regulated: item.data.regulated,
@@ -65,6 +67,7 @@ export async function createProfessionalSpecialty(input: {
 
 export async function updateProfessionalSpecialty(input: {
   key: string;
+  expectedVersion: number;
   label: string;
   council: string;
   regulated: boolean;
@@ -78,7 +81,7 @@ export async function updateProfessionalSpecialty(input: {
       label: input.label.trim(),
       public: current.public,
       position: current.position,
-      expected_version: current.version,
+      expected_version: input.expectedVersion,
       data: { council: input.council.trim(), regulated: input.regulated },
     },
   })));

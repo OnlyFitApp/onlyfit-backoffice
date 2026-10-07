@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
 import {
   Check,
   ChevronLeft,
@@ -15,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { FormEvent, useMemo, useState } from 'react';
-import { coreApi } from '../api/core';
+import { useSportsCatalog } from '../hooks/useSportsCatalog';
 import type { StaffExercise, StaffSportItem, TrainingExerciseLocalization } from '../api/core.gen';
 import {
   useExerciseCatalog,
@@ -95,15 +94,6 @@ function commaSeparatedValues(value: string): string[] {
 
 function readKind(value: string): Draft['kind'] {
   return value === 'technique' ? 'technique' : 'exercise';
-}
-
-function useSportsCatalog() {
-  return useQuery({
-    queryKey: ['staff-catalog', 'sports'],
-    queryFn: () => coreApi.staff.catalog({ kind: 'sports' }),
-    staleTime: 60_000,
-    select: (catalog) => catalog.items.filter((item): item is StaffSportItem => item.kind === 'sports'),
-  });
 }
 
 export function ExerciseCatalogPage() {

@@ -1,6 +1,6 @@
 import { Check, Dumbbell, Pencil, Plus, RefreshCw, Save, X } from 'lucide-react';
 import { FormEvent, useMemo, useState } from 'react';
-import { useAffinityGroups } from '../hooks/useAffinityGroups';
+import { useSportsCatalog } from '../hooks/useSportsCatalog';
 import { useSessionTypes, useSetSessionTypeActive, useUpsertSessionType } from '../hooks/useSessionTypes';
 import { useCurrentStaffRole } from '../hooks/useStaffManagement';
 import { sessionIcon, sessionIconKeys } from '../lib/protocolIconCatalog';
@@ -10,12 +10,14 @@ import {
   type SessionTypeInput,
 } from '../lib/sessionTypes';
 import { formatNumber } from '../lib/format';
+import { staffSportLabel } from '../lib/sportsCatalog';
 
 type Draft = SessionTypeInput & { isNew: boolean };
 
 const emptyDraft: Draft = {
   isNew: true,
   key: '',
+  expectedVersion: null,
   label: '',
   iconKey: 'activity',
   sports: [],
@@ -45,7 +47,7 @@ const slug = (value: string) =>
  */
 export function SessionTypesPage() {
   const query = useSessionTypes();
-  const sports = useAffinityGroups();
+  const sports = useSportsCatalog();
   const role = useCurrentStaffRole();
   const canGovern = role.data === 'admin' || role.data === 'super_admin';
 
@@ -56,7 +58,7 @@ export function SessionTypesPage() {
 
   const types = useMemo(() => query.data ?? [], [query.data]);
   const sportOptions = useMemo(
-    () => (sports.data ?? []).filter((group) => group.active).map((group) => ({ key: group.key, label: group.label })),
+    () => (sports.data ?? []).filter((sport) => sport.active).map((sport) => ({ key: sport.key, label: staffSportLabel(sport) })),
     [sports.data],
   );
 
@@ -82,7 +84,7 @@ export function SessionTypesPage() {
   }
 
   function openEdit(type: SessionType) {
-    setDraft({ ...type, isNew: false, sports: [...type.sports] });
+    setDraft({ ...type, expectedVersion: type.version, isNew: false, sports: [...type.sports] });
     upsert.reset();
     setActive.reset();
   }
@@ -106,8 +108,12 @@ export function SessionTypesPage() {
     if (!draft || !canGovern) return;
     const key = draft.isNew ? slug(draft.key || draft.label) : draft.key;
     if (!key || !draft.label.trim()) return;
-    await upsert.mutateAsync({ ...draft, key });
-    setDraft(null);
+    try {
+      await upsert.mutateAsync({ ...draft, key });
+      setDraft(null);
+    } catch {
+      // A mutation mantém o erro e a edição para conferência.
+    }
   }
 
   const sportLabel = (key: string) =>

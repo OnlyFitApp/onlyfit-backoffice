@@ -10,12 +10,13 @@ import {
 import { useCurrentStaffRole } from '../hooks/useStaffManagement';
 import type { ProfessionalSpecialty } from '../lib/professionalSpecialties';
 
-type Draft = { key: string | null; label: string; council: string; regulated: boolean };
+type Draft = { expectedVersion: number | null; key: string | null; label: string; council: string; regulated: boolean };
 
-const emptyDraft: Draft = { key: null, label: '', council: '', regulated: true };
+const emptyDraft: Draft = { expectedVersion: null, key: null, label: '', council: '', regulated: true };
 
 function errorMessage(error: unknown): string {
   const code = (error as { message?: string })?.message ?? '';
+  if (code.includes('staff.catalog_changed')) return 'Outra pessoa alterou esta especialidade. Atualize a lista e reabra a edição.';
   if (code.includes('specialty_already_exists')) return 'Já existe uma especialidade com esse nome.';
   if (code.includes('invalid_specialty_label')) return 'O nome precisa ter de 2 a 60 caracteres.';
   if (code.includes('invalid_specialty_council')) return 'A sigla do conselho precisa ter de 2 a 20 caracteres.';
@@ -58,12 +59,16 @@ export function ProfessionalSpecialtiesPage() {
     if (!draft) return;
     const payload = { label: draft.label.trim(), council: draft.council.trim(), regulated: draft.regulated };
     if (!payload.label || !payload.council) return;
-    if (draft.key) {
-      await update.mutateAsync({ key: draft.key, ...payload });
-    } else {
-      await create.mutateAsync(payload);
+    try {
+      if (draft.key && draft.expectedVersion !== null) {
+        await update.mutateAsync({ key: draft.key, expectedVersion: draft.expectedVersion, ...payload });
+      } else {
+        await create.mutateAsync(payload);
+      }
+      setDraft(null);
+    } catch {
+      // A mutation mantém o erro e a edição para conferência.
     }
-    setDraft(null);
   }
 
   function move(item: ProfessionalSpecialty, direction: -1 | 1) {
@@ -195,6 +200,7 @@ export function ProfessionalSpecialtiesPage() {
                           onClick={() =>
                             setDraft({
                               key: item.key,
+                              expectedVersion: item.version,
                               label: item.label,
                               council: item.council,
                               regulated: item.regulated,

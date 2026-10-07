@@ -4,6 +4,7 @@ import { catalogKeyFromLabel } from './catalogKey';
 
 export type CombatTechnique = {
   id: string;
+  version: number;
   namePtbr: string;
   nameEn: string;
   nameEs: string;
@@ -17,7 +18,7 @@ export type CombatTechnique = {
   inUseCount: number;
 };
 
-export type CombatTechniqueInput = Omit<CombatTechnique, 'inUseCount'>;
+export type CombatTechniqueInput = Omit<CombatTechnique, 'inUseCount' | 'version'> & { expectedVersion: number | null };
 
 export type CombatTechniqueFilters = {
   search: string;
@@ -32,6 +33,7 @@ export type CombatTechniqueFilters = {
 function technique(item: StaffFightTechniqueItem): CombatTechnique {
   return {
     id: item.key,
+    version: item.version,
     namePtbr: item.data.label,
     nameEn: item.data.name_en ?? '',
     nameEs: item.data.name_es ?? '',
@@ -81,7 +83,7 @@ export async function upsertCombatTechnique(input: CombatTechniqueInput): Promis
       label: input.namePtbr.trim(),
       public: current?.public ?? true,
       position: current?.position ?? 0,
-      expected_version: current?.version,
+      expected_version: input.expectedVersion,
       data: {
         name_en: input.nameEn.trim() || null,
         name_es: input.nameEs.trim() || null,
@@ -119,6 +121,7 @@ export async function setCombatTechniqueActive(input: { id: string; active: bool
 
 export function combatTechniqueErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : '';
+  if (message.includes('staff.catalog_changed')) return 'Outra pessoa alterou esta técnica. Atualize a lista e reabra a edição.';
   if (message.includes('invalid_combat_technique_name')) return 'Informe um nome em português com até 120 caracteres.';
   if (message.includes('invalid_combat_technique_description')) return 'A descrição pode ter até 4.000 caracteres.';
   if (message.includes('invalid_combat_disciplines')) return 'Selecione ao menos uma disciplina válida.';

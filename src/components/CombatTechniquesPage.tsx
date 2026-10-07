@@ -45,6 +45,7 @@ const DISTANCES = [
 
 const emptyDraft: CombatTechniqueInput = {
   id: '',
+  expectedVersion: null,
   namePtbr: '',
   nameEn: '',
   nameEs: '',
@@ -100,6 +101,7 @@ export function CombatTechniquesPage() {
   function openEdit(entry: CombatTechnique) {
     setDraft({
       id: entry.id,
+      expectedVersion: entry.version,
       namePtbr: entry.namePtbr,
       nameEn: entry.nameEn,
       nameEs: entry.nameEs,

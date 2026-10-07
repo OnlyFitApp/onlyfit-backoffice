@@ -8,6 +8,7 @@ import type {
 
 export type ProductCategory = {
   slug: string;
+  version: number | null;
   label: string;
   icon: string;
   sort_order: number;
@@ -32,19 +33,24 @@ async function productCategories(): Promise<StaffProductCategoryItem[]> {
   );
 }
 
-export async function listProductCategories(): Promise<ProductCategory[]> {
-  return (await productCategories()).map((row) => ({
+function productCategory(row: StaffProductCategoryItem): ProductCategory {
+  return {
     slug: row.key,
+    version: row.version,
     label: row.data.label,
     icon: row.data.icon,
     sort_order: row.position,
     is_active: row.active,
-  }));
+  };
+}
+
+export async function listProductCategories(): Promise<ProductCategory[]> {
+  return (await productCategories()).map(productCategory);
 }
 
 export async function saveProductCategory(
   category: ProductCategory,
-): Promise<void> {
+): Promise<ProductCategory> {
   const current = (await productCategories())
     .find((item) => item.key === category.slug);
   const saved = requireProductCategory(await coreApi.staff.catalogSave({
@@ -54,11 +60,11 @@ export async function saveProductCategory(
       label: category.label.trim(),
       public: current?.public ?? true,
       position: category.sort_order,
-      expected_version: current?.version,
+      expected_version: category.version,
       data: { icon: category.icon },
     },
   }));
-  if (saved.active === category.is_active) return;
+  if (saved.active === category.is_active) return productCategory(saved);
   const changed = category.is_active
     ? await coreApi.staff.catalogActivate({
       kind: "product_categories", key: saved.key, expectedVersion: saved.version,
@@ -67,7 +73,7 @@ export async function saveProductCategory(
       kind: "product_categories", key: saved.key, expectedVersion: saved.version,
       confirmation: saved.data.label,
     });
-  requireProductCategory(changed);
+  return productCategory(requireProductCategory(changed));
 }
 
 export async function listMarketStores(): Promise<MarketStore[]> {

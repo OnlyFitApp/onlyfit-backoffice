@@ -47,6 +47,7 @@ function businessStatusLabel(status: MarketStore["business_status"]): string {
 
 const emptyCategory: ProductCategory = {
   slug: "",
+  version: null,
   label: "",
   icon: "package",
   sort_order: 100,
@@ -663,12 +664,17 @@ function CategoryRow({
   const submit = () => {
     setFeedback(null);
     saveCategory.mutate(value, {
-      onSuccess: () => setFeedback({ tone: "ok", text: "Categoria salva." }),
+      onSuccess: (saved) => {
+        setValue(saved);
+        setFeedback({ tone: "ok", text: "Categoria salva." });
+      },
       onError: (error) =>
         setFeedback({
           tone: "danger",
           text:
-            error instanceof Error ? error.message : "Não foi possível salvar.",
+            error instanceof Error && error.message.includes("staff.catalog_changed")
+              ? "Outra pessoa alterou esta categoria. Recarregue a página para conferir."
+              : error instanceof Error ? error.message : "Não foi possível salvar.",
         }),
     });
   };
@@ -679,7 +685,7 @@ function CategoryRow({
         <input
           className="of-field"
           value={value.label}
-          disabled={!canEdit}
+          disabled={!canEdit || saveCategory.isPending}
           aria-label={`Nome de ${category.label}`}
           onChange={(event) =>
             setValue((current) => ({ ...current, label: event.target.value }))
@@ -693,7 +699,7 @@ function CategoryRow({
         <input
           className="of-field"
           value={value.icon}
-          disabled={!canEdit}
+          disabled={!canEdit || saveCategory.isPending}
           aria-label={`Ícone de ${category.label}`}
           onChange={(event) =>
             setValue((current) => ({ ...current, icon: event.target.value }))
@@ -705,7 +711,7 @@ function CategoryRow({
           className="of-field market-numeric-input"
           type="number"
           value={value.sort_order}
-          disabled={!canEdit}
+          disabled={!canEdit || saveCategory.isPending}
           aria-label={`Ordem de ${category.label}`}
           onChange={(event) =>
             setValue((current) => ({
@@ -720,7 +726,7 @@ function CategoryRow({
           label={`Categoria ${category.label} ativa`}
           hideLabel
           checked={value.is_active}
-          disabled={!canEdit}
+          disabled={!canEdit || saveCategory.isPending}
           onChange={(next) =>
             setValue((current) => ({ ...current, is_active: next }))
           }

@@ -89,7 +89,7 @@ export async function createAffinityGroup(input: AffinityGroupInput): Promise<Af
   return affinityItem(requireAffinityItem(activated));
 }
 
-export async function updateAffinityGroup(input: AffinityGroupInput & { key: string }): Promise<AffinityGroup> {
+export async function updateAffinityGroup(input: AffinityGroupInput & { key: string; expectedToken: string }): Promise<AffinityGroup> {
   const current = (await affinityItems()).find((item) => item.key === input.key);
   if (!current) throw new Error('staff.catalog_item_not_found');
   const item = await coreApi.staff.catalogSave({
@@ -99,7 +99,7 @@ export async function updateAffinityGroup(input: AffinityGroupInput & { key: str
       label: input.label.trim(),
       public: current.public,
       position: current.position,
-      expected_version: current.version,
+      expected_version: Number(input.expectedToken),
       data: { icon: input.icon, accent: input.accent, aliases: input.aliases },
     },
   });
@@ -176,6 +176,7 @@ export function isAffinityGroupImpactChanged(error: unknown): boolean {
 
 export function affinityGroupErrorMessage(error: unknown): string {
   const message = affinityGroupErrorText(error);
+  if (message.includes('staff.catalog_changed')) return 'Outra pessoa alterou este grupo. Atualize a lista e reabra a edição.';
   if (message.includes('affinity_group_value_conflict')) return 'Nome, chave ou alias já usado por outro grupo.';
   if (message.includes('last_active_affinity_group')) return 'O último grupo ativo não pode ser desativado.';
   if (message.includes('affinity_group_impact_changed')) return 'Os vínculos mudaram. Revise o impacto atualizado e confirme novamente.';

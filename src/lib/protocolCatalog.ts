@@ -50,6 +50,7 @@ export type ProtocolStepTranslation = {
 
 export type ProtocolCatalogEntry = {
   id: string;
+  version: number;
   translations: ProtocolTranslation[];
   flow: ProtocolFlow;
   iconKey: ProtocolIconKey;
@@ -65,6 +66,7 @@ export type ProtocolCatalogEntry = {
 
 export type ProtocolCatalogInput = {
   id: string;
+  expectedVersion: number | null;
   translations: ProtocolTranslation[];
   flow: ProtocolFlow;
   iconKey: ProtocolIconKey;
@@ -120,6 +122,7 @@ function parse(value: StaffProtocolTemplateItem): ProtocolCatalogEntry {
   }
   return {
     id: value.key,
+    version: value.version,
     translations: data.translations.map(parseTranslation),
     flow: data.flow,
     iconKey: data.icon_key,
@@ -129,7 +132,7 @@ function parse(value: StaffProtocolTemplateItem): ProtocolCatalogEntry {
     defaultSteps: data.default_steps.map(parseStep),
     sortOrder: value.position,
     active: value.active,
-    inUseCount: value.impact.accounts,
+    inUseCount: value.impact.total_links,
     updatedAt: null,
   };
 }
@@ -155,13 +158,10 @@ export async function listProtocolCatalog(): Promise<ProtocolCatalogEntry[]> {
 }
 
 export async function upsertProtocolCatalogEntry(input: ProtocolCatalogInput): Promise<string> {
-  const current = (await coreApi.staff.catalog({ kind: 'protocol_templates' })).items
-    .find((item): item is StaffProtocolTemplateItem =>
-      item.kind === 'protocol_templates' && item.key === input.id.trim());
   const saved = await coreApi.staff.catalogSave({ item: {
     kind: 'protocol_templates', key: input.id.trim(),
     label: protocolTranslation(input, 'pt-BR').name, public: true,
-    position: input.sortOrder, expected_version: current?.version,
+    position: input.sortOrder, expected_version: input.expectedVersion,
     data: {
       icon_key: input.iconKey,
       flow: input.flow,
@@ -231,6 +231,7 @@ export async function setProtocolCatalogEntryActive(input: {
 
 export function protocolCatalogErrorMessage(error: unknown): string {
   const code = (error as { message?: string })?.message ?? '';
+  if (code.includes('staff.catalog_changed')) return 'Outra pessoa alterou este protocolo. Atualize a lista e reabra a edição.';
   if (code.includes('catalog_id_required')) return 'Informe a chave técnica da entrada.';
   if (code.includes('catalog_id_too_long')) return 'A chave técnica passa de 80 caracteres.';
   if (code.includes('catalog_name_required')) return 'O nome é obrigatório e vai até 120 caracteres.';

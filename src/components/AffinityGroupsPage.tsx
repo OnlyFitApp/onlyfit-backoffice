@@ -119,7 +119,7 @@ export function AffinityGroupsPage() {
     };
     const onError = (mutationError: Error) => setError(affinityGroupErrorMessage(mutationError));
     if (editing === 'new') createMutation.mutate(input, { onSuccess, onError });
-    else updateMutation.mutate({ ...input, key: editing.key }, { onSuccess, onError });
+    else updateMutation.mutate({ ...input, key: editing.key, expectedToken: editing.token }, { onSuccess, onError });
   };
 
   const activate = (group: AffinityGroup) => {

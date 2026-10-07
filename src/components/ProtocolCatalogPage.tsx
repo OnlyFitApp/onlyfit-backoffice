@@ -22,6 +22,7 @@ type Draft = ProtocolCatalogInput & { isNew: boolean };
 const emptyDraft: Draft = {
   isNew: true,
   id: '',
+  expectedVersion: null,
   translations: protocolLocales.map(({ value }) => ({
     locale: value,
     name: '',
@@ -86,6 +87,7 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
   function openEdit(entry: ProtocolCatalogEntry) {
     setDraft({
       ...entry,
+      expectedVersion: entry.version,
       isNew: false,
       translations: entry.translations.map((translation) => ({ ...translation })),
       defaultSteps: entry.defaultSteps.map((step) => ({
@@ -107,8 +109,12 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
     const stepsComplete = draft.defaultSteps.every((step) =>
       step.translations.every((translation) => translation.name.trim()));
     if (!id || !translationsComplete || !stepsComplete) return;
-    await upsert.mutateAsync({ ...draft, id });
-    setDraft(null);
+    try {
+      await upsert.mutateAsync({ ...draft, id });
+      setDraft(null);
+    } catch {
+      // A mutation mantém o erro e a edição para conferência.
+    }
   }
 
   function patch(values: Partial<Draft>) {

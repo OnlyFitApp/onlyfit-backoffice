@@ -3,6 +3,7 @@ import type { StaffSessionTypeItem } from '../api/core.gen';
 
 export type SessionType = {
   key: string;
+  version: number;
   label: string;
   iconKey: string;
   sports: string[];
@@ -13,6 +14,7 @@ export type SessionType = {
 
 export type SessionTypeInput = {
   key: string;
+  expectedVersion: number | null;
   label: string;
   iconKey: string;
   sports: string[];
@@ -23,6 +25,7 @@ export type SessionTypeInput = {
 function sessionType(item: StaffSessionTypeItem): SessionType {
   return {
     key: item.key,
+    version: item.version,
     label: item.data.label,
     iconKey: item.data.icon_key,
     sports: item.data.sports,
@@ -56,7 +59,7 @@ export async function upsertSessionType(input: SessionTypeInput): Promise<string
       label: input.label.trim(),
       public: current?.public ?? true,
       position: input.sortOrder,
-      expected_version: current?.version,
+      expected_version: input.expectedVersion,
       data: { icon_key: input.iconKey.trim(), sports: input.sports },
     },
   }));
@@ -85,6 +88,8 @@ export async function setSessionTypeActive(input: { key: string; active: boolean
 
 export function sessionTypeErrorMessage(error: unknown): string {
   const code = error instanceof Error ? error.message : '';
+  if (code.includes('staff.catalog_changed')) return 'Outra pessoa alterou este tipo. Atualize a lista e reabra a edição.';
+  if (code.includes('staff.invalid_session_type')) return 'Revise o rótulo, o ícone e as modalidades do tipo de sessão.';
   if (code.includes('invalid_session_type_key')) return 'A chave aceita só letras minúsculas, números e _, começando por letra.';
   if (code.includes('invalid_session_type_label')) return 'O rótulo é obrigatório e vai até 60 caracteres.';
   if (code.includes('invalid_session_type_icon')) return 'Escolha um ícone.';

@@ -28,7 +28,7 @@ test('catalog sends translated steps to backend validation and preserves an unsp
   };
   const icons = {protocolIconKeys:['sun']};
   runInNewContext(compiled, {exports, require: (id) => id.includes('/api/core') ? core : icons});
-  await exports.upsertProtocolCatalogEntry({id:'example',translations:translations('Example'),
+  await exports.upsertProtocolCatalogEntry({id:'example',expectedVersion:null,translations:translations('Example'),
     iconKey:'sun',flow:'generic',structureLocked:true,clinicalNotice:true,
     featured:false,sortOrder:0,active:true,defaultSteps:[
       {translations:translations('Named step','Complete instruction'),time:'',durationMinutes:null},

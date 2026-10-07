@@ -24,6 +24,11 @@ import type {
   ProductCategory,
 } from "../lib/marketSettings";
 import { useCurrentStaffRole } from "../hooks/useStaffManagement";
+import {
+  heroFocusPattern,
+  MarketStoreHeroEditor,
+  tileBgPattern,
+} from "./MarketStoreHeroEditor";
 import { formatNumber } from "../lib/format";
 
 const businessStatusLabels: Record<MarketStore["business_status"], string> = {
@@ -54,6 +59,8 @@ const emptyMarketStore: MarketStoreInput = {
   tagline: "",
   category: "",
   cover_image_url: null,
+  hero_focus: null,
+  tile_bg: null,
   official: true,
   featured: false,
   featured_starts_at: null,
@@ -137,6 +144,12 @@ function MarketStoresSection({
   const [editing, setEditing] = useState<MarketStoreInput | null>(null);
   const [businessQuery, setBusinessQuery] = useState("");
   const businesses = useMarketStoreBusinesses(businessQuery);
+  const editingStore = stores.find((store) => store.business_id === editing?.business_id);
+  const editingBusiness = businesses.data?.find(
+    (business) => business.id === editing?.business_id,
+  );
+  const editingName = editingBusiness?.name ?? editingStore?.name ?? "";
+  const editingLogo = editingBusiness?.logo_url ?? editingStore?.logo_url ?? null;
   const [feedback, setFeedback] = useState<Feedback>(null);
 
   const startCreate = () => {
@@ -152,6 +165,8 @@ function MarketStoresSection({
       tagline: store.tagline,
       category: store.category,
       cover_image_url: store.cover_image_url,
+      hero_focus: store.hero_focus,
+      tile_bg: store.tile_bg,
       official: store.official,
       featured: store.featured,
       featured_starts_at: store.featured_starts_at,
@@ -174,6 +189,20 @@ function MarketStoresSection({
     if (!editing) return;
     if (!editing.business_id || !/^[a-z0-9_]{2,40}$/.test(editing.key)) {
       setFeedback({ tone: "danger", text: "Selecione um negócio válido." });
+      return;
+    }
+    if (editing.hero_focus && !heroFocusPattern.test(editing.hero_focus)) {
+      setFeedback({
+        tone: "danger",
+        text: "Foco da foto deve ser horizontal e vertical em %, ex.: 50% 25%.",
+      });
+      return;
+    }
+    if (editing.tile_bg && !tileBgPattern.test(editing.tile_bg)) {
+      setFeedback({
+        tone: "danger",
+        text: "Fundo do tile deve ser uma cor hexadecimal, ex.: #FFFFFF.",
+      });
       return;
     }
     if (editing.featured && !editing.official) {
@@ -387,17 +416,18 @@ function MarketStoresSection({
                 onChange={(event) => update("tagline", event.target.value)}
               />
             </label>
-            <label className="market-field wide">
-              <span>URL HTTPS da capa do destaque</span>
-              <input
-                type="url"
-                value={editing.cover_image_url ?? ""}
-                onChange={(event) =>
-                  update("cover_image_url", event.target.value || null)
+            <div className="market-field wide">
+              <MarketStoreHeroEditor
+                value={editing}
+                name={editingName}
+                category={editing.category}
+                tagline={editing.tagline}
+                logoUrl={editingLogo}
+                onChange={(patch) =>
+                  setEditing((current) => (current ? { ...current, ...patch } : current))
                 }
-                placeholder="https://..."
               />
-            </label>
+            </div>
             <SwitchField
               label="Contrato verificado · loja oficial"
               checked={editing.official}

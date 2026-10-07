@@ -83,8 +83,9 @@ export type ApiErrorCode =
   | 'commerce.invalid_google_play_purchase'
   | 'commerce.invalid_market_filter'
   | 'commerce.invalid_member_filter'
+  | 'commerce.invalid_network_invitation'
   | 'commerce.invalid_network_location'
-  | 'commerce.invalid_network_principal'
+  | 'commerce.invalid_network_recipient'
   | 'commerce.invalid_offer'
   | 'commerce.invalid_offer_action'
   | 'commerce.invalid_offering_tool'
@@ -107,6 +108,7 @@ export type ApiErrorCode =
   | 'commerce.invalid_storefront_cursor'
   | 'commerce.invalid_storefront_filter'
   | 'commerce.invalid_subscription_transition'
+  | 'commerce.invitation_required'
   | 'commerce.lesson_locked'
   | 'commerce.library_item_unavailable'
   | 'commerce.media_upload_conflict'
@@ -116,8 +118,10 @@ export type ApiErrorCode =
   | 'commerce.native_product_unavailable'
   | 'commerce.native_transaction_mismatch'
   | 'commerce.network_closed'
-  | 'commerce.network_manual_choice_disabled'
+  | 'commerce.network_invitation_changed'
+  | 'commerce.network_invitation_not_found'
   | 'commerce.network_membership_exists'
+  | 'commerce.network_scope_changed'
   | 'commerce.offer_changed'
   | 'commerce.offer_delivery_changed'
   | 'commerce.offer_delivery_invalid'
@@ -138,6 +142,7 @@ export type ApiErrorCode =
   | 'commerce.physical_product_changed'
   | 'commerce.physical_product_not_found'
   | 'commerce.price_required'
+  | 'commerce.principal_required'
   | 'commerce.professional_required'
   | 'commerce.provider_action_failed'
   | 'commerce.provider_bind_failed'
@@ -237,6 +242,7 @@ export type ApiErrorCode =
   | 'interaction.target_not_found'
   | 'internal.error'
   | 'media.audio_track_present'
+  | 'media.backend_unavailable'
   | 'media.cover_busy'
   | 'media.cover_expired'
   | 'media.cover_not_found'
@@ -461,6 +467,7 @@ export type ApiErrorCode =
   | 'social.prize_terms_required'
   | 'social.professional_required'
   | 'social.profile_not_found'
+  | 'social.publication_not_configured'
   | 'social.report_target_not_found'
   | 'social.resource_contract_mismatch'
   | 'social.resource_not_found'
@@ -590,6 +597,7 @@ export type ApiErrorCode =
   | 'staff.invalid_health_library_filter'
   | 'staff.invalid_health_library_item'
   | 'staff.invalid_market_store'
+  | 'staff.invalid_market_store_media'
   | 'staff.invalid_market_store_query'
   | 'staff.invalid_member_access_action'
   | 'staff.invalid_member_access_filter'
@@ -645,6 +653,10 @@ export type ApiErrorCode =
   | 'staff.legal_version_exists'
   | 'staff.market_store_business_taken'
   | 'staff.market_store_changed'
+  | 'staff.market_store_media_contract_mismatch'
+  | 'staff.market_store_media_not_found'
+  | 'staff.market_store_media_upload_conflict'
+  | 'staff.market_store_media_upload_incomplete'
   | 'staff.member_access_changed'
   | 'staff.member_access_not_found'
   | 'staff.mfa_required'
@@ -653,6 +665,7 @@ export type ApiErrorCode =
   | 'staff.network_assignment_not_found'
   | 'staff.network_changed'
   | 'staff.network_conflict'
+  | 'staff.network_consent_required'
   | 'staff.network_policy_not_found'
   | 'staff.network_region_in_use'
   | 'staff.network_region_not_found'
@@ -1196,6 +1209,13 @@ export interface CommerceAdPackages {
   items: CommerceAdPackage[];
 }
 
+export interface CommerceAmbassadorActionInput {
+  principal_membership_id?: string;
+  username?: string;
+  invitation_id?: string;
+  expected_version?: number;
+}
+
 export interface CommerceAmbassadorContext {
   enabled: boolean;
   allow_direct: boolean;
@@ -1203,20 +1223,29 @@ export interface CommerceAmbassadorContext {
   location: CommerceAmbassadorLocation;
   membership: CommerceAmbassadorMembershipView | null;
   principals: CommerceAmbassadorPrincipal[];
+  can_invite: boolean;
+  can_access: boolean;
+  network_enabled: boolean;
+  scopes: CommerceAmbassadorScope[];
+  incoming: CommerceAmbassadorInvitation[];
+  outgoing: CommerceAmbassadorInvitation[];
+}
+
+export interface CommerceAmbassadorInvitation {
+  id: string;
+  status: string;
+  version: number;
+  profile: CommerceProfessionalCard;
+  inviter: CommerceProfessionalCard;
+  vertical_label: string;
+  country_code: string;
+  principal_membership_id: string;
 }
 
 export interface CommerceAmbassadorLocation {
   country_code: string;
   state_code: string | null;
   city_name: string | null;
-}
-
-export interface CommerceAmbassadorMembership {
-  id: string;
-  status: string;
-  classification: string;
-  container_id: string;
-  principal_membership_id: string | null;
 }
 
 export interface CommerceAmbassadorMembershipView {
@@ -1232,6 +1261,14 @@ export interface CommerceAmbassadorPrincipal {
   classification: "ambassador" | "associate";
   badge_label: string;
   profile: CommerceProfessionalCard;
+}
+
+export interface CommerceAmbassadorScope {
+  id: string;
+  vertical_key: string;
+  vertical_label: string;
+  region_name: string;
+  country_code: string;
 }
 
 export interface CommerceAmbassadorVertical {
@@ -1919,6 +1956,8 @@ export interface CommerceFeaturedStore {
   name: string;
   logo_url: string;
   cover_image_url?: string | null;
+  hero_focus?: string | null;
+  tile_bg?: string | null;
   tagline?: string | null;
   category?: string | null;
 }
@@ -6552,6 +6591,7 @@ export interface SocialPollOption {
 }
 
 export interface SocialPost {
+  publication?: SocialPublicationReceipt;
   id: string;
   kind: "post" | "story" | "comment";
   author: SocialProfileReadCard;
@@ -6587,7 +6627,7 @@ export interface SocialPost {
   author_club_member?: boolean;
 }
 
-export type SocialPostActionCommand = SocialPostCaptionAction | SocialPostCommentsAction | SocialPostCoverAction | SocialPostDeleteAction | SocialPostCancelEventAction | SocialPostModerateAction | SocialPostApproveCheckinAction | SocialPostRejectCheckinAction;
+export type SocialPostActionCommand = SocialPostCaptionAction | SocialPostCommentsAction | SocialPostCoverAction | SocialPostDeleteAction | SocialPostCancelEventAction | SocialPostModerateAction | SocialPostApproveCheckinAction | SocialPostRejectCheckinAction | SocialPostRetryPublication;
 
 export interface SocialPostActivity {
   type: "activity";
@@ -6724,6 +6764,8 @@ export interface SocialPostEvent {
 export interface SocialPostLookup {
   found: boolean;
   id?: string | null;
+  publication?: SocialPublicationReceipt;
+  status?: "draft" | "pending" | "published" | "removed" | null;
 }
 
 export interface SocialPostModerateAction {
@@ -6760,7 +6802,28 @@ export interface SocialPostResource {
   bytes: number;
 }
 
-export type SocialPostSaveCommand = SocialPostCreate | SocialPostUpdate;
+export interface SocialPostRetryPublication {
+  action: "retryPublication";
+  id: string;
+  expected_version: number;
+  idempotency_key: string;
+}
+
+export type SocialPostSaveCommand = SocialPostCreate | SocialPostUpdate | SocialPostSubmit;
+
+export interface SocialPostSubmit {
+  action: "submit";
+  idempotency_key: string;
+  visibility: "public" | "followers" | "members" | "paid";
+  body: string;
+  media: SocialMediaInput[];
+  sports: string[];
+  location?: string | null;
+  offer_id?: string | null;
+  affinity?: string | null;
+  comments_enabled: boolean;
+  converted_story_id?: string | null;
+}
 
 export interface SocialPostUpdate {
   action: "update";
@@ -6837,6 +6900,14 @@ export interface SocialPublicationPolicy {
   total_video_seconds: number;
   media_count: number;
   ambassador: boolean;
+  submissions?: SocialPublicationReceipt[];
+}
+
+export interface SocialPublicationReceipt {
+  id: string;
+  state: "processing" | "published" | "failed" | "cancelled";
+  retryable: boolean;
+  error_code?: string | null;
 }
 
 export interface SocialRelationState {
@@ -8493,6 +8564,8 @@ export interface StaffMarketStore {
   tagline?: string | null;
   category?: string | null;
   cover_image_url?: string | null;
+  hero_focus?: string | null;
+  tile_bg?: string | null;
   official: boolean;
   featured: boolean;
   featured_starts_at?: string | null;
@@ -8515,12 +8588,51 @@ export interface StaffMarketStoreInput {
   tagline?: string | null;
   category?: string | null;
   cover_image_url?: string | null;
+  hero_focus?: string | null;
+  tile_bg?: string | null;
   official: boolean;
   featured: boolean;
   featured_starts_at?: string | null;
   featured_ends_at?: string | null;
   position: number;
   expected_version?: number | null;
+}
+
+export interface StaffMarketStoreMediaComplete {
+  action: "complete";
+  request_id: string;
+  idempotency_key: string;
+}
+
+export interface StaffMarketStoreMediaPending {
+  file_id: string;
+  status: "pending";
+  upload_url: string;
+  upload_headers: StaffMarketStoreUploadHeaders;
+  expires_in: number;
+}
+
+export interface StaffMarketStoreMediaPrepare {
+  action: "prepare";
+  request_id: string;
+  filename: string;
+  mime: "image/jpeg" | "image/png" | "image/webp";
+  bytes: number;
+}
+
+export interface StaffMarketStoreMediaReady {
+  file_id: string;
+  status: "ready";
+  public_url: string;
+}
+
+export type StaffMarketStoreMediaUploadCommand = StaffMarketStoreMediaPrepare | StaffMarketStoreMediaComplete;
+
+export type StaffMarketStoreMediaUploadResult = StaffMarketStoreMediaPending | StaffMarketStoreMediaReady;
+
+export interface StaffMarketStoreUploadHeaders {
+  "Content-Type": string;
+  "Content-Length": string;
 }
 
 export interface StaffMarketStores {
@@ -9929,10 +10041,10 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       adBookings: (input: { businessId: string; limit?: number; offset?: number }) => call('commerce_ad_bookings_v1', { p_business_id: input.businessId, p_limit: input.limit, p_offset: input.offset }) as Promise<CommerceAdBookingPage>,
       /** Lista pacotes publicitários configurados e sua capacidade atual. (query; contract/commerce/ad_packages.v1.json) */
       adPackages: (input: { businessId: string }) => call('commerce_ad_packages_v1', { p_business_id: input.businessId }) as Promise<CommerceAdPackages>,
-      /** Lê a entrada do profissional em sua única vertical e os Principais/Associados elegíveis na região. O vínculo da conta corresponde ao país consultado. (query; contract/commerce/ambassador.v1.json) */
+      /** Lê capacidades privadas, escopos do Principal e convites enviados ou recebidos; não oferece candidatura pública. (query; contract/commerce/ambassador.v1.json) */
       ambassador: (input: { countryCode?: string | null; stateCode?: string | null; cityName?: string | null } = {}) => call('commerce_ambassador_v1', { p_country_code: input.countryCode, p_state_code: input.stateCode, p_city_name: input.cityName }) as Promise<CommerceAmbassadorContext>,
-      /** Solicita entrada do profissional na rede da própria vertical e região. (command; contract/commerce/ambassador_act.v1.json) */
-      ambassadorAct: (input: { countryCode: string; stateCode?: string | null; cityName?: string | null; principalMembershipId?: string | null }) => call('commerce_ambassador_act_v1', { p_country_code: input.countryCode, p_state_code: input.stateCode, p_city_name: input.cityName, p_principal_membership_id: input.principalMembershipId }) as Promise<CommerceAmbassadorMembership>,
+      /** Principal convida um profissional para Associado; destinatário aceita ou recusa, aceite aguarda aprovação do backoffice. Cancela convite ainda não aceito. (command; contract/commerce/ambassador_act.v1.json) */
+      ambassadorAct: (input: { countryCode?: string; stateCode?: string | null; cityName?: string | null; principalMembershipId?: string | null; action?: "invite" | "accept" | "decline" | "cancel"; input?: CommerceAmbassadorActionInput } = {}) => call('commerce_ambassador_act_v1', { p_country_code: input.countryCode, p_state_code: input.stateCode, p_city_name: input.cityName, p_principal_membership_id: input.principalMembershipId, p_action: input.action, p_input: input.input }) as Promise<CommerceAmbassadorContext>,
       /** Valida criptograficamente uma transação StoreKit e confirma a compra canônica sem confiar no app. (command; contract/commerce/app_store_verify.v1.json) */
       appStoreVerify: (input: { signedTransaction: string; offerId?: string }) => invoke('worker', '/commerce/app-store/verify', { signed_transaction: input.signedTransaction, offer_id: input.offerId }) as Promise<CommerceAppStoreVerification>,
       /** Remove, renomeia ou torna principal um método Stripe pertencente à conta autenticada, com comando durável e idempotente. (command; contract/commerce/card_act.v1.json) */
@@ -10278,7 +10390,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Salva, remove dos salvos ou registra visualização de uma publicação de forma idempotente. (command; contract/social/post_event_act.v1.json) */
       postEventAct: (input: { id: string; action: "save" | "unsave" | "view" }) => call('social_post_event_act_v1', { p_id: input.id, p_action: input.action }) as Promise<SocialPost>,
       /** Localiza uma publicação ou story próprio pela chave idempotente antes de repetir uploads. (query; contract/social/post_lookup.v1.json) */
-      postLookup: (input: { idempotencyKey: string; kind?: "post" | "story" }) => call('social_post_lookup_v1', { p_idempotency_key: input.idempotencyKey, p_kind: input.kind }) as Promise<SocialPostLookup>,
+      postLookup: (input: { idempotencyKey: string; kind?: "post" | "story" | "submission" }) => call('social_post_lookup_v1', { p_idempotency_key: input.idempotencyKey, p_kind: input.kind }) as Promise<SocialPostLookup>,
       /** Cria ou edita publicação com comando discriminado, replay exato e concorrência otimista na edição. (command; contract/social/post_save.v1.json) */
       postSave: (input: { post: SocialPostSaveCommand }) => call('social_post_save_v1', { p_post: input.post }) as Promise<SocialPost>,
       /** Lê um conjunto ordenado de publicações visíveis sem acesso direto às tabelas. (query; contract/social/posts.v1.json) */
@@ -10320,7 +10432,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       /** Abre a quarentena de um vídeo social e registra seu destino canônico antes do envio. (command; contract/social/video_upload.v1.json) */
       videoUpload: (input: { filename: string; contentType: "video/mp4" | "video/webm" | "video/quicktime" | "video/x-m4v" | "video/ogg"; contentLength: number; audioMode: "preserve" | "remove" | "absent"; destination: "post" | "story" }) => invoke('worker', '/media/video-upload', { filename: input.filename, content_type: input.contentType, content_length: input.contentLength, audio_mode: input.audioMode, destination: input.destination }) as Promise<VideoUpload>,
       /** Retoma, assina partes, conclui ou cancela o envio da sessão privada de vídeo. (command; contract/social/video_upload_act.v1.json) */
-      videoUploadAct: (input: { uploadId: string; action: "status" | "signPart" | "complete" | "cancel"; partNumber?: number }) => invoke('worker', '/media/video-upload-act', { upload_id: input.uploadId, action: input.action, part_number: input.partNumber }) as Promise<VideoUploadState>,
+      videoUploadAct: (input: { uploadId: string; action: "status" | "signPart" | "complete" | "cancel" | "resume"; partNumber?: number }) => invoke('worker', '/media/video-upload-act', { upload_id: input.uploadId, action: input.action, part_number: input.partNumber }) as Promise<VideoUploadState>,
     },
     interaction: {
       /** Executa reação, comentário, edição, remoção ou denúncia discriminada e idempotente. (command; contract/social/interaction_act.v1.json) */
@@ -10471,6 +10583,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       legalDocumentUpload: (input: { filename: string; contentType: "application/pdf"; contentLength: number }) => invoke('worker', '/staff/legal-document-upload', { filename: input.filename, content_type: input.contentType, content_length: input.contentLength }) as Promise<StaffLegalDocumentUpload>,
       /** Lista versões legais imutáveis, configuração vigente e cobertura de aceite. (query; contract/staff/legal_documents.v1.json) */
       legalDocuments: () => call('staff_legal_documents_v1', {}) as Promise<StaffLegalDocumentVersion[]>,
+      /** Prepara e conclui upload R2 inspecionado da foto de campanha do hero de uma loja em destaque. (command; contract/staff/market_store_media_upload.v1.json) */
+      marketStoreMediaUpload: (input: { upload: StaffMarketStoreMediaUploadCommand }) => invoke('worker', '/staff/market-store-media-upload', { upload: input.upload }) as Promise<StaffMarketStoreMediaUploadResult>,
       /** Configura de forma independente a oficialização e o destaque de uma marca. (command; contract/staff/market_store_save.v1.json) */
       marketStoreSave: (input: { store: StaffMarketStoreInput }) => call('staff_market_store_save_v1', { p_store: input.store }) as Promise<StaffMarketStore>,
       /** Lista as marcas configuradas como oficiais ou destaque e os negócios disponíveis. (query; contract/staff/market_stores.v1.json) */

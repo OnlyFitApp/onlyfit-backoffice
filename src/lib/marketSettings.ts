@@ -86,3 +86,51 @@ export async function saveMarketStore(
 ): Promise<MarketStore> {
   return coreApi.staff.marketStoreSave({ store: input });
 }
+
+type MarketStoreMediaMime = "image/jpeg" | "image/png" | "image/webp";
+
+function marketStoreMediaMime(file: File): MarketStoreMediaMime {
+  if (file.type === "image/jpeg" || file.type === "image/png" || file.type === "image/webp") {
+    return file.type;
+  }
+  throw new Error("staff.invalid_market_store_media");
+}
+
+/** Envia a foto de campanha do hero ao R2 e devolve a URL pública verificada. */
+export async function uploadMarketStoreHero(file: File): Promise<string> {
+  if (file.size <= 0) throw new Error("staff.invalid_market_store_media");
+  const pending = await coreApi.staff.marketStoreMediaUpload({
+    upload: {
+      action: "prepare",
+      request_id: crypto.randomUUID(),
+      filename: file.name,
+      mime: marketStoreMediaMime(file),
+      bytes: file.size,
+    },
+  });
+  if (pending.status !== "pending") throw new Error("staff.market_store_media_prepare_invalid");
+  const uploaded = await fetch(pending.upload_url, {
+    method: "PUT",
+    headers: { "Content-Type": pending.upload_headers["Content-Type"] },
+    body: file,
+  });
+  if (!uploaded.ok) throw new Error("staff.market_store_media_upload_failed");
+  const ready = await coreApi.staff.marketStoreMediaUpload({
+    upload: {
+      action: "complete",
+      request_id: pending.file_id,
+      idempotency_key: crypto.randomUUID(),
+    },
+  });
+  if (ready.status !== "ready") throw new Error("staff.market_store_media_complete_invalid");
+  return ready.public_url;
+}
+
+export function marketStoreMediaErrorMessage(error: unknown): string {
+  const code = error instanceof Error ? error.message : "";
+  if (code.includes("staff.invalid_market_store_media")) return "Use foto JPG, PNG ou WebP de até 10 MB.";
+  if (code.includes("staff.market_store_media_upload_failed")) return "Não foi possível enviar a foto. Tente novamente.";
+  if (code.includes("staff.market_store_media_contract_mismatch")) return "O arquivo enviado não é uma imagem válida.";
+  if (code.includes("staff.forbidden")) return "Seu perfil não pode alterar lojas.";
+  return "Não foi possível enviar a foto.";
+}

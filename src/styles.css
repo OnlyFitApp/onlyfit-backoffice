@@ -5927,6 +5927,10 @@ svg text {
   color: rgb(var(--color-primary));
 }
 
+.market-feedback.warning {
+  color: #f1b44c;
+}
+
 .market-feedback.danger {
   color: rgb(var(--color-error));
 }
@@ -7862,6 +7866,8 @@ fieldset.pcat-field > legend {
 .official-store-copy > span { display: flex; align-items: center; gap: 5px; color: rgb(var(--color-primary)); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
 .official-store-copy strong,.official-store-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .official-store-copy small { color: rgb(var(--color-on-surface-variant)); }
+.official-store-states { display: flex; align-items: flex-end; flex-direction: column; gap: 6px; }
+.official-store-publication-note { grid-column: 2 / -1; margin: 0; color: rgb(var(--color-on-surface-variant)); font-size: 12px; line-height: 1.5; }
 .official-store-actions { grid-column: 2 / -1; display: flex; justify-content: flex-end; gap: 6px; }
 .official-store-editor { display: grid; gap: 16px; padding: 16px; border: 1px solid rgb(var(--color-primary) / .35); border-radius: 14px; background: rgb(var(--color-primary) / .05); }
 .official-store-editor-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -7873,6 +7879,9 @@ fieldset.pcat-field > legend {
 .upload-field img { width: 100%; height: 110px; object-fit: contain; border-radius: 10px; background: rgb(var(--color-surface)); }
 @media (max-width: 760px) {
   .official-store-grid,.official-store-form-grid { grid-template-columns: 1fr; }
+  .official-store-card { grid-template-columns: 54px minmax(0, 1fr); }
+  .official-store-states { grid-column: 1 / -1; align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+  .official-store-publication-note { grid-column: 1 / -1; }
   .official-store-form-grid .wide { grid-column: auto; }
   .official-store-toolbar { align-items: flex-start; flex-direction: column; }
 }

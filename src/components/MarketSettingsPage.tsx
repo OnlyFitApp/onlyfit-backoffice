@@ -26,6 +26,20 @@ import type {
 import { useCurrentStaffRole } from "../hooks/useStaffManagement";
 import { formatNumber } from "../lib/format";
 
+const businessStatusLabels: Record<MarketStore["business_status"], string> = {
+  draft: "Rascunho",
+  pending_review: "Em verificação",
+  rejected: "Rejeitado",
+  published: "Publicado",
+  paused: "Pausado",
+  suspended: "Suspenso",
+  archived: "Arquivado",
+};
+
+function businessStatusLabel(status: MarketStore["business_status"]): string {
+  return businessStatusLabels[status] ?? "Estado não reconhecido";
+}
+
 const emptyCategory: ProductCategory = {
   slug: "",
   label: "",
@@ -171,8 +185,13 @@ function MarketStoresSection({
     }
     setFeedback(null);
     saveStore.mutate(editing, {
-      onSuccess: () => {
-        setFeedback({ tone: "ok", text: "Configuração da loja salva." });
+      onSuccess: (saved) => {
+        setFeedback({
+          tone: saved.business_status === "published" ? "ok" : "warning",
+          text: saved.business_status === "published"
+            ? "Configuração da loja salva. Negócio publicado."
+            : `Configuração da loja salva. ${businessStatusLabel(saved.business_status)}: a loja não está publicada e não é exibida no Mercado.`,
+        });
         setEditing(null);
       },
       onError: (saveError) =>
@@ -195,7 +214,9 @@ function MarketStoresSection({
       <div className="official-store-toolbar">
         <p>
           Oficial confirma o contrato com a marca. Destaque promove uma loja
-          oficial no topo do Mercado.
+          oficial no topo do Mercado, dentro do período configurado. Salvar a
+          configuração não publica o negócio: lojas em rascunho permanecem
+          salvas, mas não são exibidas no Mercado.
         </p>
         {canEdit && (
           <button
@@ -237,11 +258,21 @@ function MarketStoresSection({
                 <strong>{store.name}</strong>
                 <small>{store.category || "Sem categoria"}</small>
               </div>
-              <span
-                className={`market-pill ${store.featured ? "ok" : "muted"}`}
-              >
-                {store.featured ? "Em destaque" : "Fora do destaque"}
-              </span>
+              <div className="official-store-states">
+                <span
+                  className={`market-pill ${store.business_status === "published" ? "ok" : "warning"}`}
+                >
+                  {businessStatusLabel(store.business_status)}
+                </span>
+                <span className="market-pill muted">
+                  {store.featured ? "Destaque configurado" : "Sem destaque no topo"}
+                </span>
+              </div>
+              <p className="official-store-publication-note">
+                {store.business_status === "published"
+                  ? "Configuração salva. Negócio publicado."
+                  : "Configuração salva. Loja não publicada; não é exibida no Mercado."}
+              </p>
               {canEdit && (
                 <div className="official-store-actions">
                   <button
@@ -276,6 +307,10 @@ function MarketStoresSection({
               Cancelar
             </button>
           </header>
+          <p className="market-empty">
+            Salvar mantém a configuração da loja. A publicação do negócio é
+            independente do contrato oficial e do destaque.
+          </p>
           <div className="official-store-form-grid">
             <label className="market-field wide">
               <span>Buscar negócio</span>
@@ -319,7 +354,7 @@ function MarketStoresSection({
                       business.id !== editing.business_id
                     }
                   >
-                    {business.name} · {business.status}
+                    {business.name} · {businessStatusLabel(business.status)}
                     {business.already_configured ? " · já configurada" : ""}
                   </option>
                 ))}
@@ -687,7 +722,7 @@ function CategoryRow({
 /* Peças compartilhadas                                                */
 /* ------------------------------------------------------------------ */
 
-type Feedback = { tone: "ok" | "danger"; text: string } | null;
+type Feedback = { tone: "ok" | "warning" | "danger"; text: string } | null;
 
 function FeedbackLine({ feedback }: { feedback: Feedback }) {
   if (!feedback) return <span className="market-feedback" aria-hidden="true" />;

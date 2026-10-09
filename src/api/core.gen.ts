@@ -6127,6 +6127,8 @@ export interface SocialFeed {
   items: SocialPost[];
   stories: SocialPost[];
   next_cursor: string | null;
+  /** Primeira publicação depois das novidades não vistas nesta página; o app mostra o aviso de feed em dia antes dela. */
+  caught_up_before?: string | null;
 }
 
 export interface SocialGroup {
@@ -8141,6 +8143,8 @@ export interface StaffExerciseUploadHeaders {
 export interface StaffFeedSettings {
   followed_slots: number;
   discovery_slots: number;
+  priority_slots: number;
+  other_slots: number;
   version: number;
   selection_mode: "global_groups" | "followed_discovery";
   prioritize_followed: boolean;
@@ -10367,7 +10371,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       credentials: (input: { accountIds: string[] }) => call('social_credentials_v1', { p_account_ids: input.accountIds }) as Promise<ProfessionalCredential[]>,
       /** Descobre apenas profissionais, embaixadores e associados. Publicações mais recentes primeiro; em empate, embaixador, associado, profissional e UUID decrescente. (query; contract/social/explore.v1.json) */
       explore: (input: { search?: string; affinity?: string; classifications?: ("professional" | "associate" | "ambassador")[]; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_classifications: input.classifications, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
-      /** Feed configurado no backoffice: novidades de 24h e 7d por grupos com preferência por seguidos; histórico cronológico ou proporção entre seguidos e descoberta. (query; contract/social/feed.v1.json) */
+      /** Feed configurado no backoffice: novidades não vistas dos últimos 7 dias intercalando embaixadores e demais autores; depois, já vistas e histórico cronológico; ou proporção entre seguidos e descoberta. (query; contract/social/feed.v1.json) */
       feed: (input: { affinities?: string[]; cursor?: string; limit?: number; containerType?: "community" | "challenge"; containerId?: string; spaceId?: string } = {}) => call('social_feed_v1', { p_affinities: input.affinities, p_cursor: input.cursor, p_limit: input.limit, p_container_type: input.containerType, p_container_id: input.containerId, p_space_id: input.spaceId }) as Promise<SocialFeed>,
       /** Segue, deixa de seguir, bloqueia ou desbloqueia e devolve o estado final. (command; contract/social/follow_act.v1.json) */
       followAct: (input: { accountId: string; action: "follow" | "unfollow" | "block" | "unblock" }) => call('social_follow_act_v1', { p_account_id: input.accountId, p_action: input.action }) as Promise<SocialRelationState>,
@@ -10387,8 +10391,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       post: (input: { id: string }) => call('social_post_v1', { p_id: input.id }) as Promise<SocialPost>,
       /** Executa uma alteração discriminada, versionada e idempotente em publicação própria. (command; contract/social/post_act.v1.json) */
       postAct: (input: { command: SocialPostActionCommand }) => call('social_post_act_v1', { p_command: input.command }) as Promise<SocialPost>,
-      /** Salva, remove dos salvos ou registra visualização de uma publicação de forma idempotente. (command; contract/social/post_event_act.v1.json) */
-      postEventAct: (input: { id: string; action: "save" | "unsave" | "view" }) => call('social_post_event_act_v1', { p_id: input.id, p_action: input.action }) as Promise<SocialPost>,
+      /** Salva, remove dos salvos, registra visualização ou marca como vista no feed uma publicação de forma idempotente. (command; contract/social/post_event_act.v1.json) */
+      postEventAct: (input: { id: string; action: "save" | "unsave" | "view" | "seen" }) => call('social_post_event_act_v1', { p_id: input.id, p_action: input.action }) as Promise<SocialPost>,
       /** Localiza uma publicação ou story próprio pela chave idempotente antes de repetir uploads. (query; contract/social/post_lookup.v1.json) */
       postLookup: (input: { idempotencyKey: string; kind?: "post" | "story" | "submission" }) => call('social_post_lookup_v1', { p_idempotency_key: input.idempotencyKey, p_kind: input.kind }) as Promise<SocialPostLookup>,
       /** Cria ou edita publicação com comando discriminado, replay exato e concorrência otimista na edição. (command; contract/social/post_save.v1.json) */
@@ -10415,7 +10419,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       stories: (input: { authorId?: string; cursor?: string; limit?: number } = {}) => call('social_stories_v1', { p_author_id: input.authorId, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialStories>,
       /** Registra visualizações ou altera um story de modo idempotente. (command; contract/social/story_act.v1.json) */
       storyAct: (input: { ids: string[]; action: "view" | "setCommentsEnabled" | "convertToPost" | "delete"; data?: SocialStoryActionData }) => call('social_story_act_v1', { p_ids: input.ids, p_action: input.action, p_data: input.data }) as Promise<SocialStoryActionResult>,
-      /** Emite uma capacidade opaca de 60 segundos para ler mídia privada de um story que a conta pode ver agora. (query; contract/social/story_media_access.v1.json) */
+      /** Emite uma capacidade opaca de 3 minutos para ler mídia privada de um story que a conta pode ver agora. (query; contract/social/story_media_access.v1.json) */
       storyMediaAccess: (input: { objectKey: string }) => invoke('worker', '/media/story-access', { object_key: input.objectKey }) as Promise<StoryMediaAccess>,
       /** Publica ou edita um story de mídia única que expira em 24 horas. (command; contract/social/story_save.v1.json) */
       storySave: (input: { story: SocialStoryInput }) => call('social_story_save_v1', { p_story: input.story }) as Promise<SocialPost>,
@@ -10539,8 +10543,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       exerciseMediaUpload: (input: { upload: StaffExerciseMediaUploadCommand }) => invoke('worker', '/staff/exercise-media-upload', { upload: input.upload }) as Promise<StaffExerciseMediaUploadResult>,
       /** Lê a seleção versionada do feed: modo, prioridade de seguidos e proporção. (query; contract/staff/feed_settings.v1.json) */
       feedSettings: () => call('staff_feed_settings_v1', {}) as Promise<StaffFeedSettings>,
-      /** Atualiza modo, prioridade de seguidos e proporção do feed com concorrência otimista. (command; contract/staff/feed_settings_save.v1.json) */
-      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number; selectionMode?: "global_groups" | "followed_discovery"; prioritizeFollowed?: boolean; ambassadorVideoSeconds?: number }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion, p_selection_mode: input.selectionMode, p_prioritize_followed: input.prioritizeFollowed, p_ambassador_video_seconds: input.ambassadorVideoSeconds }) as Promise<StaffFeedSettings>,
+      /** Atualiza modo, prioridade de seguidos, intercalação de embaixadores e proporção do feed com concorrência otimista. (command; contract/staff/feed_settings_save.v1.json) */
+      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number; selectionMode?: "global_groups" | "followed_discovery"; prioritizeFollowed?: boolean; ambassadorVideoSeconds?: number; prioritySlots?: number; otherSlots?: number }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion, p_selection_mode: input.selectionMode, p_prioritize_followed: input.prioritizeFollowed, p_ambassador_video_seconds: input.ambassadorVideoSeconds, p_priority_slots: input.prioritySlots, p_other_slots: input.otherSlots }) as Promise<StaffFeedSettings>,
       /** Lista ofertas financeiras e calcula sua prontidão no servidor. (query; contract/staff/financial_offerings.v1.json) */
       financialOfferings: (input: { type?: string | null; status?: string | null; limit?: number; offset?: number } = {}) => call('staff_financial_offerings_v1', { p_type: input.type, p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<StaffFinancialOfferingPage>,
       /** Retorna relatório financeiro tipado para uma moeda, sem mapas abertos. (query; contract/staff/financial_reports.v1.json) */

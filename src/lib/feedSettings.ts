@@ -4,6 +4,8 @@ import type { SocialPublicationPolicy } from '../api/core.gen';
 export type FeedDistributionSettings = {
   followed: number;
   discovery: number;
+  prioritySlots: number;
+  otherSlots: number;
   version: number;
   selectionMode: 'global_groups' | 'followed_discovery';
   prioritizeFollowed: boolean;
@@ -13,6 +15,8 @@ export type FeedDistributionSettings = {
 export type FeedDistributionInput = {
   slotsFollowed: number;
   slotsDiscovery: number;
+  prioritySlots: number;
+  otherSlots: number;
   expectedVersion: number;
   selectionMode: 'global_groups' | 'followed_discovery';
   prioritizeFollowed: boolean;
@@ -24,6 +28,8 @@ export async function getFeedDistributionSettings(): Promise<FeedDistributionSet
   return {
     followed: settings.followed_slots,
     discovery: settings.discovery_slots,
+    prioritySlots: settings.priority_slots,
+    otherSlots: settings.other_slots,
     version: settings.version,
     selectionMode: settings.selection_mode,
     prioritizeFollowed: settings.prioritize_followed,
@@ -39,10 +45,14 @@ export async function updateFeedDistributionSettings(input: FeedDistributionInpu
     selectionMode: input.selectionMode,
     prioritizeFollowed: input.prioritizeFollowed,
     ambassadorVideoSeconds: input.ambassadorVideoSeconds,
+    prioritySlots: input.prioritySlots,
+    otherSlots: input.otherSlots,
   });
   return {
     followed: settings.followed_slots,
     discovery: settings.discovery_slots,
+    prioritySlots: settings.priority_slots,
+    otherSlots: settings.other_slots,
     version: settings.version,
     selectionMode: settings.selection_mode,
     prioritizeFollowed: settings.prioritize_followed,

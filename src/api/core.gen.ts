@@ -8143,8 +8143,9 @@ export interface StaffExerciseUploadHeaders {
 export interface StaffFeedSettings {
   followed_slots: number;
   discovery_slots: number;
-  priority_slots: number;
-  other_slots: number;
+  ambassador_slots: number;
+  professional_slots: number;
+  common_slots: number;
   version: number;
   selection_mode: "global_groups" | "followed_discovery";
   prioritize_followed: boolean;
@@ -10371,7 +10372,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       credentials: (input: { accountIds: string[] }) => call('social_credentials_v1', { p_account_ids: input.accountIds }) as Promise<ProfessionalCredential[]>,
       /** Descobre apenas profissionais, embaixadores e associados. Publicações mais recentes primeiro; em empate, embaixador, associado, profissional e UUID decrescente. (query; contract/social/explore.v1.json) */
       explore: (input: { search?: string; affinity?: string; classifications?: ("professional" | "associate" | "ambassador")[]; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_classifications: input.classifications, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
-      /** Feed configurado no backoffice: novidades não vistas dos últimos 7 dias intercalando embaixadores e demais autores; depois, já vistas e histórico cronológico; ou proporção entre seguidos e descoberta. (query; contract/social/feed.v1.json) */
+      /** Feed configurado no backoffice: novidades não vistas dos últimos 7 dias intercalando Embaixadores, Profissionais e Usuários comuns por proporção, sem repetir autor em sequência; depois histórico não visto e já vistas; ou proporção entre seguidos e descoberta. (query; contract/social/feed.v1.json) */
       feed: (input: { affinities?: string[]; cursor?: string; limit?: number; containerType?: "community" | "challenge"; containerId?: string; spaceId?: string } = {}) => call('social_feed_v1', { p_affinities: input.affinities, p_cursor: input.cursor, p_limit: input.limit, p_container_type: input.containerType, p_container_id: input.containerId, p_space_id: input.spaceId }) as Promise<SocialFeed>,
       /** Segue, deixa de seguir, bloqueia ou desbloqueia e devolve o estado final. (command; contract/social/follow_act.v1.json) */
       followAct: (input: { accountId: string; action: "follow" | "unfollow" | "block" | "unblock" }) => call('social_follow_act_v1', { p_account_id: input.accountId, p_action: input.action }) as Promise<SocialRelationState>,
@@ -10543,8 +10544,8 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       exerciseMediaUpload: (input: { upload: StaffExerciseMediaUploadCommand }) => invoke('worker', '/staff/exercise-media-upload', { upload: input.upload }) as Promise<StaffExerciseMediaUploadResult>,
       /** Lê a seleção versionada do feed: modo, prioridade de seguidos e proporção. (query; contract/staff/feed_settings.v1.json) */
       feedSettings: () => call('staff_feed_settings_v1', {}) as Promise<StaffFeedSettings>,
-      /** Atualiza modo, prioridade de seguidos, intercalação de embaixadores e proporção do feed com concorrência otimista. (command; contract/staff/feed_settings_save.v1.json) */
-      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number; selectionMode?: "global_groups" | "followed_discovery"; prioritizeFollowed?: boolean; ambassadorVideoSeconds?: number; prioritySlots?: number; otherSlots?: number }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion, p_selection_mode: input.selectionMode, p_prioritize_followed: input.prioritizeFollowed, p_ambassador_video_seconds: input.ambassadorVideoSeconds, p_priority_slots: input.prioritySlots, p_other_slots: input.otherSlots }) as Promise<StaffFeedSettings>,
+      /** Atualiza modo, prioridade de seguidos, proporção entre Embaixadores, Profissionais e Usuários comuns e proporção seguidos/descoberta com concorrência otimista. (command; contract/staff/feed_settings_save.v1.json) */
+      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number; selectionMode?: "global_groups" | "followed_discovery"; prioritizeFollowed?: boolean; ambassadorVideoSeconds?: number; ambassadorSlots?: number; professionalSlots?: number; commonSlots?: number }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion, p_selection_mode: input.selectionMode, p_prioritize_followed: input.prioritizeFollowed, p_ambassador_video_seconds: input.ambassadorVideoSeconds, p_ambassador_slots: input.ambassadorSlots, p_professional_slots: input.professionalSlots, p_common_slots: input.commonSlots }) as Promise<StaffFeedSettings>,
       /** Lista ofertas financeiras e calcula sua prontidão no servidor. (query; contract/staff/financial_offerings.v1.json) */
       financialOfferings: (input: { type?: string | null; status?: string | null; limit?: number; offset?: number } = {}) => call('staff_financial_offerings_v1', { p_type: input.type, p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<StaffFinancialOfferingPage>,
       /** Retorna relatório financeiro tipado para uma moeda, sem mapas abertos. (query; contract/staff/financial_reports.v1.json) */

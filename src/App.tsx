@@ -931,12 +931,22 @@ function OfferingTypeBillingRow({
   );
 }
 
+type FeedDraft = {
+  followed: string;
+  discovery: string;
+  selectionMode: 'global_groups' | 'followed_discovery';
+  prioritizeFollowed: boolean;
+  ambassadorMinutes: string;
+  priority: string;
+  other: string;
+};
+
 function FeedDistributionPage() {
   const { data: currentRole } = useCurrentStaffRole();
   const canEdit = currentRole === 'super_admin' || currentRole === 'admin';
   const { data: settings, isLoading, isError, refetch, isFetching } = useFeedDistributionSettings(true);
   const updateMutation = useUpdateFeedDistributionSettings();
-  const [draft, setDraft] = useState<{ followed: string; discovery: string; selectionMode: 'global_groups' | 'followed_discovery'; prioritizeFollowed: boolean; ambassadorMinutes: string } | null>(null);
+  const [draft, setDraft] = useState<FeedDraft | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const followed = draft?.followed ?? String(settings?.followed ?? 6);
@@ -944,13 +954,21 @@ function FeedDistributionPage() {
   const selectionMode = draft?.selectionMode ?? settings?.selectionMode ?? 'global_groups';
   const prioritizeFollowed = draft?.prioritizeFollowed ?? settings?.prioritizeFollowed ?? true;
   const ambassadorMinutes = draft?.ambassadorMinutes ?? String((settings?.publicationPolicy.video_seconds ?? 300) / 60);
+  const priority = draft?.priority ?? String(settings?.prioritySlots ?? 2);
+  const other = draft?.other ?? String(settings?.otherSlots ?? 1);
+  const patch = (changes: Partial<FeedDraft>) =>
+    setDraft({ followed, discovery, selectionMode, prioritizeFollowed, ambassadorMinutes, priority, other, ...changes });
   const ambassadorSeconds = Number(ambassadorMinutes) * 60;
+  const priorityCount = Number(priority);
+  const otherCount = Number(other);
   const globalGroups = selectionMode === 'global_groups';
   const followedCount = Number(followed);
   const discoveryCount = Number(discovery);
   const valid = Number.isInteger(ambassadorSeconds) && ambassadorSeconds >= 60 && ambassadorSeconds <= 300
     && Number.isInteger(followedCount) && followedCount >= 1 && followedCount <= 100
-    && Number.isInteger(discoveryCount) && discoveryCount >= 1 && discoveryCount <= 100;
+    && Number.isInteger(discoveryCount) && discoveryCount >= 1 && discoveryCount <= 100
+    && Number.isInteger(priorityCount) && priorityCount >= 1 && priorityCount <= 100
+    && Number.isInteger(otherCount) && otherCount >= 1 && otherCount <= 100;
   const total = valid ? followedCount + discoveryCount : 0;
   const followedPercent = total ? Math.round((followedCount / total) * 100) : 0;
   const discoveryPercent = total ? 100 - followedPercent : 0;
@@ -959,11 +977,12 @@ function FeedDistributionPage() {
     event.preventDefault();
     setMessage(null);
     if (!valid || !settings) {
-      setMessage({ type: 'error', text: 'Revise a distribuição e o limite de vídeo dos embaixadores (1 a 5 minutos).' });
+      setMessage({ type: 'error', text: 'Revise a distribuição, a intercalação (1 a 100) e o limite de vídeo dos embaixadores (1 a 5 minutos).' });
       return;
     }
     updateMutation.mutate(
-      { slotsFollowed: followedCount, slotsDiscovery: discoveryCount, expectedVersion: settings.version, selectionMode, prioritizeFollowed, ambassadorVideoSeconds: ambassadorSeconds },
+      { slotsFollowed: followedCount, slotsDiscovery: discoveryCount, prioritySlots: priorityCount, otherSlots: otherCount,
+        expectedVersion: settings.version, selectionMode, prioritizeFollowed, ambassadorVideoSeconds: ambassadorSeconds },
       {
         onSuccess: () => {
           setDraft(null);
@@ -1015,9 +1034,9 @@ function FeedDistributionPage() {
               </div>
               <div className="feed-kpis">
                 {globalGroups ? <>
-                  <article><span>1º grupo</span><strong>Embaixadores</strong></article>
-                  <article><span>2º grupo</span><strong>Profissionais</strong></article>
-                  <article><span>3º grupo</span><strong>Usuários comuns</strong></article>
+                  <article><span>Novidades</span><strong>{valid ? `${priorityCount} : ${otherCount}` : '—'}</strong></article>
+                  <article><span>Lado prioritário</span><strong>Embaixadores</strong></article>
+                  <article><span>Demais</span><strong>Profissionais, depois comuns</strong></article>
                 </> : <>
                   <article><span>Seguidos</span><strong>{followedPercent}%</strong></article>
                   <article><span>Descoberta</span><strong>{discoveryPercent}%</strong></article>
@@ -1031,8 +1050,7 @@ function FeedDistributionPage() {
                 <label className="feed-field-card">
                   <span>Seleção do feed</span>
                   <select value={selectionMode} disabled={!canEdit || updateMutation.isPending}
-                    onChange={(event) => setDraft({ ambassadorMinutes, followed, discovery, prioritizeFollowed,
-                      selectionMode: event.target.value as 'global_groups' | 'followed_discovery' })}>
+                    onChange={(event) => patch({ selectionMode: event.target.value as 'global_groups' | 'followed_discovery' })}>
                     <option value="global_groups">Todos por grupos</option>
                     <option value="followed_discovery">Seguidos e descoberta</option>
                   </select>
@@ -1041,11 +1059,23 @@ function FeedDistributionPage() {
                   <span>Prioridade dentro de cada grupo</span>
                   <label className="checkbox-row">
                     <input type="checkbox" checked={prioritizeFollowed} disabled={!canEdit || updateMutation.isPending}
-                      onChange={(event) => setDraft({ ambassadorMinutes, followed, discovery, selectionMode, prioritizeFollowed: event.target.checked })} />
-                    Priorizar pessoas seguidas entre os recentes
+                      onChange={(event) => patch({ prioritizeFollowed: event.target.checked })} />
+                    Priorizar pessoas seguidas entre as novidades
                   </label>
-                  <small>{prioritizeFollowed ? 'Nas faixas de 24 horas e 7 dias: seguidos primeiro em cada grupo, depois mais recentes em cada parte.' : 'Nas faixas recentes: mais recentes primeiro em cada grupo, independentemente de seguir.'}</small>
+                  <small>{prioritizeFollowed ? 'Nas novidades: seguidos primeiro em cada lado, depois mais recentes em cada parte.' : 'Nas novidades: mais recentes primeiro em cada lado, independentemente de seguir.'}</small>
                 </div>}
+                {globalGroups && <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
+                  <span>Posts de embaixadores a cada rodada</span>
+                  <input type="number" min="1" max="100" step="1" value={priority} disabled={!canEdit || updateMutation.isPending}
+                    onChange={(event) => patch({ priority: event.target.value })} />
+                  <small>Principais e Associados, intercalados com os demais nas novidades não vistas.</small>
+                </label>}
+                {globalGroups && <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
+                  <span>Posts dos demais a cada rodada</span>
+                  <input type="number" min="1" max="100" step="1" value={other} disabled={!canEdit || updateMutation.isPending}
+                    onChange={(event) => patch({ other: event.target.value })} />
+                  <small>Profissionais e usuários comuns. Se um lado acabar, o outro preenche.</small>
+                </label>}
               </div>
             </section>
 
@@ -1056,7 +1086,7 @@ function FeedDistributionPage() {
                   <span>Embaixadores principais e associados (minutos)</span>
                   <input type="number" min="1" max="5" step="1" value={ambassadorMinutes}
                     disabled={!canEdit || updateMutation.isPending}
-                    onChange={(event) => setDraft({ followed, discovery, selectionMode, prioritizeFollowed, ambassadorMinutes: event.target.value })} />
+                    onChange={(event) => patch({ ambassadorMinutes: event.target.value })} />
                   <small>Aplica-se a todos os vínculos ativos. O Core verifica a duração real.</small>
                 </label>
                 <div className="feed-field-card"><span>Carrossel</span>
@@ -1078,13 +1108,13 @@ function FeedDistributionPage() {
                 <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
                   <span>Posições de pessoas seguidas</span>
                   <input type="number" min="1" max="100" step="1" value={followed} disabled={!canEdit}
-                    onChange={(event) => setDraft({ ambassadorMinutes, followed: event.target.value, discovery, selectionMode, prioritizeFollowed })} />
+                    onChange={(event) => patch({ followed: event.target.value })} />
                   <small>Inclui profissionais e pessoas comuns que o usuário segue.</small>
                 </label>
                 <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
                   <span>Posições de descoberta</span>
                   <input type="number" min="1" max="100" step="1" value={discovery} disabled={!canEdit}
-                    onChange={(event) => setDraft({ ambassadorMinutes, followed, discovery: event.target.value, selectionMode, prioritizeFollowed })} />
+                    onChange={(event) => patch({ discovery: event.target.value })} />
                   <small>Principal, Associado, Profissional e demais elegíveis; os mais recentes primeiro dentro de cada nível.</small>
                 </label>
               </div>
@@ -1095,7 +1125,7 @@ function FeedDistributionPage() {
                 <Rss size={18} />
                 <div>
                   <h2>Quem pode aparecer</h2>
-                  <p>{globalGroups ? 'Últimas 24 horas → demais dos últimos 7 dias → histórico. Nos recentes: Embaixadores (Principais e Associados), Profissionais e Usuários comuns. No histórico, apenas mais recentes primeiro.' : 'Posts próprios e de seguidos; descoberta de profissionais e embaixadores.'}</p>
+                  <p>{globalGroups ? 'Primeiro as novidades: posts dos últimos 7 dias que a pessoa ainda não viu, intercalando Embaixadores (Principais e Associados) com Profissionais e Usuários comuns na proporção acima. Depois do aviso “Você está em dia”, as já vistas e o histórico, apenas mais recentes primeiro.' : 'Posts próprios e de seguidos; descoberta de profissionais e embaixadores.'}</p>
                   <p>O filtro de afinidade e as restrições de acesso continuam valendo.</p>
                 </div>
               </div>
@@ -1103,7 +1133,7 @@ function FeedDistributionPage() {
 
             {canEdit && (
               <div className="feed-actions">
-                {!globalGroups && <button className="button secondary" type="button" onClick={() => setDraft({ ambassadorMinutes, followed: '6', discovery: '4', selectionMode, prioritizeFollowed })}>
+                {!globalGroups && <button className="button secondary" type="button" onClick={() => patch({ followed: '6', discovery: '4' })}>
                   <RefreshCw size={16} /> Restaurar proporção inicial
                 </button>}
                 <button className="button primary" type="submit" disabled={updateMutation.isPending || !valid}>

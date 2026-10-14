@@ -58,6 +58,7 @@ import { useOfferingCatalog } from './hooks/useOfferingCatalog';
 import { usePlatformPaymentSettings, useUpdatePlatformPaymentSettings } from './hooks/usePlatformPaymentSettings';
 import { usePlatformStaff } from './hooks/usePlatformStaff';
 import { useFeedDistributionSettings, useUpdateFeedDistributionSettings } from './hooks/useFeedDistribution';
+import { parseFeedTuning } from './lib/feedSettings';
 import {
   useCurrentStaffRole,
   useRemovePlatformStaff,
@@ -931,235 +932,111 @@ function OfferingTypeBillingRow({
   );
 }
 
-type FeedDraft = {
-  followed: string;
-  discovery: string;
-  selectionMode: 'global_groups' | 'followed_discovery';
-  prioritizeFollowed: boolean;
-  ambassadorMinutes: string;
-  ambassadors: string;
-  professionals: string;
-  commons: string;
-};
+type FeedDraft = { interval: string; days: string; ambassadorMinutes: string };
 
-function FeedDistributionPage() {
+export function FeedDistributionPage() {
   const { data: currentRole } = useCurrentStaffRole();
   const canEdit = currentRole === 'super_admin' || currentRole === 'admin';
   const { data: settings, isLoading, isError, refetch, isFetching } = useFeedDistributionSettings(true);
   const updateMutation = useUpdateFeedDistributionSettings();
   const [draft, setDraft] = useState<FeedDraft | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const followed = draft?.followed ?? String(settings?.followed ?? 6);
-  const discovery = draft?.discovery ?? String(settings?.discovery ?? 4);
-  const selectionMode = draft?.selectionMode ?? settings?.selectionMode ?? 'global_groups';
-  const prioritizeFollowed = draft?.prioritizeFollowed ?? settings?.prioritizeFollowed ?? true;
+  const interval = draft?.interval ?? String(settings?.recommendationInterval ?? 5);
+  const days = draft?.days ?? String(settings?.recommendationWindowDays ?? 7);
   const ambassadorMinutes = draft?.ambassadorMinutes ?? String((settings?.publicationPolicy.video_seconds ?? 300) / 60);
-  const ambassadors = draft?.ambassadors ?? String(settings?.ambassadorSlots ?? 3);
-  const professionals = draft?.professionals ?? String(settings?.professionalSlots ?? 2);
-  const commons = draft?.commons ?? String(settings?.commonSlots ?? 1);
-  const patch = (changes: Partial<FeedDraft>) =>
-    setDraft({ followed, discovery, selectionMode, prioritizeFollowed, ambassadorMinutes, ambassadors, professionals, commons, ...changes });
-  const ambassadorSeconds = Number(ambassadorMinutes) * 60;
-  const groupCounts = [Number(ambassadors), Number(professionals), Number(commons)];
-  const globalGroups = selectionMode === 'global_groups';
-  const followedCount = Number(followed);
-  const discoveryCount = Number(discovery);
-  const valid = Number.isInteger(ambassadorSeconds) && ambassadorSeconds >= 60 && ambassadorSeconds <= 300
-    && Number.isInteger(followedCount) && followedCount >= 1 && followedCount <= 100
-    && Number.isInteger(discoveryCount) && discoveryCount >= 1 && discoveryCount <= 100
-    && groupCounts.every((count) => Number.isInteger(count) && count >= 1 && count <= 100);
-  const total = valid ? followedCount + discoveryCount : 0;
-  const followedPercent = total ? Math.round((followedCount / total) * 100) : 0;
-  const discoveryPercent = total ? 100 - followedPercent : 0;
+  const values = parseFeedTuning(interval, days, ambassadorMinutes);
+  const patch = (changes: Partial<FeedDraft>) => setDraft({ interval, days, ambassadorMinutes, ...changes });
 
   const save = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
-    if (!valid || !settings) {
-      setMessage({ type: 'error', text: 'Revise a distribuição, a proporção entre grupos (1 a 100) e o limite de vídeo dos embaixadores (1 a 5 minutos).' });
+    if (!canEdit || !values || !settings) {
+      setMessage({ type: 'error', text: 'Revise o intervalo (1 a 100), a janela de engajamento (1 a 30 dias) e o limite de vídeo (1 a 5 minutos).' });
       return;
     }
-    updateMutation.mutate(
-      { slotsFollowed: followedCount, slotsDiscovery: discoveryCount,
-        ambassadorSlots: groupCounts[0], professionalSlots: groupCounts[1], commonSlots: groupCounts[2],
-        expectedVersion: settings.version, selectionMode, prioritizeFollowed, ambassadorVideoSeconds: ambassadorSeconds },
-      {
-        onSuccess: () => {
-          setDraft(null);
-          setMessage({ type: 'success', text: 'Configuração salva. O feed usa esta regra na próxima atualização.' });
-        },
-        onError: (error) => {
-          if (error instanceof Error && error.message.includes('staff.settings_changed')) {
-            setMessage({ type: 'error', text: 'Outra pessoa alterou o feed. Atualize a configuração e tente novamente.' });
-          } else {
-            setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Não foi possível salvar.' });
-          }
-        },
+    updateMutation.mutate({ ...values, expectedVersion: settings.version }, {
+      onSuccess: () => {
+        setDraft(null);
+        setMessage({ type: 'success', text: 'Configuração salva. O feed usa esta regra na próxima atualização.' });
       },
-    );
+      onError: (error) => {
+        setMessage({ type: 'error', text: error instanceof Error && error.message.includes('staff.settings_changed')
+          ? 'Outra pessoa alterou o feed. Atualize a configuração e tente novamente.'
+          : 'Não foi possível salvar a configuração.' });
+      },
+    });
   };
 
-  return (
-    <>
-      <header className="page-header">
-        <div>
-          <p className="section-label">Configuração</p>
-          <h1>Feed</h1>
-          <span>Configure quem aparece e a ordem do feed principal.</span>
-        </div>
-        <div className="header-actions">
-          <button className="button secondary" type="button" onClick={() => { setDraft(null); setMessage(null); void refetch(); }} disabled={isFetching}>
-            <RefreshCw className={isFetching ? 'spin' : ''} size={16} />
-            Atualizar
-          </button>
-        </div>
-      </header>
-
-      <section className="content feed-page">
-        {isLoading ? (
-          <div className="skeleton staff-skeleton" />
-        ) : isError ? (
-          <div className="inline-alert danger" role="alert">
-            <AlertTriangle size={18} />
-            Não foi possível carregar a distribuição do feed. Verifique a migração do backend.
-          </div>
-        ) : (
-          <form className="feed-form" onSubmit={save}>
-            <section className="feed-command-panel">
-              <div className="feed-command-head">
-                <div>
-                  <span>Ordenação</span>
-                  <h2>{globalGroups ? 'Todos por grupos' : 'Seguidos e descoberta'}</h2>
-                </div>
+  return <>
+    <header className="page-header">
+      <div><p className="section-label">Configuração</p><h1>Feed</h1>
+        <span>Publicações por data, com recomendações pontuais.</span></div>
+      <div className="header-actions">
+        <button className="button secondary" type="button" onClick={() => { setDraft(null); setMessage(null); void refetch(); }} disabled={isFetching}>
+          <RefreshCw className={isFetching ? 'spin' : ''} size={16} /> Atualizar
+        </button>
+      </div>
+    </header>
+    <section className="content feed-page">
+      {isLoading ? <div className="skeleton staff-skeleton" /> : isError ?
+        <div className="inline-alert danger" role="alert"><AlertTriangle size={18} /> Não foi possível carregar a configuração do feed.</div> :
+        <form className="feed-form" onSubmit={save}>
+          <section className="feed-command-panel">
+            <div className="feed-command-head"><div><span>Ordenação</span><h2>Mais recentes primeiro</h2></div></div>
+            <div className="feed-kpis">
+              <article><span>Lista principal</span><strong>Cronológica</strong></article>
+              <article><span>Uma recomendação a cada</span><strong>{values ? `${values.recommendationInterval} publicações` : '—'}</strong></article>
+              <article><span>Engajamento de posts dos últimos</span><strong>{values ? `${values.recommendationWindowDays} dias` : '—'}</strong></article>
+            </div>
+          </section>
+          <section className="feed-tuning-section">
+            <div className="feed-section-head"><Rss size={18} /><div><h2>Quem aparece</h2>
+              <p>Embaixadores principais e associados, seguindo ou não; pessoas seguidas e publicações próprias. Todos na mesma lista, das mais recentes para as mais antigas.</p>
+              <p>Privacidade, bloqueios, filtros de afinidade e acesso a conteúdo exclusivo continuam valendo. Stories mantêm sua apresentação.</p>
+            </div></div>
+          </section>
+          <section className="feed-tuning-section">
+            <div className="feed-section-head"><SlidersHorizontal size={18} /><div><h2>Recomendações por engajamento</h2>
+              <p>Uma publicação pública de pessoa comum que o usuário não segue, sem perfil profissional ou vínculo ativo de embaixador. Curtidas + comentários definem a prioridade; precisa haver pelo menos uma interação.</p>
+              <p>Quando não houver uma publicação elegível, a lista segue cronológica. As recomendações não se repetem na mesma consulta.</p>
+            </div></div>
+            <div className="feed-grid">
+              <label className="feed-field-card">
+                <span>Publicações antes de cada recomendação</span>
+                <input type="number" min="1" max="100" step="1" value={interval} disabled={!canEdit || updateMutation.isPending}
+                  onChange={(event) => patch({ interval: event.target.value })} />
+                <small>Conta apenas publicações da lista principal; a contagem continua ao rolar e carregar mais.</small>
+              </label>
+              <label className="feed-field-card">
+                <span>Idade máxima da publicação recomendada (dias)</span>
+                <input type="number" min="1" max="30" step="1" value={days} disabled={!canEdit || updateMutation.isPending}
+                  onChange={(event) => patch({ days: event.target.value })} />
+                <small>Publicações com mais curtidas + comentários aparecem primeiro entre as recomendações.</small>
+              </label>
+            </div>
+          </section>
+          <section className="feed-tuning-section">
+            <div className="feed-section-head"><SlidersHorizontal size={18} /><h2>Vídeos de publicação</h2></div>
+            <div className="feed-grid">
+              <label className="feed-field-card"><span>Embaixadores principais e associados (minutos)</span>
+                <input type="number" min="1" max="5" step="any" value={ambassadorMinutes} disabled={!canEdit || updateMutation.isPending}
+                  onChange={(event) => patch({ ambassadorMinutes: event.target.value })} />
+                <small>Aplica-se a todos os vínculos ativos. A duração real é conferida no envio.</small>
+              </label>
+              <div className="feed-field-card"><span>Carrossel</span><strong>{settings?.publicationPolicy.media_count} fotos ou vídeos</strong>
+                <small>Vídeos somados: {(settings?.publicationPolicy.total_video_seconds ?? 0) / 60} minutos. Stories: {settings?.publicationPolicy.story_seconds} segundos.</small>
               </div>
-              <div className="feed-kpis">
-                {globalGroups ? <>
-                  <article><span>Embaixadores</span><strong>{valid ? groupCounts[0] : '—'}</strong></article>
-                  <article><span>Profissionais</span><strong>{valid ? groupCounts[1] : '—'}</strong></article>
-                  <article><span>Usuários comuns</span><strong>{valid ? groupCounts[2] : '—'}</strong></article>
-                </> : <>
-                  <article><span>Seguidos</span><strong>{followedPercent}%</strong></article>
-                  <article><span>Descoberta</span><strong>{discoveryPercent}%</strong></article>
-                  <article><span>Bloco</span><strong>{total || '—'}</strong></article>
-                </>}
-              </div>
-            </section>
-
-            <section className="feed-tuning-section">
-              <div className="feed-grid">
-                <label className="feed-field-card">
-                  <span>Seleção do feed</span>
-                  <select value={selectionMode} disabled={!canEdit || updateMutation.isPending}
-                    onChange={(event) => patch({ selectionMode: event.target.value as 'global_groups' | 'followed_discovery' })}>
-                    <option value="global_groups">Todos por grupos</option>
-                    <option value="followed_discovery">Seguidos e descoberta</option>
-                  </select>
-                </label>
-                {globalGroups && <div className="feed-field-card">
-                  <span>Prioridade dentro de cada grupo</span>
-                  <label className="checkbox-row">
-                    <input type="checkbox" checked={prioritizeFollowed} disabled={!canEdit || updateMutation.isPending}
-                      onChange={(event) => patch({ prioritizeFollowed: event.target.checked })} />
-                    Priorizar pessoas seguidas entre as novidades
-                  </label>
-                  <small>{prioritizeFollowed ? 'Nas novidades: seguidos primeiro em cada grupo, depois mais recentes.' : 'Nas novidades: mais recentes primeiro em cada grupo, independentemente de seguir.'}</small>
-                </div>}
-                {globalGroups && <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
-                  <span>Embaixadores a cada rodada</span>
-                  <input type="number" min="1" max="100" step="1" value={ambassadors} disabled={!canEdit || updateMutation.isPending}
-                    onChange={(event) => patch({ ambassadors: event.target.value })} />
-                  <small>Principais e Associados.</small>
-                </label>}
-                {globalGroups && <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
-                  <span>Profissionais a cada rodada</span>
-                  <input type="number" min="1" max="100" step="1" value={professionals} disabled={!canEdit || updateMutation.isPending}
-                    onChange={(event) => patch({ professionals: event.target.value })} />
-                  <small>Contas profissionais sem vínculo de embaixador.</small>
-                </label>}
-                {globalGroups && <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
-                  <span>Usuários comuns a cada rodada</span>
-                  <input type="number" min="1" max="100" step="1" value={commons} disabled={!canEdit || updateMutation.isPending}
-                    onChange={(event) => patch({ commons: event.target.value })} />
-                  <small>Seguidos primeiro. Se um grupo acabar, os outros preenchem.</small>
-                </label>}
-              </div>
-            </section>
-
-            <section className="feed-tuning-section">
-              <div className="feed-section-head"><SlidersHorizontal size={18} /><h2>Vídeos de publicação</h2></div>
-              <div className="feed-grid">
-                <label className="feed-field-card">
-                  <span>Embaixadores principais e associados (minutos)</span>
-                  <input type="number" min="1" max="5" step="1" value={ambassadorMinutes}
-                    disabled={!canEdit || updateMutation.isPending}
-                    onChange={(event) => patch({ ambassadorMinutes: event.target.value })} />
-                  <small>Aplica-se a todos os vínculos ativos. O Core verifica a duração real.</small>
-                </label>
-                <div className="feed-field-card"><span>Carrossel</span>
-                  <strong>{settings?.publicationPolicy.media_count} fotos ou vídeos</strong>
-                  <small>Vídeos somados: {(settings?.publicationPolicy.total_video_seconds ?? 0) / 60} minutos. Stories: {settings?.publicationPolicy.story_seconds} segundos.</small>
-                </div>
-              </div>
-            </section>
-
-            {!globalGroups && <section className="feed-tuning-section">
-              <div className="feed-section-head">
-                <SlidersHorizontal size={18} />
-                <div>
-                  <h2>Distribuição</h2>
-                  <p>Seguidos têm prioridade. Se uma origem acabar, a outra preenche a lista.</p>
-                </div>
-              </div>
-              <div className="feed-grid">
-                <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
-                  <span>Posições de pessoas seguidas</span>
-                  <input type="number" min="1" max="100" step="1" value={followed} disabled={!canEdit}
-                    onChange={(event) => patch({ followed: event.target.value })} />
-                  <small>Inclui profissionais e pessoas comuns que o usuário segue.</small>
-                </label>
-                <label className="feed-field-card" aria-invalid={!valid ? 'true' : undefined}>
-                  <span>Posições de descoberta</span>
-                  <input type="number" min="1" max="100" step="1" value={discovery} disabled={!canEdit}
-                    onChange={(event) => patch({ discovery: event.target.value })} />
-                  <small>Principal, Associado, Profissional e demais elegíveis; os mais recentes primeiro dentro de cada nível.</small>
-                </label>
-              </div>
-            </section>}
-
-            <section className="feed-tuning-section">
-              <div className="feed-section-head">
-                <Rss size={18} />
-                <div>
-                  <h2>Quem pode aparecer</h2>
-                  <p>{globalGroups ? 'Primeiro as novidades: posts dos últimos 7 dias que a pessoa ainda não viu, intercalando Embaixadores (Principais e Associados), Profissionais e Usuários comuns na proporção acima, sem repetir o mesmo autor em menos de 5 posições. Depois do aviso “Você está em dia”, o histórico não visto e, por último, as já vistas, mais recentes primeiro.' : 'Posts próprios e de seguidos; descoberta de profissionais e embaixadores.'}</p>
-                  <p>O filtro de afinidade e as restrições de acesso continuam valendo.</p>
-                </div>
-              </div>
-            </section>
-
-            {canEdit && (
-              <div className="feed-actions">
-                {!globalGroups && <button className="button secondary" type="button" onClick={() => patch({ followed: '6', discovery: '4' })}>
-                  <RefreshCw size={16} /> Restaurar proporção inicial
-                </button>}
-                <button className="button primary" type="submit" disabled={updateMutation.isPending || !valid}>
-                  {updateMutation.isPending ? <RefreshCw className="spin" size={16} /> : <CheckCircle2 size={16} />}
-                  Salvar configuração
-                </button>
-              </div>
-            )}
-            {message && (
-              <div className={`inline-alert ${message.type === 'error' ? 'danger' : ''}`} role="status">
-                {message.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
-                {message.text}
-              </div>
-            )}
-          </form>
-        )}
-      </section>
-    </>
-  );
+            </div>
+          </section>
+          {canEdit && <div className="feed-actions"><button className="button primary" type="submit" disabled={updateMutation.isPending || !values}>
+            {updateMutation.isPending ? <RefreshCw className="spin" size={16} /> : <CheckCircle2 size={16} />} Salvar configuração
+          </button></div>}
+          {message && <div className={`inline-alert ${message.type === 'error' ? 'danger' : ''}`} role="status">
+            {message.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}{message.text}
+          </div>}
+        </form>}
+    </section>
+  </>;
 }
 
 function NewOfferingTypeForm({ onDone }: { onDone: (key: string) => void }) {

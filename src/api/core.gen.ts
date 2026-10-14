@@ -1072,7 +1072,7 @@ export interface CalendarActivity {
 export interface CalendarDay {
   date: string;
   items: CalendarItem[];
-  /** Minutos de atividade real no dia (J16.58); execução vinculada conta uma vez. */
+  /** Minutos registrados no dia (J16.58): Feito manual usa a duração explicitamente prescrita; execução real vinculada substitui esse valor e conta uma vez. */
   minutes: number;
   /** Execuções concluídas sem ocorrência visível e atividades importadas ou manuais do dia, incluindo seus vínculos canônicos com o treino. */
   activities: CalendarActivity[];
@@ -4097,6 +4097,8 @@ export interface HealthUploadInput {
 export interface HealthWearable {
   connection: HealthWearableConnection | null;
   daily: HealthDailySummary[];
+  /** Há importações anteriores deste provedor pertencentes à conta. É uma pista de recuperação, não permissão de leitura nem consentimento. */
+  has_import_history?: boolean;
 }
 
 export interface HealthWearableConnection {
@@ -6127,7 +6129,7 @@ export interface SocialFeed {
   items: SocialPost[];
   stories: SocialPost[];
   next_cursor: string | null;
-  /** Primeira publicação depois das novidades não vistas nesta página; o app mostra o aviso de feed em dia antes dela. */
+  /** Campo legado de compatibilidade; o feed contínuo devolve null e não apresenta aviso de novidades esgotadas. */
   caught_up_before?: string | null;
 }
 
@@ -8147,9 +8149,11 @@ export interface StaffFeedSettings {
   professional_slots: number;
   common_slots: number;
   version: number;
-  selection_mode: "global_groups" | "followed_discovery";
+  selection_mode: "global_groups" | "followed_discovery" | "chronological_discovery";
   prioritize_followed: boolean;
   publication_policy: SocialPublicationPolicy;
+  recommendation_interval?: number;
+  recommendation_window_days?: number;
 }
 
 export interface StaffFightTechniqueData {
@@ -10372,7 +10376,7 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       credentials: (input: { accountIds: string[] }) => call('social_credentials_v1', { p_account_ids: input.accountIds }) as Promise<ProfessionalCredential[]>,
       /** Descobre apenas profissionais, embaixadores e associados. Publicações mais recentes primeiro; em empate, embaixador, associado, profissional e UUID decrescente. (query; contract/social/explore.v1.json) */
       explore: (input: { search?: string; affinity?: string; classifications?: ("professional" | "associate" | "ambassador")[]; cursor?: string; limit?: number } = {}) => call('social_explore_v1', { p_search: input.search, p_affinity: input.affinity, p_classifications: input.classifications, p_cursor: input.cursor, p_limit: input.limit }) as Promise<SocialExplore>,
-      /** Feed configurado no backoffice: novidades não vistas dos últimos 7 dias intercalando Embaixadores, Profissionais e Usuários comuns por proporção, sem repetir autor em sequência; depois histórico não visto e já vistas; ou proporção entre seguidos e descoberta. (query; contract/social/feed.v1.json) */
+      /** Feed cronológico de autores próprios/seguidos e embaixadores principais/associados. Após cada intervalo configurado, uma publicação pública de pessoa comum não seguida por curtidas + comentários. Mantém privacidade, filtros, paginação, stories e formato compatível com apps publicados. (query; contract/social/feed.v1.json) */
       feed: (input: { affinities?: string[]; cursor?: string; limit?: number; containerType?: "community" | "challenge"; containerId?: string; spaceId?: string } = {}) => call('social_feed_v1', { p_affinities: input.affinities, p_cursor: input.cursor, p_limit: input.limit, p_container_type: input.containerType, p_container_id: input.containerId, p_space_id: input.spaceId }) as Promise<SocialFeed>,
       /** Segue, deixa de seguir, bloqueia ou desbloqueia e devolve o estado final. (command; contract/social/follow_act.v1.json) */
       followAct: (input: { accountId: string; action: "follow" | "unfollow" | "block" | "unblock" }) => call('social_follow_act_v1', { p_account_id: input.accountId, p_action: input.action }) as Promise<SocialRelationState>,
@@ -10542,10 +10546,10 @@ export function createApi(call: Transport, invoke: EdgeTransport = missingEdgeTr
       exerciseCatalogSave: (input: { exerciseId: string | null; sportIds: string[]; kind: "exercise" | "technique"; localizations: TrainingExerciseLocalizations; muscles: string[]; equipment: string | null; videoFileId: string | null; thumbFileId: string | null; expectedVersion: number | null; idempotencyKey: string }) => call('staff_exercise_catalog_save_v1', { p_exercise_id: input.exerciseId, p_sport_ids: input.sportIds, p_kind: input.kind, p_localizations: input.localizations, p_muscles: input.muscles, p_equipment: input.equipment, p_video_file_id: input.videoFileId, p_thumb_file_id: input.thumbFileId, p_expected_version: input.expectedVersion, p_idempotency_key: input.idempotencyKey }) as Promise<StaffExercise>,
       /** Prepara e conclui upload R2 inspecionado de vídeo ou miniatura de exercício oficial. (command; contract/staff/exercise_media_upload.v1.json) */
       exerciseMediaUpload: (input: { upload: StaffExerciseMediaUploadCommand }) => invoke('worker', '/staff/exercise-media-upload', { upload: input.upload }) as Promise<StaffExerciseMediaUploadResult>,
-      /** Lê a seleção versionada do feed: modo, prioridade de seguidos e proporção. (query; contract/staff/feed_settings.v1.json) */
+      /** Configuração versionada do feed cronológico com recomendações de usuários comuns por engajamento; preserva parâmetros antigos e política de vídeos. (query; contract/staff/feed_settings.v1.json) */
       feedSettings: () => call('staff_feed_settings_v1', {}) as Promise<StaffFeedSettings>,
-      /** Atualiza modo, prioridade de seguidos, proporção entre Embaixadores, Profissionais e Usuários comuns e proporção seguidos/descoberta com concorrência otimista. (command; contract/staff/feed_settings_save.v1.json) */
-      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number; selectionMode?: "global_groups" | "followed_discovery"; prioritizeFollowed?: boolean; ambassadorVideoSeconds?: number; ambassadorSlots?: number; professionalSlots?: number; commonSlots?: number }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion, p_selection_mode: input.selectionMode, p_prioritize_followed: input.prioritizeFollowed, p_ambassador_video_seconds: input.ambassadorVideoSeconds, p_ambassador_slots: input.ambassadorSlots, p_professional_slots: input.professionalSlots, p_common_slots: input.commonSlots }) as Promise<StaffFeedSettings>,
+      /** Configuração versionada do feed cronológico com recomendações de usuários comuns por engajamento; preserva parâmetros antigos e política de vídeos. (command; contract/staff/feed_settings_save.v1.json) */
+      feedSettingsSave: (input: { followedSlots: number; discoverySlots: number; expectedVersion: number; selectionMode?: "global_groups" | "followed_discovery" | "chronological_discovery"; prioritizeFollowed?: boolean; ambassadorVideoSeconds?: number; ambassadorSlots?: number; professionalSlots?: number; commonSlots?: number }) => call('staff_feed_settings_save_v1', { p_followed_slots: input.followedSlots, p_discovery_slots: input.discoverySlots, p_expected_version: input.expectedVersion, p_selection_mode: input.selectionMode, p_prioritize_followed: input.prioritizeFollowed, p_ambassador_video_seconds: input.ambassadorVideoSeconds, p_ambassador_slots: input.ambassadorSlots, p_professional_slots: input.professionalSlots, p_common_slots: input.commonSlots }) as Promise<StaffFeedSettings>,
       /** Lista ofertas financeiras e calcula sua prontidão no servidor. (query; contract/staff/financial_offerings.v1.json) */
       financialOfferings: (input: { type?: string | null; status?: string | null; limit?: number; offset?: number } = {}) => call('staff_financial_offerings_v1', { p_type: input.type, p_status: input.status, p_limit: input.limit, p_offset: input.offset }) as Promise<StaffFinancialOfferingPage>,
       /** Retorna relatório financeiro tipado para uma moeda, sem mapas abertos. (query; contract/staff/financial_reports.v1.json) */

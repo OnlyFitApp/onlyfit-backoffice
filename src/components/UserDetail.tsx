@@ -12,6 +12,7 @@ import { useUserOverview } from '../hooks/useUsers';
 import type { CredentialResetAction } from '../lib/credentialReset';
 import { formatCurrencyExact, formatDateTime } from '../lib/format';
 import { displayName, formatDocument, userAdminErrorMessage } from '../lib/users';
+import { purchaseStatusLabel } from '../lib/purchasePresentation';
 import type { StaffRole } from '../lib/staff';
 import { CredentialResetDialog } from './CredentialResetDialog';
 
@@ -141,7 +142,7 @@ export function UserDetail({
           <div className="section-heading"><div><h2>Compras</h2><p>{overview.purchases.length} compra(s) registrada(s).</p></div></div>
           {overview.purchases.length === 0 ? <p className="empty-copy">Nenhuma compra.</p> : (
             <div className="table-wrapper"><table className="staff-table"><thead><tr><th>Oferta</th><th>Status</th><th>Valor</th><th>Data</th></tr></thead><tbody>
-              {overview.purchases.map((purchase) => <tr key={purchase.id}><td>{purchase.offer_name}</td><td>{purchase.status}</td><td>{formatCurrencyExact(purchase.amount)}</td><td>{formatDateTime(new Date(purchase.created_at))}</td></tr>)}
+              {overview.purchases.map((purchase) => <tr key={purchase.id}><td>{purchase.offer_name}</td><td>{purchaseStatusLabel(purchase.status)}</td><td>{formatCurrencyExact(purchase.amount)}</td><td>{formatDateTime(new Date(purchase.created_at))}</td></tr>)}
             </tbody></table></div>
           )}
         </section>

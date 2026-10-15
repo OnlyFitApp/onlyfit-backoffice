@@ -14,10 +14,15 @@ const foodSourceNames: Readonly<Record<string, string>> = {
 // Presentation terms already used by the desktop nutrition editor (pt-BR).
 const nutrientNames: Readonly<Record<string, string>> = {
   kcal: 'Calorias',
+  protein: 'Proteínas',
   protein_g: 'Proteínas',
+  carbs: 'Carboidratos',
   carbs_g: 'Carboidratos',
+  fat: 'Lipídeos',
   fat_g: 'Lipídeos',
+  fiber: 'Fibras',
   fiber_g: 'Fibras',
+  sodium: 'Sódio',
   sodium_mg: 'Sódio',
   calcium: 'Cálcio',
   iron: 'Ferro',

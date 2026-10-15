@@ -16,6 +16,7 @@ import {
   type NutritionCatalogKind,
   type NutritionCatalogSave,
 } from '../lib/nutritionCatalogs';
+import { foodSourceOriginLabel, nutritionCatalogLabel } from '../lib/nutritionCatalogPresentation';
 
 type Draft = NutritionCatalogSave;
 
@@ -150,11 +151,11 @@ function CatalogRow({ item, busy, canGovern, onEdit, onSetActive }: {
   onSetActive: (active: boolean) => void;
 }) {
   const detail = item.kind === 'food_sources'
-    ? `${item.data.origin} · prioridade ${item.data.search_priority}${item.data.license_name ? ` · ${item.data.license_name}` : ''}`
+    ? `${foodSourceOriginLabel(item.data.origin)} · prioridade ${item.data.search_priority}${item.data.license_name ? ` · ${item.data.license_name}` : ''}`
     : `Unidade: ${item.data.unit}`;
   return <li className={item.active ? 'pcat-row' : 'pcat-row inactive'}>
     <span className="pcat-icon"><Database size={19} /></span>
-    <div className="pcat-row-main"><div><strong>{item.data.display_name_key}</strong><code>{item.key}</code></div><span className={item.active ? 'pcat-status active' : 'pcat-status'}>{item.active ? 'Ativo' : 'Inativo'}</span><span className="pcat-muted">{detail} · posição {item.position} · {item.public ? 'público' : 'interno'}</span></div>
+    <div className="pcat-row-main"><div><strong>{nutritionCatalogLabel(item)}</strong><code>{item.key}{item.data.display_name_key !== item.key ? ` · ${item.data.display_name_key}` : ''}</code></div><span className={item.active ? 'pcat-status active' : 'pcat-status'}>{item.active ? 'Ativo' : 'Inativo'}</span><span className="pcat-muted">{detail} · posição {item.position} · {item.public ? 'público' : 'interno'}</span></div>
     {canGovern ? <div className="pcat-row-actions"><button className="button secondary compact" type="button" disabled={busy} onClick={onEdit}><Pencil size={14} />Editar</button><button className={item.active ? 'button danger compact' : 'button primary compact'} type="button" disabled={busy} onClick={() => onSetActive(!item.active)}>{item.active ? <X size={14} /> : <Check size={14} />}{item.active ? 'Desativar' : 'Ativar'}</button></div> : null}
   </li>;
 }
@@ -170,7 +171,7 @@ function CatalogEditor({ draft, busy, onChange, onCancel, onSubmit }: {
   return <form className="pcat-editor" onSubmit={onSubmit}>
     <h2 className="pcat-section-heading">{existing ? 'Editar item' : 'Novo item'}</h2>
     <label className="pcat-field"><span>Chave</span><input required pattern="[a-z0-9_]{2,60}" value={draft.key} readOnly={existing} onChange={(event) => onChange({ ...draft, key: event.target.value })} /></label>
-    <label className="pcat-field"><span>Chave de exibição</span><input required minLength={2} maxLength={120} value={draft.data.display_name_key} onChange={(event) => onChange(withDisplayName(draft, event.target.value))} /></label>
+    <label className="pcat-field"><span>Chave de exibição</span><input required minLength={2} maxLength={120} value={draft.data.display_name_key} onChange={(event) => onChange(withDisplayName(draft, event.target.value))} /><small>Nome exibido: {nutritionCatalogLabel(draft)}</small></label>
     <div className="exercise-editor-grid"><label className="pcat-field"><span>Posição</span><input required type="number" min={0} max={100000} value={draft.position} onChange={(event) => onChange({ ...draft, position: Number(event.target.value) })} /></label><label className="ohlib-check"><input type="checkbox" checked={draft.public} onChange={(event) => onChange({ ...draft, public: event.target.checked })} /><span>Disponível publicamente</span></label></div>
     {draft.kind === 'food_sources' ? <FoodSourceFields draft={draft} onChange={onChange} /> : <NutrientFields draft={draft} onChange={onChange} />}
     <div className="pcat-editor-actions"><button className="button secondary" type="button" onClick={onCancel} disabled={busy}>Cancelar</button><button className="button primary" type="submit" disabled={busy || !draft.key.trim() || !draft.data.display_name_key.trim()}>{busy ? <RefreshCw className="spin" size={16} /> : <Save size={16} />}Salvar</button></div>

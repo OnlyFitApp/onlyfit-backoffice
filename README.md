@@ -18,6 +18,10 @@ O Core é a fonte canônica das regras administradas por este portal. Consulte:
 
 ## Verificação
 
+O [manual completo do desktop e backoffice](docs/manual-de-testes-desktop-backoffice.md)
+reúne rotas, seções, controles e ciclos entre profissional e aluno, com inventários
+de fonte separados dos resultados de execução pelo navegador.
+
 O [manual de testes profissionais](docs/manual-de-testes-profissionais.md)
 descreve os testes funcionais pelas interfaces, os resultados esperados e o
 registro de evidências para profissional, aluno e equipe do backoffice.

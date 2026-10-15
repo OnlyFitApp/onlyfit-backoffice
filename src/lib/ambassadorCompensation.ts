@@ -76,7 +76,9 @@ export function simulateCompensation(input: {
 }
 
 export function compensationErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : '';
+  const message = error instanceof Error ? error.message
+    : error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' ? error.message : '';
+  if (message.includes('compensation_policy_not_found')) return 'Não há uma política de remuneração aplicável a este cenário. Revise as matrizes e a vigência antes de simular.';
   if (message.includes('forbidden')) return 'Esta operação exige administrador com MFA válido.';
   if (message.includes('changed') || message.includes('version')) return 'A política mudou em outra sessão. Atualize a tela.';
   if (message.includes('100')) return 'Os percentuais precisam somar exatamente 100%.';

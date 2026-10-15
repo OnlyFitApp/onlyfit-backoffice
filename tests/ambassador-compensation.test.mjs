@@ -1,9 +1,22 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import ts from 'typescript';
+import { runInNewContext } from 'node:vm';
 const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 const page = readFileSync(new URL('../src/components/AmbassadorCompensationPage.tsx', import.meta.url), 'utf8');
 const api = readFileSync(new URL('../src/lib/ambassadorCompensation.ts', import.meta.url), 'utf8');
+
+test('the error returned by the live simulator explains the missing policy without exposing transport details', () => {
+  const exports = {};
+  runInNewContext(ts.transpileModule(api, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
+    { exports, require: () => ({ coreApi: {} }) });
+  const message = exports.compensationErrorMessage({ code: 'P0002', message: 'staff.compensation_policy_not_found', details: null, hint: null });
+  assert.match(message, /Não há uma política de remuneração aplicável/);
+  assert.match(message, /vigência/);
+  assert.doesNotMatch(message, /P0002|staff\./);
+  assert.equal(exports.compensationErrorMessage({ message: 'unrecognized private detail' }), 'Não foi possível concluir a operação financeira.');
+});
 test('exposes the canonical remuneration workspace', () => {
   assert.match(app, /id: 'ambassador-compensation', label: 'Remuneração'/);
   for (const label of ['Percentuais', 'Custos por canal', 'Simulador']) assert.match(page, new RegExp(label));

@@ -36,8 +36,8 @@ export function AmbassadorCompensationPage() {
         <Simulator offerTypes={offerTypes} affinities={affinities} />
       </div> : null}
     </section>
-    {selected ? <MatrixEditor matrix={selected} close={() => setSelected(undefined)} /> : null}
-    {selectedCost ? <LifecycleEditor kind="cost" item={selectedCost} close={() => setSelectedCost(undefined)} /> : null}
+    {selected ? <MatrixEditor matrix={selected} canEdit={canEdit} close={() => setSelected(undefined)} /> : null}
+    {selectedCost ? <LifecycleEditor kind="cost" item={selectedCost} canEdit={canEdit} close={() => setSelectedCost(undefined)} /> : null}
   </>;
 }
 
@@ -47,7 +47,7 @@ function MatrixCreate({ offerTypes, affinities, regions }: { offerTypes: StaffOf
   return <form onSubmit={submit} className="ambassador-form-grid"><select required value={offeringType} onChange={(e) => setOfferingType(e.target.value)}><option value="">Tipo de oferta</option>{offerTypes.filter((item) => item.active).map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select><select value={affinity} onChange={(e) => setAffinity(e.target.value)}><option value="">Todas as verticais</option>{affinities.filter((item) => item.active).map((item) => <option key={item.key} value={item.key}>{item.data.label}</option>)}</select><select value={region} onChange={(e) => setRegion(e.target.value)}><option value="">Todas as regiões</option>{regions.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><button className="button primary" disabled={mutation.isPending}>Criar matriz</button></form>;
 }
 
-function MatrixEditor({ matrix, close }: { matrix: StaffCompensationMatrix; close: () => void }) {
+function MatrixEditor({ matrix, canEdit, close }: { matrix: StaffCompensationMatrix; canEdit: boolean; close: () => void }) {
   const mutation = useCompensationMatrixAction();
   const firstScenario = matrix.scenarios[0]?.scenario ?? 'direct_to_principal';
   const valuesFor = (value: CompensationScenario) => {
@@ -61,8 +61,8 @@ function MatrixEditor({ matrix, close }: { matrix: StaffCompensationMatrix; clos
     const selected = scenarios.find((item) => item === value) ?? 'direct_to_principal';
     setScenario(selected); setShares(valuesFor(selected)); setReason(matrix.scenarios.find((item) => item.scenario === selected)?.rationale ?? '');
   };
-  const save = (event: FormEvent) => { event.preventDefault(); mutation.mutate({ action: 'saveScenario', matrixId: matrix.id, expectedVersion: matrix.version, data: { scenario, professional_share: Number(shares.professional), associate_share: Number(shares.associate), principal_share: Number(shares.principal), platform_share: Number(shares.platform), rationale: reason } }); };
-  return <div className="user-dialog" role="dialog"><h2>Editar matriz v{matrix.version}</h2><form onSubmit={save}><select value={scenario} onChange={(e) => selectScenario(e.target.value)}>{scenarios.map((item) => <option key={item} value={item}>{scenarioNames[item]}</option>)}</select>{Object.entries(shares).map(([key, value]) => <label key={key}>{key}<input type="number" min="0" max="100" step="0.0001" value={value} onChange={(e) => setShares({ ...shares, [key]: e.target.value })} /></label>)}<textarea required minLength={3} value={reason} onChange={(e) => setReason(e.target.value)} /><button className="button primary"><Save size={16} />Salvar cenário</button></form><LifecycleEditor kind="matrix" item={matrix} close={close} /></div>;
+  const save = (event: FormEvent) => { event.preventDefault(); if (!canEdit || mutation.isPending) return; mutation.mutate({ action: 'saveScenario', matrixId: matrix.id, expectedVersion: matrix.version, data: { scenario, professional_share: Number(shares.professional), associate_share: Number(shares.associate), principal_share: Number(shares.principal), platform_share: Number(shares.platform), rationale: reason } }); };
+  return <div className="user-dialog" role="dialog"><h2>{canEdit ? 'Editar matriz' : 'Consultar matriz'} v{matrix.version}</h2><form onSubmit={save}><select aria-label="Cenário" value={scenario} onChange={(e) => selectScenario(e.target.value)}>{scenarios.map((item) => <option key={item} value={item}>{scenarioNames[item]}</option>)}</select>{Object.entries(shares).map(([key, value]) => <label key={key}>{key}<input type="number" min="0" max="100" step="0.0001" value={value} readOnly={!canEdit} disabled={mutation.isPending} onChange={(e) => setShares({ ...shares, [key]: e.target.value })} /></label>)}<textarea aria-label="Justificativa do cenário" required minLength={3} value={reason} readOnly={!canEdit} disabled={mutation.isPending} onChange={(e) => setReason(e.target.value)} />{canEdit ? <button className="button primary" disabled={mutation.isPending}><Save size={16} />Salvar cenário</button> : null}</form><LifecycleEditor kind="matrix" item={matrix} canEdit={canEdit} close={close} /></div>;
 }
 
 function CostCreate({ offerTypes }: { offerTypes: StaffOfferTypeItem[] }) {
@@ -70,15 +70,17 @@ function CostCreate({ offerTypes }: { offerTypes: StaffOfferTypeItem[] }) {
   return <form className="ambassador-form-grid" onSubmit={(e) => { e.preventDefault(); mutation.mutate({ action: 'create', policyId: null, expectedVersion: null, data: { provider, payment_method: method, offering_type: type || null, commission_percentage: 0, processing_percentage: 0, fixed_amount: 0, rounding_mode: 'half_up', rounding_increment: 0.01 } }); }}><select value={provider} onChange={(e) => setProvider(e.target.value === 'google' || e.target.value === 'stripe' || e.target.value === 'asaas' ? e.target.value : 'apple')}><option value="apple">Apple</option><option value="google">Google</option><option value="stripe">Stripe</option><option value="asaas">Asaas</option></select><select value={method} onChange={(e) => setMethod(e.target.value === 'google_play' || e.target.value === 'card' || e.target.value === 'pix' ? e.target.value : 'app_store')}><option value="app_store">App Store</option><option value="google_play">Google Play</option><option value="card">Cartão</option><option value="pix">Pix</option></select><select value={type} onChange={(e) => setType(e.target.value)}><option value="">Todas as ofertas</option>{offerTypes.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select><button className="button primary">Criar taxa</button></form>;
 }
 
-function LifecycleEditor({ kind, item, close }: { kind: 'matrix'; item: StaffCompensationMatrix; close: () => void } | { kind: 'cost'; item: StaffChannelCostPolicy; close: () => void }) {
+function LifecycleEditor({ kind, item, canEdit, close }: { kind: 'matrix'; item: StaffCompensationMatrix; canEdit: boolean; close: () => void } | { kind: 'cost'; item: StaffChannelCostPolicy; canEdit: boolean; close: () => void }) {
   const matrixMutation = useCompensationMatrixAction(); const costMutation = useChannelCostPolicyAction();
+  const busy = matrixMutation.isPending || costMutation.isPending;
   const act = (action: 'publish' | 'activate' | 'retire') => {
+    if (!canEdit || busy) return;
     const data = action === 'publish' ? { effective_from: new Date().toISOString() } : {};
     return kind === 'matrix'
       ? matrixMutation.mutate({ action, matrixId: item.id, expectedVersion: item.version, data })
       : costMutation.mutate({ action, policyId: item.id, expectedVersion: item.version, data });
   };
-  return <div className="user-dialog-actions"><button className="button secondary" onClick={close}>Fechar</button>{item.status === 'draft' ? <button className="button primary" onClick={() => act('publish')}>Publicar</button> : null}{item.status === 'scheduled' ? <button className="button primary" onClick={() => act('activate')}>Ativar</button> : null}{item.status !== 'retired' ? <button className="button danger" onClick={() => act('retire')}>Encerrar</button> : null}</div>;
+  return <div className="user-dialog-actions"><button className="button secondary" onClick={close}>Fechar</button>{canEdit && item.status === 'draft' ? <button className="button primary" disabled={busy} onClick={() => act('publish')}>Publicar</button> : null}{canEdit && item.status === 'scheduled' ? <button className="button primary" disabled={busy} onClick={() => act('activate')}>Ativar</button> : null}{canEdit && item.status !== 'retired' ? <button className="button danger" disabled={busy} onClick={() => act('retire')}>Encerrar</button> : null}</div>;
 }
 
 function Simulator({ offerTypes, affinities }: { offerTypes: StaffOfferTypeItem[]; affinities: StaffAffinityGroupItem[] }) {

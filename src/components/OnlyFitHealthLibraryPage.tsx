@@ -157,7 +157,7 @@ function itemSummary(item: StaffHealthLibraryItem): string {
   return `${item.detail.weeks} semana(s) · ${item.detail.days.length} dia(s)`;
 }
 
-function ManagedCatalog({ kind }: { kind: LibraryKind }) {
+function ManagedCatalog({ kind, onEditingChange }: { kind: LibraryKind; onEditingChange: (open: boolean) => void }) {
   const role = useCurrentStaffRole();
   const canGovern = role.data === 'admin' || role.data === 'super_admin';
   const [search, setSearch] = useState('');
@@ -178,11 +178,22 @@ function ManagedCatalog({ kind }: { kind: LibraryKind }) {
   const total = query.data?.total ?? 0;
   const remoteError = mutation.error ?? setActive.error;
 
+  function changeEditor(next: EditorState | null) {
+    setEditor(next);
+    onEditingChange(next !== null);
+  }
+
+  function openEditor(next: EditorState) {
+    if (editor || busy) return;
+    changeEditor(next);
+  }
+
   async function save(state: EditorState) {
+    if (state.kind !== kind) throw new Error('library.editor_scope_changed');
     if (state.kind === 'workout') await workoutSave.mutateAsync({ id: state.id, expectedVersion: state.expectedVersion, payload: state.payload });
     else if (state.kind === 'diet') await dietSave.mutateAsync({ id: state.id, expectedVersion: state.expectedVersion, payload: state.payload });
     else await programSave.mutateAsync({ id: state.id, expectedVersion: state.expectedVersion, payload: state.payload });
-    setEditor(null);
+    changeEditor(null);
   }
 
   return (
@@ -192,7 +203,7 @@ function ManagedCatalog({ kind }: { kind: LibraryKind }) {
         {kind !== 'diet' ? <input aria-label="Filtrar modalidade" value={sport} onChange={(event) => { setSport(event.target.value); setPage(0); }} placeholder="Modalidade" /> : null}
         <select aria-label="Filtrar situação" value={status} onChange={(event) => { const value = event.target.value; setStatus(value === 'active' || value === 'inactive' ? value : 'all'); setPage(0); }}><option value="all">Todos</option><option value="active">Publicados</option><option value="inactive">Inativos</option></select>
         <button className="button secondary" type="button" onClick={() => void query.refetch()} disabled={query.isFetching}><RefreshCw size={16} className={query.isFetching ? 'spin' : ''} />Atualizar</button>
-        {canGovern ? <button className="button primary" type="button" onClick={() => setEditor(newEditor(kind))}><Plus size={16} />Novo</button> : null}
+        {canGovern ? <button className="button primary" type="button" onClick={() => openEditor(newEditor(kind))} disabled={busy || Boolean(editor)}><Plus size={16} />Novo</button> : null}
       </div>
 
       <div className="ohlib-metrics"><span><strong>{total}</strong> cadastrados</span><span><strong>{items.filter((item) => item.status === 'active').length}</strong> publicados nesta página</span><span>Alterações usam controle de versão</span></div>
@@ -205,11 +216,11 @@ function ManagedCatalog({ kind }: { kind: LibraryKind }) {
           {!query.isLoading && !items.length ? <div className="ohlib-empty"><BookOpen /><strong>Nenhum conteúdo encontrado</strong><span>Use “Novo” para criar a primeira publicação.</span></div> : null}
           {items.map((item) => <article className={item.status === 'active' ? 'ohlib-card' : 'ohlib-card inactive'} key={item.id}>
             <div className="ohlib-card-copy"><div className="ohlib-card-heading"><strong>{item.title}</strong><span>v{item.version}</span></div><p>{itemSummary(item)}</p><div className="ohlib-tags"><span>{item.status === 'active' ? 'Publicado' : 'Fora da biblioteca'}</span><span>Atualizado em {new Date(item.updated_at).toLocaleDateString('pt-BR')}</span></div></div>
-            {canGovern ? <div className="ohlib-actions"><button className="button secondary compact" type="button" onClick={() => setEditor(editorFrom(item))} disabled={busy}><Pencil size={14} />Editar</button><button className={item.status === 'active' ? 'button danger compact' : 'button primary compact'} type="button" disabled={busy} onClick={() => setActive.mutate({ kind: item.kind, id: item.id, active: item.status !== 'active', expectedVersion: item.version })}>{item.status === 'active' ? <X size={14} /> : <Check size={14} />}{item.status === 'active' ? 'Retirar' : 'Publicar'}</button></div> : null}
+            {canGovern ? <div className="ohlib-actions"><button className="button secondary compact" type="button" onClick={() => openEditor(editorFrom(item))} disabled={busy || Boolean(editor)}><Pencil size={14} />Editar</button><button className={item.status === 'active' ? 'button danger compact' : 'button primary compact'} type="button" disabled={busy} onClick={() => setActive.mutate({ kind: item.kind, id: item.id, active: item.status !== 'active', expectedVersion: item.version })}>{item.status === 'active' ? <X size={14} /> : <Check size={14} />}{item.status === 'active' ? 'Retirar' : 'Publicar'}</button></div> : null}
           </article>)}
           {total > PAGE_SIZE ? <div className="ohlib-pagination"><button className="button secondary compact" type="button" disabled={page === 0 || query.isFetching} onClick={() => setPage((value) => Math.max(0, value - 1))}><ChevronLeft size={15} />Anterior</button><span>Página {page + 1} de {Math.ceil(total / PAGE_SIZE)}</span><button className="button secondary compact" type="button" disabled={(page + 1) * PAGE_SIZE >= total || query.isFetching} onClick={() => setPage((value) => value + 1)}>Próxima<ChevronRight size={15} /></button></div> : null}
         </div>
-        {editor ? <LibraryEditor state={editor} busy={busy} onChange={setEditor} onCancel={() => setEditor(null)} onSave={save} /> : null}
+        {editor ? <LibraryEditor state={editor} busy={busy} onChange={changeEditor} onCancel={() => changeEditor(null)} onSave={save} /> : null}
       </div>
     </section>
   );
@@ -229,10 +240,15 @@ function LibraryEditor({ state, busy, onChange, onCancel, onSave }: {
     if (state.kind === 'diet' && state.payload.meals.some((meal) => meal.items.length === 0)) { setError('Cada refeição precisa ter ao menos um alimento.'); return; }
     if (state.kind === 'program' && state.payload.days.some((day) => day.week < 1 || day.week > state.payload.weeks || day.weekday < 1 || day.weekday > 7)) { setError('Revise a semana e o dia das sessões.'); return; }
     setError('');
-    try { await onSave(state); } catch { /* A mutação mantém o erro remoto visível. */ }
+    try { await onSave(state); } catch (error) {
+      if (error instanceof Error && error.message === 'library.editor_scope_changed') {
+        setError('Reabra o conteúdo na aba correspondente antes de salvar.');
+      }
+      // As mutações mantêm os demais erros visíveis no catálogo.
+    }
   }
   return <form className="ohlib-editor" onSubmit={submit}>
-    <div className="ohlib-editor-title"><div><span>{state.id ? 'Editar conteúdo' : 'Novo conteúdo'}</span><h2>{state.kind === 'workout' ? 'Treino' : state.kind === 'diet' ? 'Dieta' : 'Programa'}</h2></div><button className="icon-button" type="button" aria-label="Fechar" onClick={onCancel}><X size={18} /></button></div>
+    <div className="ohlib-editor-title"><div><span>{state.id ? 'Editar conteúdo' : 'Novo conteúdo'}</span><h2>{state.kind === 'workout' ? 'Treino' : state.kind === 'diet' ? 'Dieta' : 'Programa'}</h2></div><button className="icon-button" type="button" aria-label="Fechar" onClick={onCancel} disabled={busy}><X size={18} /></button></div>
     {error ? <p className="form-error" role="alert">{error}</p> : null}
     {state.kind === 'workout' ? <WorkoutFields state={state} onChange={onChange} /> : state.kind === 'diet' ? <DietFields state={state} onChange={onChange} /> : <ProgramFields state={state} onChange={onChange} />}
     <div className="ohlib-editor-footer"><button className="button secondary" type="button" onClick={onCancel} disabled={busy}>Cancelar</button><button className="button primary" type="submit" disabled={busy}><Save size={16} />{busy ? 'Salvando…' : 'Salvar'}</button></div>
@@ -303,5 +319,16 @@ function ProgramFields({ state, onChange }: { state: Extract<EditorState, { kind
 
 export function OnlyFitHealthLibraryPage() {
   const [tab, setTab] = useState<Tab>('workout');
-  return <><header className="page-header"><div><p className="section-label">Biblioteca da plataforma</p><h1>Biblioteca OnlyFit Health</h1><p className="ohlib-lead">Conteúdo oficial servido pelo OnlyFit Core.</p></div></header><section className="content ohlib-page"><nav className="ohlib-tabs" aria-label="Tipos de conteúdo">{tabs.map(({ id, label, description, icon: Icon }) => <button type="button" key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}><Icon size={19} /><span><strong>{label}</strong><small>{description}</small></span></button>)}</nav>{tab === 'protocols' ? <ProtocolCatalogPage embedded /> : <ManagedCatalog kind={tab} />}</section></>;
+  const [editorOpen, setEditorOpen] = useState(false);
+  function changeTab(next: Tab) {
+    if (!editorOpen) setTab(next);
+  }
+  return <>
+    <header className="page-header"><div><p className="section-label">Biblioteca da plataforma</p><h1>Biblioteca OnlyFit Health</h1><p className="ohlib-lead">Conteúdo oficial servido pelo OnlyFit Core.</p></div></header>
+    <section className="content ohlib-page">
+      <nav className="ohlib-tabs" aria-label="Tipos de conteúdo">{tabs.map(({ id, label, description, icon: Icon }) => <button type="button" key={id} className={tab === id ? 'active' : ''} disabled={editorOpen && tab !== id} onClick={() => changeTab(id)}><Icon size={19} /><span><strong>{label}</strong><small>{description}</small></span></button>)}</nav>
+      {editorOpen ? <p role="status" className="ohlib-lead">Feche o editor para trocar o tipo de conteúdo.</p> : null}
+      {tab === 'protocols' ? <ProtocolCatalogPage embedded onEditingChange={setEditorOpen} /> : <ManagedCatalog key={tab} kind={tab} onEditingChange={setEditorOpen} />}
+    </section>
+  </>;
 }

@@ -58,7 +58,7 @@ const slug = (value: string) =>
  * Não há exclusão: a chave fica guardada em quem já segue o protocolo.
  * Desativar tira da vitrine sem apagar histórico.
  */
-export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }) {
+export function ProtocolCatalogPage({ embedded = false, onEditingChange }: { embedded?: boolean; onEditingChange?: (open: boolean) => void }) {
   const query = useProtocolCatalog();
   const role = useCurrentStaffRole();
   const canGovern = role.data === 'admin' || role.data === 'super_admin';
@@ -79,12 +79,16 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
   );
 
   function openNew() {
+    if (draft || busy) return;
     setDraft({ ...emptyDraft, sortOrder: nextOrder });
+    onEditingChange?.(true);
     upsert.reset();
     setActive.reset();
   }
 
   function openEdit(entry: ProtocolCatalogEntry) {
+    if (draft || busy) return;
+    onEditingChange?.(true);
     setDraft({
       ...entry,
       expectedVersion: entry.version,
@@ -112,6 +116,7 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
     try {
       await upsert.mutateAsync({ ...draft, id });
       setDraft(null);
+      onEditingChange?.(false);
     } catch {
       // A mutation mantém o erro e a edição para conferência.
     }
@@ -159,7 +164,7 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
         </div>
         <div className="pcat-row-actions">
           {canGovern ? (
-            <button className="button primary" type="button" onClick={openNew} disabled={busy}>
+            <button className="button primary" type="button" onClick={openNew} disabled={busy || Boolean(draft)}>
               <Plus size={16} /> Novo protocolo
             </button>
           ) : null}
@@ -231,7 +236,7 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
 
                       {canGovern ? (
                         <div className="pcat-row-actions">
-                          <button className="button secondary compact" type="button" disabled={busy} onClick={() => openEdit(entry)}>
+                          <button className="button secondary compact" type="button" disabled={busy || Boolean(draft)} onClick={() => openEdit(entry)}>
                             <Pencil size={14} /> Editar
                           </button>
                           <button
@@ -424,7 +429,7 @@ export function ProtocolCatalogPage({ embedded = false }: { embedded?: boolean }
               )}
 
               <div className="pcat-editor-actions">
-                <button className="button secondary" type="button" onClick={() => setDraft(null)} disabled={busy}>
+                <button className="button secondary" type="button" onClick={() => { setDraft(null); onEditingChange?.(false); }} disabled={busy}>
                   Cancelar
                 </button>
                 <button

@@ -12,7 +12,7 @@ test('consolidates all user-facing OnlyFit Health content in one destination', (
   assert.match(app, /onlyfit-health-library[^\n]+OnlyFit Health/);
   assert.doesNotMatch(app, /id: 'protocol-catalog'/);
   for (const label of ['Treinos', 'Programas', 'Nutrição e dietas', 'Protocolos']) assert.ok(page.includes(label));
-  assert.match(page, /<ProtocolCatalogPage embedded \/>/);
+  assert.match(page, /<ProtocolCatalogPage embedded(?: \/>| onEditingChange=)/);
 });
 
 test('uses only the typed Core operations for both official libraries', () => {

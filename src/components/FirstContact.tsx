@@ -40,10 +40,15 @@ export function FirstContactPage() {
 
   const reminderHours = reminderDraft ?? String(settings?.reminder_hours ?? '');
   const alertHours = alertDraft ?? String(settings?.alert_hours ?? '');
+  const deadlinesComplete = Boolean(reminderHours.trim() && alertHours.trim());
 
   const submitDeadlines = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFeedback(null);
+    if (!deadlinesComplete) {
+      setFeedback({ type: 'error', text: 'Preencha os dois prazos.' });
+      return;
+    }
     const reminder = Number(reminderHours);
     const alert = Number(alertHours);
     if (!Number.isInteger(reminder) || !Number.isInteger(alert)) {
@@ -124,6 +129,7 @@ export function FirstContactPage() {
               <span>Lembrete ao profissional (horas)</span>
               <input
                 type="number"
+                required
                 min={1}
                 max={720}
                 value={reminderHours}
@@ -134,13 +140,14 @@ export function FirstContactPage() {
               <span>Alerta ao cliente (horas)</span>
               <input
                 type="number"
+                required
                 min={1}
                 max={720}
                 value={alertHours}
                 onChange={(event) => setAlertDraft(event.target.value)}
               />
             </label>
-            <button className="button primary" type="submit" disabled={saveMutation.isPending}>
+            <button className="button primary" type="submit" disabled={saveMutation.isPending || !deadlinesComplete}>
               {saveMutation.isPending ? <RefreshCw className="spin" size={16} /> : <Save size={16} />}
               Salvar prazos
             </button>

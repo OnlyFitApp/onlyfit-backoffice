@@ -110,8 +110,14 @@ export function NutritionCatalogsPage() {
   const nextPosition = items.length ? Math.max(...items.map((item) => item.position)) + 10 : 0;
 
   function changeKind(next: NutritionCatalogKind) {
+    if (draft) return;
     setKind(next);
     setDraft(null);
+  }
+
+  function openDraft(next: Draft) {
+    if (draft || busy) return;
+    setDraft(next);
   }
 
   async function submit(event: FormEvent) {
@@ -124,10 +130,11 @@ export function NutritionCatalogsPage() {
   return <>
     <header className="page-header">
       <div><p className="section-label">Biblioteca da plataforma</p><h1>Catálogos nutricionais</h1><p className="ohlib-lead">Fontes de alimentos e nutrientes reconhecidos pelo OnlyFit Core.</p></div>
-      <div className="pcat-row-actions">{canGovern ? <button className="button primary" type="button" onClick={() => setDraft(newDraft(kind, nextPosition))} disabled={busy}><Plus size={16} />Novo item</button> : null}<button className="button secondary" type="button" onClick={() => void query.refetch()} disabled={query.isFetching}><RefreshCw className={query.isFetching ? 'spin' : ''} size={16} />Atualizar</button></div>
+      <div className="pcat-row-actions">{canGovern ? <button className="button primary" type="button" onClick={() => openDraft(newDraft(kind, nextPosition))} disabled={busy || Boolean(draft)}><Plus size={16} />Novo item</button> : null}<button className="button secondary" type="button" onClick={() => void query.refetch()} disabled={query.isFetching}><RefreshCw className={query.isFetching ? 'spin' : ''} size={16} />Atualizar</button></div>
     </header>
     <section className="content pcat-page nutrition-catalog-page">
-      <nav className="ohlib-tabs" aria-label="Catálogos nutricionais"><button type="button" className={kind === 'food_sources' ? 'active' : ''} onClick={() => changeKind('food_sources')}><Database size={19} /><span><strong>Fontes de alimentos</strong><small>Origem, licença e prioridade</small></span></button><button type="button" className={kind === 'nutrients' ? 'active' : ''} onClick={() => changeKind('nutrients')}><Database size={19} /><span><strong>Nutrientes</strong><small>Código, nome e unidade</small></span></button></nav>
+      <nav className="ohlib-tabs" aria-label="Catálogos nutricionais"><button type="button" className={kind === 'food_sources' ? 'active' : ''} disabled={Boolean(draft) && kind !== 'food_sources'} onClick={() => changeKind('food_sources')}><Database size={19} /><span><strong>Fontes de alimentos</strong><small>Origem, licença e prioridade</small></span></button><button type="button" className={kind === 'nutrients' ? 'active' : ''} disabled={Boolean(draft) && kind !== 'nutrients'} onClick={() => changeKind('nutrients')}><Database size={19} /><span><strong>Nutrientes</strong><small>Código, nome e unidade</small></span></button></nav>
+      {draft ? <p role="status" className="ohlib-lead">Feche o editor para trocar o catálogo.</p> : null}
       <div className="pcat-summary"><span><strong>{items.length}</strong> cadastrados</span><span><strong>{items.filter((item) => item.active).length}</strong> ativos</span><span><strong>{items.filter((item) => item.public).length}</strong> públicos</span></div>
       {failure ? <p className="form-error" role="alert">{nutritionCatalogErrorMessage(failure)}</p> : null}
       {query.isError ? <p className="form-error" role="alert">Não foi possível carregar o catálogo nutricional.</p> : null}
@@ -135,7 +142,7 @@ export function NutritionCatalogsPage() {
         <div className="pcat-list-panel">
           {query.isLoading ? <div className="pcat-loading"><RefreshCw className="spin" size={22} /></div> : null}
           {!query.isLoading && !items.length ? <div className="pcat-empty"><Database size={26} /><strong>Nenhum item neste catálogo</strong></div> : null}
-          {items.length ? <ul className="pcat-list">{items.map((item) => <CatalogRow key={`${item.kind}:${item.key}`} item={item} busy={busy} canGovern={canGovern} onEdit={() => setDraft(draftFrom(item))} onSetActive={(active) => setActive.mutate({ item, active })} />)}</ul> : null}
+          {items.length ? <ul className="pcat-list">{items.map((item) => <CatalogRow key={`${item.kind}:${item.key}`} item={item} busy={busy} editorOpen={Boolean(draft)} canGovern={canGovern} onEdit={() => openDraft(draftFrom(item))} onSetActive={(active) => setActive.mutate({ item, active })} />)}</ul> : null}
         </div>
         {draft ? <CatalogEditor draft={draft} busy={busy} onChange={setDraft} onCancel={() => setDraft(null)} onSubmit={submit} /> : null}
       </div>
@@ -143,9 +150,10 @@ export function NutritionCatalogsPage() {
   </>;
 }
 
-function CatalogRow({ item, busy, canGovern, onEdit, onSetActive }: {
+function CatalogRow({ item, busy, editorOpen, canGovern, onEdit, onSetActive }: {
   item: NutritionCatalogItem;
   busy: boolean;
+  editorOpen: boolean;
   canGovern: boolean;
   onEdit: () => void;
   onSetActive: (active: boolean) => void;
@@ -156,7 +164,7 @@ function CatalogRow({ item, busy, canGovern, onEdit, onSetActive }: {
   return <li className={item.active ? 'pcat-row' : 'pcat-row inactive'}>
     <span className="pcat-icon"><Database size={19} /></span>
     <div className="pcat-row-main"><div><strong>{nutritionCatalogLabel(item)}</strong><code>{item.key}{item.data.display_name_key !== item.key ? ` · ${item.data.display_name_key}` : ''}</code></div><span className={item.active ? 'pcat-status active' : 'pcat-status'}>{item.active ? 'Ativo' : 'Inativo'}</span><span className="pcat-muted">{detail} · posição {item.position} · {item.public ? 'público' : 'interno'}</span></div>
-    {canGovern ? <div className="pcat-row-actions"><button className="button secondary compact" type="button" disabled={busy} onClick={onEdit}><Pencil size={14} />Editar</button><button className={item.active ? 'button danger compact' : 'button primary compact'} type="button" disabled={busy} onClick={() => onSetActive(!item.active)}>{item.active ? <X size={14} /> : <Check size={14} />}{item.active ? 'Desativar' : 'Ativar'}</button></div> : null}
+    {canGovern ? <div className="pcat-row-actions"><button className="button secondary compact" type="button" disabled={busy || editorOpen} onClick={onEdit}><Pencil size={14} />Editar</button><button className={item.active ? 'button danger compact' : 'button primary compact'} type="button" disabled={busy} onClick={() => onSetActive(!item.active)}>{item.active ? <X size={14} /> : <Check size={14} />}{item.active ? 'Desativar' : 'Ativar'}</button></div> : null}
   </li>;
 }
 

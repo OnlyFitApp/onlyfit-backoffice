@@ -18,6 +18,10 @@ O Core é a fonte canônica das regras administradas por este portal. Consulte:
 
 ## Verificação
 
+O [manual de testes profissionais](docs/manual-de-testes-profissionais.md)
+descreve os testes funcionais pelas interfaces, os resultados esperados e o
+registro de evidências para profissional, aluno e equipe do backoffice.
+
 ```bash
 npm run core:check-sdk
 npm run build

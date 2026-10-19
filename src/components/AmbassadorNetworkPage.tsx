@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   Check,
+  ListOrdered,
   MapPin,
   RefreshCw,
   Save,
@@ -27,8 +28,9 @@ import {
 } from "../lib/ambassadorNetwork";
 import { formatDateTime, formatNumber } from "../lib/format";
 import { AmbassadorTabPanel, AmbassadorTabs } from "./AmbassadorUi";
+import { AmbassadorRankingPanel } from "./AmbassadorRankingPanel";
 
-type Tab = "network" | "regions" | "policies" | "requests" | "audit";
+type Tab = "network" | "regions" | "policies" | "requests" | "ranking" | "audit";
 type Status = "draft" | "pending" | "active" | "suspended" | "ended";
 type Run = (
   input: {
@@ -97,6 +99,11 @@ export function AmbassadorNetworkPage() {
       id: "requests" as const,
       label: `Solicitações${data?.requests.length ? ` (${data.requests.length})` : ""}`,
       icon: <UserRoundCheck size={16} />,
+    },
+    {
+      id: "ranking" as const,
+      label: "Página do ranking",
+      icon: <ListOrdered size={16} />,
     },
     {
       id: "audit" as const,
@@ -207,6 +214,9 @@ export function AmbassadorNetworkPage() {
             </AmbassadorTabPanel>
             <AmbassadorTabPanel id="requests" activeTab={tab}>
               <RequestsTab data={data} canEdit={canEdit} run={run} />
+            </AmbassadorTabPanel>
+            <AmbassadorTabPanel id="ranking" activeTab={tab}>
+              <AmbassadorRankingPanel assignments={data.assignments} />
             </AmbassadorTabPanel>
             <AmbassadorTabPanel id="audit" activeTab={tab}>
               <div className="ambassador-list-panel">

@@ -1,7 +1,7 @@
 import type { AmbassadorAssignment } from "./ambassadorNetwork";
 
-// Dados mínimos que saem na página pública. Nada de ids internos, contato
-// ou número de contrato: só se existe uma referência de contrato registrada.
+// Projeção do vínculo para o ranking. A chave interna da seleção é
+// pseudonimizada na exportação; contato e número de contrato não saem na página.
 export type RankingMember = {
   key: string;
   name: string;
@@ -33,9 +33,8 @@ export function buildRankingMembers(
 ): RankingMember[] {
   return assignments
     .filter((item) => item.status !== "ended")
-    .map((item, index) => ({
-      // Sem username, a chave é posicional: o id interno nunca sai na página.
-      key: item.username || `sem-usuario-${index + 1}`,
+    .map((item) => ({
+      key: item.id,
       name: item.display_name,
       username: item.username,
       classification:
@@ -74,17 +73,37 @@ function embedJson(value: unknown): string {
     .replace(/\u2029/g, "\\u2029");
 }
 
-export function buildRankingPageHtml(input: {
+export async function buildRankingPageHtml(input: {
   slug: string;
   title: string;
   generatedAt: string;
   members: RankingMember[];
-}): string {
+}): Promise<string> {
   const data = {
     slug: input.slug,
     title: input.title,
     generatedAt: input.generatedAt,
-    members: input.members,
+    members: await Promise.all(
+      input.members.map(async (member) => {
+        const digest = await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(JSON.stringify([input.slug, member.key])),
+        );
+        return {
+          key: Array.from(new Uint8Array(digest), (byte) =>
+            byte.toString(16).padStart(2, "0"),
+          ).join(""),
+          name: member.name,
+          username: member.username,
+          classification: member.classification,
+          affinity: member.affinity,
+          place: member.place,
+          followers: member.followers,
+          status: member.status,
+          hasContractReference: member.hasContractReference,
+        };
+      }),
+    ),
   };
   return RANKING_PAGE_TEMPLATE.replace("__TITLE__", escapeHtml(input.title)).replace(
     "__DATA__",

@@ -32,3 +32,16 @@ npm run build
 npm run lint
 npm test
 ```
+
+## Publicação
+
+O [backoffice em produção](https://onlyfit-backoffice.vercel.app) é publicado
+pela integração do GitHub com o projeto `onlyfit-backoffice` na Vercel.
+Envie as mudanças em uma branch, valide a prévia do PR e faça o merge por
+rebase em `main`. Confirme o status de sucesso da Vercel no commit final de
+`main` e confira o endereço de produção antes de considerar a entrega publicada.
+
+O plano Hobby da Vercel exige que este repositório da organização seja público.
+Se um deploy for bloqueado por essa restrição, corrija a visibilidade e inicie
+uma nova publicação; o status de falha anterior não confirma uma nova tentativa.
+Consulte as [restrições da integração Git no Hobby](https://vercel.com/docs/git#using-hobby-teams).

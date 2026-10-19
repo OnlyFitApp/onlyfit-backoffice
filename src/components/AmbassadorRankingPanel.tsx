@@ -16,6 +16,8 @@ export function AmbassadorRankingPanel({
   const [title, setTitle] = useState("Ranking de embaixadores");
   const [slug, setSlug] = useState(() => newRankingSlug());
   const [excluded, setExcluded] = useState<Set<string>>(() => new Set());
+  const [generating, setGenerating] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const included = members.filter((member) => !excluded.has(member.key));
 
@@ -28,31 +30,38 @@ export function AmbassadorRankingPanel({
     });
   };
 
-  const download = () => {
-    const html = buildRankingPageHtml({
-      slug,
-      title: title.trim() || "Ranking de embaixadores",
-      generatedAt: new Date().toISOString(),
-      members: included,
-    });
-    const url = URL.createObjectURL(
-      new Blob([html], { type: "text/html;charset=utf-8" }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `ranking-${slug}.html`;
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  const download = async () => {
+    setGenerating(true);
+    setDownloadError(null);
+    try {
+      const html = await buildRankingPageHtml({
+        slug,
+        title: title.trim() || "Ranking de embaixadores",
+        generatedAt: new Date().toISOString(),
+        members: included,
+      });
+      const url = URL.createObjectURL(
+        new Blob([html], { type: "text/html;charset=utf-8" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `ranking-${slug}.html`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch {
+      setDownloadError("Não foi possível gerar a página. Tente novamente.");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   return (
     <div className="ambassador-list-panel">
       <h2>Página do ranking</h2>
       <p className="ambassador-muted">
-        Gera um arquivo HTML estático com os cadastros escolhidos. Não cria
-        tabela nem endpoint: quem tiver o link vê a página, e ela não aparece
-        em buscadores. A posição A/B/C é guardada no navegador de quem move os
-        cards.
+        Gera um arquivo HTML com os cadastros selecionados nesta lista. A
+        publicação é feita separadamente. A posição A/B/C fica salva no navegador
+        de quem organiza os cards.
       </p>
 
       <label>
@@ -70,7 +79,7 @@ export function AmbassadorRankingPanel({
           className="button secondary"
           type="button"
           onClick={() => setSlug(newRankingSlug())}
-          title="Gera um caminho novo; a página antiga deixa de valer"
+          title="Gera outro caminho sugerido; páginas já publicadas continuam acessíveis"
         >
           <RefreshCw size={14} /> Novo caminho
         </button>
@@ -93,13 +102,20 @@ export function AmbassadorRankingPanel({
         ))}
       </fieldset>
 
+      {downloadError ? (
+        <div className="inline-alert danger" role="alert">
+          {downloadError}
+        </div>
+      ) : null}
+
       <button
         className="button primary"
         type="button"
         onClick={download}
-        disabled={included.length === 0}
+        disabled={included.length === 0 || generating}
       >
-        <Download size={16} /> Baixar página do ranking
+        <Download size={16} />
+        {generating ? "Gerando página…" : "Baixar página do ranking"}
       </button>
     </div>
   );

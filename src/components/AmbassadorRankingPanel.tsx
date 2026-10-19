@@ -1,4 +1,4 @@
-import { Download, RefreshCw } from "lucide-react";
+import { Download, MapPin, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { AmbassadorAssignment } from "../lib/ambassadorNetwork";
 import {
@@ -56,15 +56,15 @@ export function AmbassadorRankingPanel({
   };
 
   return (
-    <div className="ambassador-list-panel">
-      <h2>Página do ranking</h2>
-      <p className="ambassador-muted">
-        Gera um arquivo HTML com os cadastros selecionados nesta lista. A
-        publicação é feita separadamente. A posição A/B/C fica salva no navegador
-        de quem organiza os cards.
-      </p>
+    <div className="ambassador-list-panel ambassador-ranking-panel">
+      <div className="ambassador-section-head">
+        <div>
+          <h2>Página do ranking</h2>
+          <p>Escolha os participantes. A publicação do arquivo é feita separadamente.</p>
+        </div>
+      </div>
 
-      <label>
+      <label className="ambassador-field">
         Título da página
         <input
           value={title}
@@ -73,34 +73,40 @@ export function AmbassadorRankingPanel({
         />
       </label>
 
-      <p className="ambassador-muted">
-        Caminho sugerido para publicar: <code>/{slug}/index.html</code>
-        <button
-          className="button secondary"
-          type="button"
-          onClick={() => setSlug(newRankingSlug())}
-          title="Gera outro caminho sugerido; páginas já publicadas continuam acessíveis"
-        >
-          <RefreshCw size={14} /> Novo caminho
-        </button>
-      </p>
-
-      <fieldset>
+      <fieldset className="ambassador-ranking-members">
         <legend>
-          Cadastros na página ({included.length} de {members.length})
+          Participantes ({included.length} de {members.length})
         </legend>
         {members.map((member) => (
-          <label key={member.key}>
+          <label key={member.key} className="ambassador-ranking-choice">
             <input
               type="checkbox"
               checked={!excluded.has(member.key)}
               onChange={() => toggle(member.key)}
             />
-            {member.name} <span className="ambassador-muted">@{member.username}</span>{" "}
-            <span className="ambassador-muted">· {member.status}</span>
+            <span className="ambassador-ranking-copy">
+              <strong>{member.name}</strong>
+              {member.affinity ? <span>{member.affinity}</span> : null}
+              {member.place ? <small><MapPin size={12} aria-hidden="true" />{member.place}</small> : null}
+            </span>
           </label>
         ))}
       </fieldset>
+
+      <details className="ambassador-ranking-publish">
+        <summary>Opções de publicação</summary>
+        <div>
+          <code>/{slug}/index.html</code>
+          <button
+            className="button secondary"
+            type="button"
+            onClick={() => setSlug(newRankingSlug())}
+            title="Gera outro caminho sugerido; páginas já publicadas continuam acessíveis"
+          >
+            <RefreshCw size={14} /> Novo caminho
+          </button>
+        </div>
+      </details>
 
       {downloadError ? (
         <div className="inline-alert danger" role="alert">
@@ -109,7 +115,7 @@ export function AmbassadorRankingPanel({
       ) : null}
 
       <button
-        className="button primary"
+        className="button primary ambassador-ranking-download"
         type="button"
         onClick={download}
         disabled={included.length === 0 || generating}

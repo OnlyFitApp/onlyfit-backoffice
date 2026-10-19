@@ -1,3 +1,5 @@
+/// <reference lib="es2021.intl" />
+
 import type { AmbassadorAssignment } from "./ambassadorNetwork";
 
 // Projeção do vínculo para o ranking. A chave interna da seleção é
@@ -5,28 +7,23 @@ import type { AmbassadorAssignment } from "./ambassadorNetwork";
 export type RankingMember = {
   key: string;
   name: string;
-  username: string;
-  classification: string;
   affinity: string;
   place: string;
-  followers: number;
-  status: string;
-  hasContractReference: boolean;
 };
 
-const classificationLabels: Record<string, string> = {
-  principal: "Principal",
-  associate: "Associado",
-  professional: "Profissional",
-};
+const countryNames = typeof Intl.DisplayNames === "function"
+  ? new Intl.DisplayNames(["pt-BR"], { type: "region" })
+  : null;
 
-const statusLabels: Record<string, string> = {
-  draft: "Rascunho",
-  pending: "Pendente",
-  active: "Ativo",
-  suspended: "Suspenso",
-  ended: "Encerrado",
-};
+function countryName(value: string | null): string {
+  const code = value?.trim().toUpperCase() ?? "";
+  if (!code) return "";
+  try {
+    return countryNames?.of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
 
 export function buildRankingMembers(
   assignments: AmbassadorAssignment[],
@@ -36,16 +33,10 @@ export function buildRankingMembers(
     .map((item) => ({
       key: item.id,
       name: item.display_name,
-      username: item.username,
-      classification:
-        classificationLabels[item.classification] ?? item.classification,
       affinity: item.affinity_group_label,
-      place: [item.city_name, item.state_code, item.country_code]
+      place: [countryName(item.country_code), item.city_name, item.state_code]
         .filter(Boolean)
         .join(" · "),
-      followers: item.follower_count,
-      status: statusLabels[item.status] ?? item.status,
-      hasContractReference: Boolean(item.contract_reference?.trim()),
     }));
 }
 
@@ -94,13 +85,8 @@ export async function buildRankingPageHtml(input: {
             byte.toString(16).padStart(2, "0"),
           ).join(""),
           name: member.name,
-          username: member.username,
-          classification: member.classification,
           affinity: member.affinity,
           place: member.place,
-          followers: member.followers,
-          status: member.status,
-          hasContractReference: member.hasContractReference,
         };
       }),
     ),
@@ -120,37 +106,58 @@ const RANKING_PAGE_TEMPLATE = `<!doctype html>
 <meta name="referrer" content="no-referrer">
 <title>__TITLE__</title>
 <style>
-:root { color-scheme: dark; --bg: #0c1117; --panel: #141b24; --card: #0f151d; --line: #243040; --text: #e8edf3; --muted: #8b9bb0; }
+:root { color-scheme: dark; --bg: #0d0e10; --panel: #141619; --card: #1d2025; --line: #2c3037; --text: #f1f3f6; --muted: #a1a8b4; }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
-.wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
-.top { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
-h1 { font-size: 22px; margin: 0; }
-.hint { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
-.reset { background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 6px; height: 34px; padding: 0 12px; cursor: pointer; font: inherit; font-size: 13px; }
-.reset:hover { border-color: var(--text); }
-.lane { border: 1px solid var(--line); border-left: 6px solid var(--tone); background: var(--panel); border-radius: 10px; margin-bottom: 16px; overflow: hidden; }
-.lane-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: color-mix(in srgb, var(--tone) 14%, transparent); }
-.lane-tag { font-weight: 800; font-size: 22px; color: var(--tone); width: 28px; }
-.lane-head h2 { font-size: 15px; margin: 0; }
-.lane-head p { margin: 0; color: var(--muted); font-size: 12px; }
-.count { margin-left: auto; background: var(--tone); color: #06110d; border-radius: 6px; padding: 2px 10px; font-weight: 700; font-size: 13px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; padding: 12px; min-height: 80px; transition: background .15s; }
-.cards.over { background: color-mix(in srgb, var(--tone) 10%, transparent); }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 12px; cursor: grab; display: flex; flex-direction: column; gap: 6px; }
-.card.dragging { opacity: .4; }
-.card.over { outline: 2px dashed var(--tone); outline-offset: 2px; }
-.card strong { font-size: 15px; }
-.meta { margin: 0; color: var(--muted); font-size: 12.5px; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-size: 11.5px; color: var(--muted); }
-.chip.ok { border-color: var(--tone); color: var(--tone); }
-.actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-.mini { background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 6px; min-width: 32px; height: 28px; padding: 0 8px; cursor: pointer; font: inherit; font-size: 12px; }
-.mini:hover:not(:disabled) { border-color: var(--text); }
-.mini:disabled { opacity: .35; cursor: default; }
-.empty { margin: 0; color: var(--muted); font-size: 13px; grid-column: 1 / -1; align-self: center; }
-@media (max-width: 520px) { .wrap { padding: 16px; } }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+button, summary { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, summary:focus-visible { outline: 2px solid #008abf; outline-offset: 4px; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 52px 32px 64px; }
+.top { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+h1 { margin: 0; font-size: clamp(25px, 3vw, 34px); font-weight: 700; letter-spacing: -.035em; line-height: 1.2; }
+.hint { margin: 9px 0 0; color: var(--muted); font-size: 13px; }
+.reset { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+.reset:hover { border-color: #535b68; color: var(--text); }
+#board { display: grid; gap: 16px; }
+.lane { display: grid; grid-template-columns: 144px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 18px; background: var(--panel); }
+.lane-head { display: grid; align-content: center; justify-items: start; gap: 10px; padding: 24px 20px; border-right: 1px solid var(--line); }
+.lane-tag { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 12px; background: color-mix(in srgb, var(--tone) 13%, transparent); color: var(--tone); font-size: 25px; font-weight: 750; line-height: 1; }
+.lane-head h2 { margin: 0; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.4; }
+.count { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); align-content: start; gap: 12px; min-height: 164px; padding: 18px; border-radius: 0 18px 18px 0; transition: background .15s; }
+.cards.over { background: color-mix(in srgb, var(--tone) 7%, transparent); }
+.card { position: relative; min-width: 0; padding: 21px 42px 20px 20px; border: 1px solid #343941; border-radius: 13px; background: var(--card); cursor: grab; transition: border-color .15s, background .15s; }
+.card:hover, .card:focus-within { border-color: #555e6c; background: #22262c; }
+.card.dragging { opacity: .3; }
+.card.over { outline: 2px solid var(--tone); outline-offset: 3px; }
+.card h3 { margin: 0; color: var(--text); font-size: 21px; font-weight: 700; letter-spacing: -.025em; line-height: 1.25; overflow-wrap: anywhere; }
+.card-vertical { margin: 8px 0 0; color: #d0d5de; font-size: 13px; overflow-wrap: anywhere; }
+.card-location { margin: 5px 0 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.card-options { position: absolute; top: 12px; right: 8px; z-index: 1; }
+.card-options[open] { z-index: 5; }
+.drag-handle { display: grid; width: 30px; height: 32px; place-items: center; border-radius: 7px; color: #737d8c; font-size: 23px; line-height: 1; list-style: none; cursor: grab; touch-action: none; user-select: none; }
+.drag-handle::-webkit-details-marker { display: none; }
+.drag-handle:hover, .card-options[open] .drag-handle { background: #ffffff09; color: var(--text); }
+.actions { position: absolute; top: 38px; right: 0; display: grid; gap: 3px; width: 180px; padding: 6px; border: 1px solid #454c58; border-radius: 11px; background: #22262c; box-shadow: 0 12px 36px #0006; }
+.mini { min-height: 36px; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text); text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
+.mini:hover:not(:disabled), .mini:focus-visible { background: #ffffff0d; }
+.mini:disabled { color: #68717e; cursor: default; }
+.empty { grid-column: 1 / -1; align-self: center; margin: 0; padding: 20px; color: #778190; text-align: center; font-size: 12px; }
+.drag-preview { position: fixed; z-index: 100; margin: 0; opacity: .96; box-shadow: 0 18px 48px #0006; pointer-events: none; }
+.drag-preview .card-options { display: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 640px) {
+  .wrap { padding: 30px 16px 40px; }
+  .top { gap: 16px; margin-bottom: 24px; }
+  .lane { grid-template-columns: minmax(0, 1fr); }
+  .lane-head { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .lane-tag { width: 32px; height: 32px; border-radius: 9px; font-size: 20px; }
+  .lane-head > div { flex: 1; }
+  .cards { gap: 10px; min-height: 110px; padding: 12px; border-radius: 0 0 18px 18px; }
+  .card { padding: 19px 48px 19px 18px; }
+  .card h3 { font-size: 21px; }
+  .drag-handle { width: 36px; height: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
@@ -160,9 +167,10 @@ h1 { font-size: 22px; margin: 0; }
       <h1 id="title"></h1>
       <p class="hint" id="hint"></p>
     </div>
-    <button class="reset" id="reset" type="button">Voltar ao início</button>
+    <button class="reset" id="reset" type="button">Restaurar ordem</button>
   </header>
   <div id="board"></div>
+  <p class="sr-only" id="announcement" role="status" aria-live="polite"></p>
 </main>
 <script>
 (function () {
@@ -223,9 +231,15 @@ h1 { font-size: 22px; margin: 0; }
     return state.order.filter(function (k) { return state.lanes[k] === lane; });
   }
 
-  function commit() {
+  function commit(focusKey) {
     write();
     render();
+    if (focusKey) {
+      var handle = document.querySelector('[data-key="' + focusKey + '"] .drag-handle');
+      if (handle) handle.focus({ preventScroll: true });
+      var lane = LANES.find(function (item) { return item.id === state.lanes[focusKey]; });
+      document.getElementById("announcement").textContent = BY_KEY[focusKey].name + " · " + lane.label;
+    }
   }
 
   function moveTo(key, lane, beforeKey) {
@@ -235,7 +249,7 @@ h1 { font-size: 22px; margin: 0; }
     var at = beforeKey ? state.order.indexOf(beforeKey) : -1;
     if (at === -1) state.order.push(key);
     else state.order.splice(at, 0, key);
-    commit();
+    commit(key);
   }
 
   function nudge(key, dir) {
@@ -247,36 +261,117 @@ h1 { font-size: 22px; margin: 0; }
     var b = state.order.indexOf(keys[j]);
     state.order[a] = keys[j];
     state.order[b] = key;
-    commit();
+    commit(key);
   }
 
   function clearOver() {
     document.querySelectorAll(".over").forEach(function (node) { node.classList.remove("over"); });
   }
 
+  function touchDropTarget(x, y) {
+    var node = document.elementFromPoint(x, y);
+    if (!node) return null;
+    var list = node.closest(".cards");
+    if (!list) return null;
+    var targetCard = node.closest(".card");
+    return { list: list, card: targetCard };
+  }
+
+  function attachTouchDrag(handle, art, key) {
+    var start = null;
+    var preview = null;
+    var suppressClick = false;
+
+    function cleanup() {
+      if (preview) preview.remove();
+      preview = null;
+      start = null;
+      dragKey = null;
+      art.classList.remove("dragging");
+      clearOver();
+    }
+
+    handle.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "mouse" || !e.isPrimary || e.button !== 0) return;
+      var rect = art.getBoundingClientRect();
+      start = { id: e.pointerId, x: e.clientX, y: e.clientY, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top };
+      suppressClick = false;
+      handle.setPointerCapture(e.pointerId);
+    });
+
+    handle.addEventListener("pointermove", function (e) {
+      if (!start || start.id !== e.pointerId) return;
+      if (!preview && Math.hypot(e.clientX - start.x, e.clientY - start.y) < 8) return;
+      e.preventDefault();
+      if (!preview) {
+        handle.parentElement.open = false;
+        preview = art.cloneNode(true);
+        preview.className = "card drag-preview";
+        preview.removeAttribute("data-key");
+        preview.setAttribute("aria-hidden", "true");
+        preview.style.width = art.getBoundingClientRect().width + "px";
+        document.body.appendChild(preview);
+        art.classList.add("dragging");
+        dragKey = key;
+        suppressClick = true;
+      }
+      preview.style.left = (e.clientX - start.offsetX) + "px";
+      preview.style.top = (e.clientY - start.offsetY) + "px";
+      if (e.clientY < 60) window.scrollBy(0, -16);
+      else if (e.clientY > window.innerHeight - 60) window.scrollBy(0, 16);
+      clearOver();
+      var target = touchDropTarget(e.clientX, e.clientY);
+      if (target) (target.card || target.list).classList.add("over");
+    });
+
+    handle.addEventListener("pointerup", function (e) {
+      if (!start || start.id !== e.pointerId) return;
+      var target = preview ? touchDropTarget(e.clientX, e.clientY) : null;
+      cleanup();
+      if (target) moveTo(key, target.list.dataset.lane, target.card ? target.card.dataset.key : null);
+    });
+    function cancelTouch(e) {
+      if (start && start.id === e.pointerId) cleanup();
+    }
+    handle.addEventListener("pointercancel", cancelTouch);
+    handle.addEventListener("lostpointercapture", cancelTouch);
+    handle.addEventListener("click", function (e) {
+      if (suppressClick) {
+        e.preventDefault();
+        e.stopPropagation();
+        suppressClick = false;
+      }
+    });
+  }
+
   function card(key, index, total) {
     var m = BY_KEY[key];
     var lane = state.lanes[key];
     var art = el("article", "card");
+    art.dataset.key = key;
     art.draggable = true;
-    art.appendChild(el("strong", "", m.name));
-    art.appendChild(el("p", "meta", "@" + m.username + " · " + m.classification + (m.affinity ? " · " + m.affinity : "")));
-    if (m.place) art.appendChild(el("p", "meta", m.place));
+    art.appendChild(el("h3", "", m.name));
+    if (m.affinity) art.appendChild(el("p", "card-vertical", m.affinity));
+    if (m.place) art.appendChild(el("p", "card-location", m.place));
 
-    var chips = el("div", "chips");
-    chips.appendChild(el("span", "chip", m.status));
-    chips.appendChild(el("span", "chip", m.followers.toLocaleString("pt-BR") + " seguidores"));
-    if (m.hasContractReference) chips.appendChild(el("span", "chip ok", "Contrato registrado"));
-    art.appendChild(chips);
-
+    var options = el("details", "card-options");
+    var handle = el("summary", "drag-handle", "⠿");
+    handle.setAttribute("aria-label", "Mover " + m.name);
+    handle.title = "Arrastar ou abrir opções de movimento";
+    options.appendChild(handle);
     var actions = el("div", "actions");
-    actions.appendChild(button("↑", "Subir", index === 0, function () { nudge(key, -1); }));
-    actions.appendChild(button("↓", "Descer", index === total - 1, function () { nudge(key, 1); }));
+    actions.appendChild(button("↑ Subir", "Subir", index === 0, function () { nudge(key, -1); }));
+    actions.appendChild(button("↓ Descer", "Descer", index === total - 1, function () { nudge(key, 1); }));
     LANES.forEach(function (target) {
       if (target.id === lane) return;
-      actions.appendChild(button("→ " + target.id, "Mover para " + target.label, false, function () { moveTo(key, target.id, null); }));
+      actions.appendChild(button("Mover para " + target.id, "Mover para " + target.label, false, function () { moveTo(key, target.id, null); }));
     });
-    art.appendChild(actions);
+    options.appendChild(actions);
+    options.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { options.open = false; handle.focus(); }
+    });
+    art.appendChild(options);
+    attachTouchDrag(handle, art, key);
 
     art.addEventListener("dragstart", function (e) {
       dragKey = key;
@@ -318,6 +413,7 @@ h1 { font-size: 22px; margin: 0; }
       var count = el("span", "count", "0");
       head.appendChild(count);
       var list = el("div", "cards");
+      list.dataset.lane = lane.id;
       section.appendChild(head);
       section.appendChild(list);
       board.appendChild(section);
@@ -346,16 +442,13 @@ h1 { font-size: 22px; margin: 0; }
       ref.list.textContent = "";
       ref.count.textContent = String(keys.length);
       keys.forEach(function (key, index) { ref.list.appendChild(card(key, index, keys.length)); });
-      if (!keys.length) ref.list.appendChild(el("p", "empty", "Arraste um cadastro para cá"));
+      if (!keys.length) ref.list.appendChild(el("p", "empty", "Solte aqui"));
     });
   }
 
   document.title = DATA.title;
   document.getElementById("title").textContent = DATA.title;
-  var generated = new Date(DATA.generatedAt);
-  document.getElementById("hint").textContent =
-    DATA.members.length + " cadastros · gerado em " + generated.toLocaleString("pt-BR") +
-    " · arraste os cards ou use as setas. A ordem fica salva neste navegador.";
+  document.getElementById("hint").textContent = DATA.members.length + " cadastros";
   document.getElementById("reset").addEventListener("click", function () {
     if (!window.confirm("Voltar todos para o início e à ordem original?")) return;
     state = reconcile({});

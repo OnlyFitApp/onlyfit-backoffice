@@ -52,7 +52,7 @@ test("keeps different memberships independently selectable for the same username
   const members = buildRankingMembers([brazil, portugal]);
   assert.equal(members.length, 2);
   assert.notEqual(members[0].key, members[1].key);
-  assert.equal(members.filter((member) => member.key !== members[0].key)[0].place, "PT");
+  assert.equal(members.filter((member) => member.key !== members[0].key)[0].place, "Portugal");
   const refreshed = buildRankingMembers([portugal, brazil]);
   assert.equal(refreshed[0].key, members[1].key);
 });
@@ -66,7 +66,7 @@ test("exports distinct stable keys without exposing internal identifiers or extr
   for (const member of exported) assert.match(member.key, /^[0-9a-f]{64}$/);
   for (const secret of [brazil.id, portugal.id, brazil.account_id, brazil.contract_reference, "private-extra-field"])
     assert.ok(!html.includes(secret));
-  assert.equal(exported[0].hasContractReference, true);
+  assert.deepEqual(Object.keys(exported[0]).sort(), ["affinity", "key", "name", "place"]);
   const reordered = exportedData(await page([...members].reverse())).members;
   assert.equal(reordered[1].key, exported[0].key);
   const anotherPage = exportedData(await page(members, "another-page")).members;
@@ -76,7 +76,19 @@ test("exports distinct stable keys without exposing internal identifiers or extr
 test("excludes ended memberships from ranking candidates", () => {
   const members = buildRankingMembers([brazil, { ...portugal, status: "ended" }]);
   assert.equal(members.length, 1);
-  assert.equal(members[0].place, "BR");
+  assert.equal(members[0].place, "Brasil");
+});
+
+test("shows country names with the supplied city and state without inventing missing locations", () => {
+  const members = buildRankingMembers([
+    { ...brazil, country_code: " br ", city_name: "Belém", state_code: "PA" },
+    { ...portugal, country_code: "US" },
+    { ...brazil, country_code: null },
+  ]);
+  assert.equal(members[0].place, "Brasil · Belém · PA");
+  assert.equal(members[1].place, "Estados Unidos");
+  assert.equal(members[2].place, "");
+  assert.equal(members[0].affinity, "Corrida");
 });
 
 test("keeps member text inside the embedded data without closing the script", async () => {
